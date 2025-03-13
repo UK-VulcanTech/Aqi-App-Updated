@@ -9,8 +9,10 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
+import RNFS from 'react-native-fs';
 
 const DummyMap = () => {
   const [status, setStatus] = useState('Loading...');
@@ -18,30 +20,27 @@ const DummyMap = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [tiffLoading, setTiffLoading] = useState(false);
   const webViewRef = useRef(null);
   const searchTimeout = useRef(null);
 
   // Fetch suggestions from Nominatim when search text changes
   useEffect(() => {
-    // Clear any existing timeout
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
 
-    // Don't search if text is empty
     if (!searchText.trim()) {
       setSuggestions([]);
       setIsLoadingSuggestions(false);
       return;
     }
 
-    // Set a timeout to avoid too many requests while typing
     setIsLoadingSuggestions(true);
     searchTimeout.current = setTimeout(() => {
       fetchSuggestions(searchText);
     }, 500);
 
-    // Cleanup function
     return () => {
       if (searchTimeout.current) {
         clearTimeout(searchTimeout.current);
@@ -65,7 +64,6 @@ const DummyMap = () => {
       );
       const data = await response.json();
 
-      // Format the suggestions
       const formattedSuggestions = data.map((item, index) => ({
         id: item.place_id.toString() || index.toString(),
         name: item.display_name,
@@ -88,7 +86,6 @@ const DummyMap = () => {
       let searchScript;
 
       if (lat !== null && lon !== null) {
-        // If we have coordinates, use them directly
         searchScript = `
           searchLocationByCoordinates(${lat}, ${lon}, "${query.replace(
           /"/g,
@@ -97,7 +94,6 @@ const DummyMap = () => {
           true;
         `;
       } else {
-        // Otherwise search by name
         searchScript = `
           searchLocation("${query.replace(/"/g, '\\"')}");
           true;
@@ -116,7 +112,124 @@ const DummyMap = () => {
     handleSearch(suggestion.name, suggestion.lat, suggestion.lon);
   };
 
-  // HTML with Leaflet for full world map plus search functionality
+  // Function to load a local TIFF file
+  const loadTiffFile = async filename => {
+    try {
+      console.log(`Starting to load TIFF: ${filename}`);
+      setTiffLoading(true);
+      setStatus(`Loading TIFF: ${filename}...`);
+
+      // Define path to the TIFF file based on platform
+      let filePath;
+
+      if (Platform.OS === 'android') {
+        filePath = `file:///android_asset/${filename}`;
+      } else {
+        filePath = RNFS.MainBundlePath + '/' + filename;
+      }
+
+      // Check if file exists
+      const fileExists = await RNFS.exists(filePath);
+      if (!fileExists) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+
+      console.log(`File exists at path: ${filePath}`);
+
+      // Read file as base64
+      const base64Data = await RNFS.readFile(filePath, 'base64');
+      console.log(`File read as base64, length: ${base64Data.length}`);
+
+      if (webViewRef.current) {
+        // Inject script to load the base64 data
+        const script = `
+          try {
+            console.log("WebView: Loading GeoTIFF from base64 data");
+            
+            const loadGeoTiffFromBase64 = async (base64Data) => {
+              try {
+                window.ReactNativeWebView.postMessage("Parsing base64 TIFF data");
+                
+                // Convert base64 to array buffer
+                const binaryString = window.atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                const arrayBuffer = bytes.buffer;
+                
+                window.ReactNativeWebView.postMessage("Base64 converted to array buffer, size: " + arrayBuffer.byteLength + " bytes");
+                
+                // Parse GeoTIFF
+                const georaster = await parseGeoraster(arrayBuffer);
+                window.ReactNativeWebView.postMessage("TIFF parsed successfully");
+                
+                // Remove existing layer if present
+                if (tiffLayer) {
+                  map.removeLayer(tiffLayer);
+                }
+                
+                // Create color scale for visualization
+                const colorScale = function(value) {
+                  if (value === null || isNaN(value)) return null;
+                  
+                  // Simple color scale
+                  if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green
+                  else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow
+                  else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange
+                  else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red
+                  else return 'rgba(128, 0, 128, 0.7)';                  // purple
+                };
+                
+                // Create and add the layer
+                tiffLayer = new GeoRasterLayer({
+                  georaster: georaster,
+                  opacity: 0.7,
+                  pixelValuesToColorFn: function(values) {
+                    const value = values[0];
+                    const minValue = georaster.mins[0];
+                    const maxValue = georaster.maxs[0];
+                    const scaledValue = (value - minValue) / (maxValue - minValue);
+                    return colorScale(scaledValue);
+                  }
+                });
+                
+                tiffLayer.addTo(map);
+                
+                // Fit bounds
+                try {
+                  const bounds = tiffLayer.getBounds();
+                  map.fitBounds(bounds);
+                  debug("Map fitted to TIFF bounds");
+                } catch(e) {
+                  debug("Could not fit to bounds: " + e.message);
+                }
+                
+                window.ReactNativeWebView.postMessage("TIFF loaded successfully");
+              } catch(error) {
+                window.ReactNativeWebView.postMessage("Error loading TIFF: " + error.message);
+              }
+            };
+            
+            // Execute the load function with the base64 data
+            loadGeoTiffFromBase64("${base64Data}");
+          } catch(e) {
+            window.ReactNativeWebView.postMessage("Error in script: " + e.message);
+          }
+          true;
+        `;
+
+        webViewRef.current.injectJavaScript(script);
+      }
+    } catch (error) {
+      console.error('React Native error loading TIFF:', error);
+      setStatus(`Error loading TIFF: ${error.message}`);
+    } finally {
+      setTiffLoading(false);
+    }
+  };
+
+  // HTML with Leaflet + GeoRaster libraries
   const mapHtml = `
     <!DOCTYPE html>
     <html>
@@ -133,6 +246,13 @@ const DummyMap = () => {
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
+        
+        <!-- GeoTIFF dependencies -->
+        <script src="https://unpkg.com/chroma-js@2.4.2/chroma.min.js"></script>
+        <script src="https://unpkg.com/geotiff@2.0.7/dist-browser/geotiff.js"></script>
+        <script src="https://unpkg.com/plotty@0.4.4/dist/plotty.min.js"></script>
+        <script src="https://unpkg.com/georaster@1.5.6/dist/georaster.browser.bundle.min.js"></script>
+        <script src="https://unpkg.com/georaster-layer-for-leaflet@3.10.0/dist/georaster-layer-for-leaflet.min.js"></script>
           
         <style>
           body { 
@@ -163,9 +283,10 @@ const DummyMap = () => {
         <div id="debug">Loading world map...</div>
         
         <script>
-          // Global map variable
+          // Global variables
           let map;
           let searchMarker;
+          let tiffLayer;
           
           // Debug utility
           function debug(msg) {
@@ -247,13 +368,13 @@ const DummyMap = () => {
           // Initialize map on load
           document.addEventListener('DOMContentLoaded', function() {
             try {
-              debug("Initializing world map with Leaflet...");
+              debug("Initializing map with Leaflet...");
               
-              // Create map centered at [0,0] with zoom level 2
+              // Create map centered at Lahore, Pakistan coordinates
               map = L.map('map', {
-                center: [0, 0],
-                zoom: 2,
-                minZoom: 1,
+                center: [31.5497, 74.3436],
+                zoom: 11,
+                minZoom: 2,
                 maxZoom: 18,
                 zoomControl: true,
                 attributionControl: true
@@ -270,7 +391,7 @@ const DummyMap = () => {
                 map.invalidateSize();
               });
               
-              debug("World map initialized successfully");
+              debug("Map initialized successfully");
             } catch(e) {
               debug("Error initializing map: " + e.message);
             }
@@ -284,14 +405,21 @@ const DummyMap = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>World Map</Text>
-        <Button
-          title="Refresh"
-          onPress={() => {
-            webViewRef.current?.reload();
-            setStatus('Reloading...');
-            setShowSuggestions(false);
-          }}
-        />
+        <View style={styles.headerButtons}>
+          <Button
+            title="Load TIFF"
+            onPress={() => loadTiffFile('NO2_clipped.tif')}
+            disabled={tiffLoading}
+          />
+          <Button
+            title="Refresh"
+            onPress={() => {
+              webViewRef.current?.reload();
+              setStatus('Reloading...');
+              setShowSuggestions(false);
+            }}
+          />
+        </View>
       </View>
 
       <Text style={styles.status}>{status}</Text>
@@ -359,6 +487,8 @@ const DummyMap = () => {
           originWhitelist={['*']}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
           onMessage={event => setStatus(event.nativeEvent.data)}
           onLoad={() => setStatus('WebView loaded')}
           onError={error =>
@@ -366,6 +496,13 @@ const DummyMap = () => {
           }
         />
       </View>
+
+      {tiffLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#0078D7" />
+          <Text style={styles.overlayText}>Loading TIFF file...</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -387,6 +524,10 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 10,
   },
   status: {
     padding: 10,
@@ -483,6 +624,18 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  overlayText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

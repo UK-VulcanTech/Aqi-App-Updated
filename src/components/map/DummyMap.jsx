@@ -1,119 +1,345 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
-  StyleSheet,
   Text,
-  Button,
-  SafeAreaView,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Platform,
+  Alert,
+  ScrollView,
+  Keyboard,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 
 const DummyMap = () => {
-  const [status, setStatus] = useState('Loading...');
-  const [searchText, setSearchText] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [status, setStatus] = useState('Ready');
   const [tiffLoading, setTiffLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const webViewRef = useRef(null);
-  const searchTimeout = useRef(null);
+  const [webViewLoaded, setWebViewLoaded] = useState(false);
 
-  // Fetch suggestions from Nominatim when search text changes
-  useEffect(() => {
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
+  // Predefined locations
+  const predefinedLocations = [
+    {
+      name: 'Gulberg',
+      lat: 31.5204,
+      lon: 74.3587,
+      description: 'Residential area',
+    },
+    {name: 'Downtown', lat: 31.5497, lon: 74.3436, description: 'City center'},
+    {
+      name: 'Industrial Zone',
+      lat: 31.5102,
+      lon: 74.3389,
+      description: 'Manufacturing area',
+    },
+  ];
 
-    if (!searchText.trim()) {
-      setSuggestions([]);
-      setIsLoadingSuggestions(false);
-      return;
-    }
+  // Initial HTML with Leaflet map
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+      <script src="https://unpkg.com/geotiff"></script>
+      <script src="https://unpkg.com/georaster"></script>
+      <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+      <style>
+        html, body { 
+          margin: 0; 
+          padding: 0; 
+          height: 100%; 
+          width: 100%;
+          overflow: hidden;
+          touch-action: manipulation;
+          -webkit-overflow-scrolling: touch;
+        }
+        #map { 
+          position: absolute; 
+          top: 0; 
+          bottom: 0; 
+          width: 100%; 
+          height: 100%;
+          touch-action: manipulation;
+          z-index: 1;
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 5px;
+        }
+        .marker-info {
+          padding: 5px;
+          font-family: Arial, sans-serif;
+        }
+        .marker-title {
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .marker-description {
+          font-size: 0.9em;
+        }
+        .info-box {
+          padding: 8px;
+          background: white;
+          border-radius: 5px;
+          box-shadow: 0 0 15px rgba(0,0,0,0.2);
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          z-index: 1000;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+        }
+        .zoom-controls {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+        }
+        .zoom-btn {
+          width: 40px;
+          height: 40px;
+          background: white;
+          border-radius: 4px;
+          margin-bottom: 8px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 24px;
+          font-weight: bold;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+          cursor: pointer;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+        .zoom-btn:active {
+          background: #f0f0f0;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <div class="zoom-controls">
+        <div class="zoom-btn" id="zoom-in">+</div>
+        <div class="zoom-btn" id="zoom-out">-</div>
+      </div>
+      <script>
+        // Explicitly enable touch detection
+        L.Browser.touch = true;
+        L.Browser.pointer = false;
+        L.Browser.mobile = true;
+        
+        // Initialize map with touch zoom and drag enabled
+        var map = L.map('map', {
+          zoomControl: false,
+          tap: true,
+          dragging: true,
+          touchZoom: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          boxZoom: true,
+          bounceAtZoomLimits: false,
+          inertia: true,
+          inertiaDeceleration: 3000,
+          inertiaMaxSpeed: 1500,
+          zoomAnimationThreshold: 4
+        }).setView([31.5204, 74.3587], 11); // Lahore
+        
+        var tiffLayer = null;
+        var markers = [];
+        var currentInfoBox = null;
+        
+        // Add OpenStreetMap base layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Debug function to send messages back to React Native
+        function debug(message) {
+          window.ReactNativeWebView.postMessage(message);
+        }
+        
+        // Specific handler for touch events
+        document.addEventListener('touchstart', function(e) {
+          if (e.touches.length > 1) {
+            map._enforcingBounds = false;
+            debug("Multi-touch detected");
+          }
+        }, { passive: false });
+        
+        // Connect zoom button events
+        document.getElementById('zoom-in').addEventListener('click', function() {
+          map.zoomIn();
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', function() {
+          map.zoomOut();
+        });
+        
+        // Let React Native know the map is ready
+        debug("Map initialized");
+        
+        // Function to zoom the map programmatically
+        function zoomMap(direction) {
+          if (direction === 'in') {
+            map.zoomIn();
+            debug("Zoomed in to level: " + map.getZoom());
+          } else if (direction === 'out') {
+            map.zoomOut();
+            debug("Zoomed out to level: " + map.getZoom());
+          }
+        }
+        
+        // Function to search for a location
+        function searchLocation(query) {
+          debug("Searching for: " + query);
+          // Use a geocoding service like Nominatim
+          fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+            .then(response => response.json())
+            .then(data => {
+              if (data && data.length > 0) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'searchResults',
+                  results: data.slice(0, 5).map(item => ({
+                    name: item.display_name,
+                    lat: parseFloat(item.lat),
+                    lon: parseFloat(item.lon)
+                  }))
+                }));
+                debug("Found " + data.length + " locations");
+              } else {
+                debug("Location not found");
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'searchResults',
+                  results: []
+                }));
+              }
+            })
+            .catch(error => {
+              debug("Error searching: " + error.message);
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'searchResults',
+                results: []
+              }));
+            });
+        }
+        
+        // Function to go to a specific location and add a marker
+        function goToLocation(lat, lon, title, description) {
+          // Set map view to location
+          map.setView([lat, lon], 13);
+          
+          // Add marker
+          addMarker(lat, lon, title, description);
+          
+          debug("Moved to location: " + title);
+        }
+        
+        // Function to add a marker to the map
+        function addMarker(lat, lon, title, description) {
+          // Remove previous search markers
+          clearMarkers();
+          
+          const marker = L.marker([lat, lon]).addTo(map);
+          
+          // Create popup content
+          const popupContent = '<div class="marker-info">' +
+                              '<div class="marker-title">' + title + '</div>' +
+                              '<div class="marker-description">' + description + '</div>' +
+                              '</div>';
+          
+          marker.bindPopup(popupContent, { className: 'custom-popup' });
+          marker.openPopup();
+          
+          markers.push(marker);
+          return marker;
+        }
+        
+        // Function to clear all markers
+        function clearMarkers() {
+          markers.forEach(marker => {
+            map.removeLayer(marker);
+          });
+          markers = [];
+        }
+        
+        // Function to display information about current view
+        function showCurrentLocation() {
+          const center = map.getCenter();
+          const zoom = map.getZoom();
+          
+          // Reverse geocode to get location name
+          fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + 
+                center.lat + '&lon=' + center.lng)
+            .then(response => response.json())
+            .then(data => {
+              if (data && data.display_name) {
+                // Create or update info box
+                if (currentInfoBox) {
+                  map.removeControl(currentInfoBox);
+                }
+                
+                const infoBoxControl = L.Control.extend({
+                  options: {
+                    position: 'bottomright'
+                  },
+                  onAdd: function() {
+                    const div = L.DomUtil.create('div', 'info-box');
+                    div.innerHTML = '<strong>Current Location:</strong><br>' + 
+                                   data.display_name + '<br>' +
+                                   '<strong>Coordinates:</strong> ' + 
+                                   center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
+                                   '<strong>Zoom Level:</strong> ' + zoom;
+                    return div;
+                  }
+                });
+                
+                currentInfoBox = new infoBoxControl();
+                map.addControl(currentInfoBox);
+                
+                debug("Current location: " + data.display_name);
+              }
+            })
+            .catch(error => {
+              debug("Error getting location info: " + error.message);
+            });
+        }
+        
+        // Improved touch handling for map
+        map.on('zoomstart', function() {
+          debug("Zoom started");
+        });
+        
+        // Listen for map move events
+        map.on('moveend', function() {
+          debug("Map moved");
+          showCurrentLocation();
+        });
+        
+        // Listen for zoom events
+        map.on('zoomend', function() {
+          debug("Map zoomed to level: " + map.getZoom());
+        });
+        
+        // Initialize with current location info
+        showCurrentLocation();
+      </script>
+    </body>
+    </html>
+  `;
 
-    setIsLoadingSuggestions(true);
-    searchTimeout.current = setTimeout(() => {
-      fetchSuggestions(searchText);
-    }, 500);
-
-    return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
-    };
-  }, [searchText]);
-
-  // Function to fetch suggestions from Nominatim
-  const fetchSuggestions = async query => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=5`,
-        {
-          headers: {
-            'Accept-Language': 'en',
-            'User-Agent': 'ReactNativeMapApp',
-          },
-        },
-      );
-      const data = await response.json();
-
-      const formattedSuggestions = data.map((item, index) => ({
-        id: item.place_id.toString() || index.toString(),
-        name: item.display_name,
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-      }));
-
-      setSuggestions(formattedSuggestions);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setStatus('Error fetching suggestions: ' + error.message);
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
-
-  // Function to handle search
-  const handleSearch = (query = searchText, lat = null, lon = null) => {
-    if (query.trim() && webViewRef.current) {
-      let searchScript;
-
-      if (lat !== null && lon !== null) {
-        searchScript = `
-          searchLocationByCoordinates(${lat}, ${lon}, "${query.replace(
-          /"/g,
-          '\\"',
-        )}");
-          true;
-        `;
-      } else {
-        searchScript = `
-          searchLocation("${query.replace(/"/g, '\\"')}");
-          true;
-        `;
-      }
-
-      webViewRef.current.injectJavaScript(searchScript);
-      setStatus(`Searching for: ${query}`);
-      setShowSuggestions(false);
-    }
-  };
-
-  // Function to handle suggestion selection
-  const handleSelectSuggestion = suggestion => {
-    setSearchText(suggestion.name);
-    handleSearch(suggestion.name, suggestion.lat, suggestion.lon);
-  };
-
-  // Function to load a local TIFF file
-  const loadTiffFile = async filename => {
+  // Function to load and display a TIFF file
+  const loadTiffFile = async () => {
+    const filename = 'NO2_clipped.tif';
     try {
       console.log(`Starting to load TIFF: ${filename}`);
       setTiffLoading(true);
@@ -121,521 +347,645 @@ const DummyMap = () => {
 
       // Define path to the TIFF file based on platform
       let filePath;
+      let base64Data;
 
       if (Platform.OS === 'android') {
-        filePath = `file:///android_asset/${filename}`;
+        // For Android, first copy from assets to cache directory
+        const destPath = `${RNFS.CachesDirectoryPath}/${filename}`;
+        console.log(`Copying from assets to: ${destPath}`);
+
+        try {
+          await RNFS.copyFileAssets(filename, destPath);
+          console.log(`File copied successfully to: ${destPath}`);
+
+          // Check if file exists in destination
+          const fileExists = await RNFS.exists(destPath);
+          if (!fileExists) {
+            throw new Error(`Copied file not found at: ${destPath}`);
+          }
+
+          // Read the copied file
+          base64Data = await RNFS.readFile(destPath, 'base64');
+        } catch (copyError) {
+          console.error('Error copying file:', copyError);
+
+          // Fallback to direct asset access
+          filePath = `file:///android_asset/${filename}`;
+          console.log(`Fallback to direct asset access: ${filePath}`);
+
+          const fileExists = await RNFS.exists(filePath);
+          if (!fileExists) {
+            throw new Error(`File not found: ${filePath}`);
+          }
+
+          base64Data = await RNFS.readFile(filePath, 'base64');
+        }
       } else {
-        filePath = RNFS.MainBundlePath + '/' + filename;
+        // iOS path
+        filePath = `${RNFS.MainBundlePath}/${filename}`;
+        console.log(`iOS file path: ${filePath}`);
+
+        const fileExists = await RNFS.exists(filePath);
+        if (!fileExists) {
+          throw new Error(`File not found: ${filePath}`);
+        }
+
+        base64Data = await RNFS.readFile(filePath, 'base64');
       }
 
-      // Check if file exists
-      const fileExists = await RNFS.exists(filePath);
-      if (!fileExists) {
-        throw new Error(`File not found: ${filePath}`);
-      }
-
-      console.log(`File exists at path: ${filePath}`);
-
-      // Read file as base64
-      const base64Data = await RNFS.readFile(filePath, 'base64');
       console.log(`File read as base64, length: ${base64Data.length}`);
 
-      if (webViewRef.current) {
-        // Inject script to load the base64 data
-        const script = `
-          try {
-            console.log("WebView: Loading GeoTIFF from base64 data");
-            
-            const loadGeoTiffFromBase64 = async (base64Data) => {
-              try {
-                window.ReactNativeWebView.postMessage("Parsing base64 TIFF data");
+      if (!webViewRef.current || !webViewLoaded) {
+        throw new Error('WebView is not ready');
+      }
+
+      // Inject script to load the base64 data
+      const script = `
+        try {
+          console.log("WebView: Loading GeoTIFF from base64 data");
+          
+          const loadGeoTiffFromBase64 = async (base64Data) => {
+            try {
+              debug("Parsing base64 TIFF data");
+              
+              // Convert base64 to array buffer
+              const binaryString = window.atob(base64Data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const arrayBuffer = bytes.buffer;
+              
+              debug("Base64 converted to array buffer, size: " + arrayBuffer.byteLength + " bytes");
+              
+              // Parse GeoTIFF
+              debug("Starting GeoTIFF parsing...");
+              const georaster = await parseGeoraster(arrayBuffer);
+              debug("TIFF parsed successfully");
+              
+              // Remove existing layer if present
+              if (tiffLayer) {
+                map.removeLayer(tiffLayer);
+                debug("Removed existing TIFF layer");
+              }
+              
+              // Create color scale for visualization
+              const colorScale = function(value) {
+                if (value === null || isNaN(value)) return null;
                 
-                // Convert base64 to array buffer
-                const binaryString = window.atob(base64Data);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
-                const arrayBuffer = bytes.buffer;
-                
-                window.ReactNativeWebView.postMessage("Base64 converted to array buffer, size: " + arrayBuffer.byteLength + " bytes");
-                
-                // Parse GeoTIFF
-                const georaster = await parseGeoraster(arrayBuffer);
-                window.ReactNativeWebView.postMessage("TIFF parsed successfully");
-                
-                // Remove existing layer if present
-                if (tiffLayer) {
-                  map.removeLayer(tiffLayer);
-                }
-                
-                // Create color scale for visualization
-                const colorScale = function(value) {
+                // Simple color scale
+                if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green
+                else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow
+                else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange
+                else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red
+                else return 'rgba(128, 0, 128, 0.7)';                  // purple
+              };
+              
+              debug("Creating GeoRaster layer");
+              // Create and add the layer
+              tiffLayer = new GeoRasterLayer({
+                georaster: georaster,
+                opacity: 0.7,
+                pixelValuesToColorFn: function(values) {
+                  const value = values[0];
                   if (value === null || isNaN(value)) return null;
                   
-                  // Simple color scale
-                  if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green
-                  else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow
-                  else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange
-                  else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red
-                  else return 'rgba(128, 0, 128, 0.7)';                  // purple
-                };
-                
-                // Create and add the layer
-                tiffLayer = new GeoRasterLayer({
-                  georaster: georaster,
-                  opacity: 0.7,
-                  pixelValuesToColorFn: function(values) {
-                    const value = values[0];
-                    const minValue = georaster.mins[0];
-                    const maxValue = georaster.maxs[0];
-                    const scaledValue = (value - minValue) / (maxValue - minValue);
-                    return colorScale(scaledValue);
-                  }
-                });
-                
-                tiffLayer.addTo(map);
-                
-                // Fit bounds
-                try {
-                  const bounds = tiffLayer.getBounds();
-                  map.fitBounds(bounds);
-                  debug("Map fitted to TIFF bounds");
-                } catch(e) {
-                  debug("Could not fit to bounds: " + e.message);
+                  const minValue = georaster.mins[0];
+                  const maxValue = georaster.maxs[0];
+                  const scaledValue = (value - minValue) / (maxValue - minValue);
+                  return colorScale(scaledValue);
                 }
-                
-                window.ReactNativeWebView.postMessage("TIFF loaded successfully");
-              } catch(error) {
-                window.ReactNativeWebView.postMessage("Error loading TIFF: " + error.message);
+              });
+              
+              tiffLayer.addTo(map);
+              debug("TIFF layer added to map");
+              
+              // Fit bounds
+              try {
+                const bounds = tiffLayer.getBounds();
+                map.fitBounds(bounds);
+                debug("Map fitted to TIFF bounds");
+              } catch(e) {
+                debug("Could not fit to bounds: " + e.message);
               }
-            };
-            
-            // Execute the load function with the base64 data
-            loadGeoTiffFromBase64("${base64Data}");
-          } catch(e) {
-            window.ReactNativeWebView.postMessage("Error in script: " + e.message);
-          }
-          true;
-        `;
+              
+              debug("TIFF loaded successfully");
+            } catch(error) {
+              debug("Error loading TIFF: " + error.message);
+            }
+          };
+          
+          // Execute the load function with the base64 data
+          loadGeoTiffFromBase64("${base64Data}");
+        } catch(e) {
+          debug("Error in script: " + e.message);
+        }
+        true;
+      `;
 
-        webViewRef.current.injectJavaScript(script);
-      }
+      webViewRef.current.injectJavaScript(script);
     } catch (error) {
       console.error('React Native error loading TIFF:', error);
       setStatus(`Error loading TIFF: ${error.message}`);
+      Alert.alert('Error', `Failed to load TIFF: ${error.message}`);
     } finally {
       setTiffLoading(false);
     }
   };
 
-  // HTML with Leaflet + GeoRaster libraries
-  const mapHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        
-        <!-- Leaflet CSS -->
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
-        
-        <!-- Leaflet JavaScript -->
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-          crossorigin=""></script>
-        
-        <!-- GeoTIFF dependencies -->
-        <script src="https://unpkg.com/chroma-js@2.4.2/chroma.min.js"></script>
-        <script src="https://unpkg.com/geotiff@2.0.7/dist-browser/geotiff.js"></script>
-        <script src="https://unpkg.com/plotty@0.4.4/dist/plotty.min.js"></script>
-        <script src="https://unpkg.com/georaster@1.5.6/dist/georaster.browser.bundle.min.js"></script>
-        <script src="https://unpkg.com/georaster-layer-for-leaflet@3.10.0/dist/georaster-layer-for-leaflet.min.js"></script>
-          
-        <style>
-          body { 
-            margin: 0; 
-            padding: 0; 
-            height: 100vh;
-            width: 100vw;
-          }
-          #map { 
-            height: 100%; 
-            width: 100%;
-          }
-          #debug {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            padding: 5px;
-            background-color: rgba(255,255,255,0.8);
-            z-index: 1000;
-            font-family: monospace;
-            font-size: 10px;
-            border-radius: 4px;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <div id="debug">Loading world map...</div>
-        
-        <script>
-          // Global variables
-          let map;
-          let searchMarker;
-          let tiffLayer;
-          
-          // Debug utility
-          function debug(msg) {
-            document.getElementById('debug').textContent = msg;
-            try {
-              window.ReactNativeWebView.postMessage(msg);
-            } catch(e) {
-              document.getElementById('debug').textContent += " (Can't post message)";
-            }
-          }
-          
-          // Search for a location by name
-          async function searchLocation(query) {
-            if (!query) return;
-            
-            try {
-              debug("Searching for: " + query);
-              
-              // Use Nominatim for geocoding (OpenStreetMap's geocoding service)
-              const response = await fetch(
-                \`https://nominatim.openstreetmap.org/search?format=json&q=\${encodeURIComponent(query)}\`,
-                {
-                  headers: {
-                    'Accept-Language': 'en',
-                    'User-Agent': 'ReactNativeMapApp'
-                  }
-                }
-              );
-              
-              const data = await response.json();
-              
-              if (data && data.length > 0) {
-                const location = data[0];
-                const lat = parseFloat(location.lat);
-                const lon = parseFloat(location.lon);
-                
-                // Set view and add marker
-                setLocationOnMap(lat, lon, location.display_name);
-                
-                debug("Found: " + location.display_name);
-              } else {
-                debug("Location not found: " + query);
-              }
-            } catch (error) {
-              debug("Search error: " + error.message);
-            }
-          }
-          
-          // Search for a location by coordinates
-          function searchLocationByCoordinates(lat, lon, displayName) {
-            try {
-              debug("Setting location: " + displayName);
-              
-              // Set view and add marker
-              setLocationOnMap(lat, lon, displayName);
-              
-              debug("Showing: " + displayName);
-            } catch (error) {
-              debug("Error setting location: " + error.message);
-            }
-          }
-          
-          // Set location on map (common function for both search methods)
-          function setLocationOnMap(lat, lon, displayName) {
-            // Center map on found location
-            map.setView([lat, lon], 12);
-            
-            // Add or move marker
-            if (searchMarker) {
-              searchMarker.setLatLng([lat, lon]);
-            } else {
-              searchMarker = L.marker([lat, lon]).addTo(map);
-            }
-            
-            // Add popup with location name
-            searchMarker.bindPopup(displayName).openPopup();
-          }
-          
-          // Initialize map on load
-          document.addEventListener('DOMContentLoaded', function() {
-            try {
-              debug("Initializing map with Leaflet...");
-              
-              // Create map centered at Lahore, Pakistan coordinates
-              map = L.map('map', {
-                center: [31.5497, 74.3436],
-                zoom: 11,
-                minZoom: 2,
-                maxZoom: 18,
-                zoomControl: true,
-                attributionControl: true
-              });
-              
-              // Add OpenStreetMap tile layer
-              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                subdomains: ['a', 'b', 'c']
-              }).addTo(map);
-              
-              // Handle resize events
-              window.addEventListener('resize', function() {
-                map.invalidateSize();
-              });
-              
-              debug("Map initialized successfully");
-            } catch(e) {
-              debug("Error initializing map: " + e.message);
-            }
-          });
-        </script>
-      </body>
-    </html>
-  `;
+  // Handle search
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+
+    // Show we're waiting for results
+    setStatus('Searching...');
+
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+      setShowDropdown(true);
+    }
+  };
+
+  // Function to show current location information
+  const showCurrentLocation = () => {
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        showCurrentLocation();
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  };
+
+  // Functions to handle zoom
+  const handleZoomIn = () => {
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        zoomMap('in');
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        zoomMap('out');
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  };
+
+  // Handle location selection - Fixed to immediately close dropdown
+  const handleLocationSelect = location => {
+    // First, set states that should change immediately
+    setShowDropdown(false);
+    setSearchResults([]); // Clear results immediately
+
+    // Dismiss the keyboard
+    Keyboard.dismiss();
+
+    // Set the search query text (this won't re-trigger the dropdown because we cleared results)
+    setSearchQuery(location.name);
+
+    // Navigate to the location
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        goToLocation(
+          ${location.lat}, 
+          ${location.lon}, 
+          "${location.name.replace(/"/g, '\\"')}", 
+          "${
+            location.description
+              ? location.description.replace(/"/g, '\\"')
+              : 'Selected location'
+          }"
+        );
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+      setStatus(`Navigated to ${location.name}`);
+    }
+  };
+
+  // Live search as user types - with timeout to prevent excessive API calls
+  useEffect(() => {
+    let timeoutId;
+
+    if (searchQuery.length >= 3 && webViewRef.current && webViewLoaded) {
+      // Set status to show searching
+      setStatus('Searching...');
+
+      timeoutId = setTimeout(() => {
+        const script = `
+          searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+          true;
+        `;
+        webViewRef.current.injectJavaScript(script);
+      }, 500); // Debounce for 500ms
+    } else if (searchQuery.length < 3) {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchQuery, webViewLoaded]);
+
+  // Handle messages from WebView
+  const handleWebViewMessage = event => {
+    console.log('WebView message:', event.nativeEvent.data);
+
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      if (data.type === 'searchResults') {
+        // Handle search results from WebView
+        setSearchResults(data.results);
+
+        if (data.results.length === 0) {
+          setStatus('No locations found');
+          setShowDropdown(false);
+        } else {
+          setStatus(`Found ${data.results.length} locations`);
+          setShowDropdown(true);
+        }
+      }
+    } catch (e) {
+      // Not JSON data, handle as regular message
+      console.log('Regular message:', event.nativeEvent.data);
+    }
+  };
+
+  // Touch handler to close dropdown if user taps outside
+  const handleOutsideTouch = () => {
+    if (showDropdown) {
+      setShowDropdown(false);
+      Keyboard.dismiss();
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>World Map</Text>
+        <Text style={styles.title}>World Map</Text>
         <View style={styles.headerButtons}>
-          <Button
-            title="Load TIFF"
-            onPress={() => loadTiffFile('NO2_clipped.tif')}
-            disabled={tiffLoading}
-          />
-          <Button
-            title="Refresh"
+          <TouchableOpacity
+            style={[styles.button, tiffLoading && styles.disabledButton]}
+            onPress={loadTiffFile}
+            disabled={tiffLoading}>
+            <Text style={styles.buttonText}>LOAD TIFF</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
             onPress={() => {
-              webViewRef.current?.reload();
-              setStatus('Reloading...');
-              setShowSuggestions(false);
-            }}
-          />
+              if (webViewRef.current) {
+                webViewRef.current.reload();
+                setStatus('Reloading...');
+              }
+            }}>
+            <Text style={styles.buttonText}>REFRESH</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <Text style={styles.status}>{status}</Text>
+      <Text style={styles.statusText}>{status}</Text>
 
       <View style={styles.searchContainer}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for a location..."
-            value={searchText}
-            onChangeText={setSearchText}
-            onFocus={() => setShowSuggestions(true)}
-            onSubmitEditing={() => handleSearch()}
-          />
-          {showSuggestions && (
-            <View style={styles.suggestionsContainer}>
-              {isLoadingSuggestions ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="small" color="#0078D7" />
-                  <Text style={styles.loaderText}>Loading suggestions...</Text>
-                </View>
-              ) : suggestions.length > 0 ? (
-                <FlatList
-                  data={suggestions}
-                  keyExtractor={item => item.id}
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={styles.suggestionItem}
-                      onPress={() => handleSelectSuggestion(item)}>
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={styles.suggestionPrimary}>
-                        {item.name.split(',')[0]}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={styles.suggestionSecondary}>
-                        {item.name.split(',').slice(1).join(',')}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              ) : searchText.trim() ? (
-                <View style={styles.noResultsContainer}>
-                  <Text style={styles.noResultsText}>No locations found</Text>
-                </View>
-              ) : null}
-            </View>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => handleSearch()}>
-          <Text style={styles.searchButtonText}>Search</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search for a location..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onSubmitEditing={handleSearch}
+        />
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <Text style={styles.buttonText}>Search</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mapContainer}>
-        <WebView
-          ref={webViewRef}
-          source={{html: mapHtml}}
-          style={styles.webview}
-          originWhitelist={['*']}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          allowFileAccess={true}
-          allowUniversalAccessFromFileURLs={true}
-          onMessage={event => setStatus(event.nativeEvent.data)}
-          onLoad={() => setStatus('WebView loaded')}
-          onError={error =>
-            setStatus(`Error: ${error.nativeEvent.description}`)
-          }
-        />
-      </View>
-
-      {tiffLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#0078D7" />
-          <Text style={styles.overlayText}>Loading TIFF file...</Text>
+      {/* Search Results Dropdown */}
+      {showDropdown && searchResults.length > 0 && (
+        <View style={styles.searchDropdown}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {searchResults.map((result, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.searchResultItem}
+                onPress={() => handleLocationSelect(result)}>
+                <Text style={styles.searchResultText}>{result.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
-    </SafeAreaView>
+
+      {/* Predefined Locations */}
+      <View style={styles.predefinedContainer}>
+        <Text style={styles.dropdownLabel}>Quick Select:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {predefinedLocations.map((location, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.predefinedItem}
+              onPress={() => handleLocationSelect(location)}>
+              <Text style={styles.predefinedText}>{location.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Touch handler to close dropdown when clicking outside */}
+      {showDropdown && (
+        <TouchableOpacity
+          style={styles.touchableOverlay}
+          activeOpacity={0}
+          onPress={handleOutsideTouch}
+        />
+      )}
+
+      <View style={styles.mapCardContainer}>
+        <View style={styles.mapCard}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.mapTouchable}
+            onPress={handleOutsideTouch}>
+            <WebView
+              ref={webViewRef}
+              originWhitelist={['*']}
+              source={{html: htmlContent}}
+              onMessage={handleWebViewMessage}
+              onLoad={() => {
+                setWebViewLoaded(true);
+                setStatus('Map loaded');
+                showCurrentLocation();
+              }}
+              onError={syntheticEvent => {
+                const {nativeEvent} = syntheticEvent;
+                console.error('WebView error:', nativeEvent);
+                setStatus(`WebView error: ${nativeEvent.description}`);
+              }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#0000ff" />
+                </View>
+              )}
+              // Critical WebView settings for proper touch handling
+              containerStyle={{flex: 1}}
+              nestedScrollEnabled={true}
+              scalesPageToFit={false} // Important for iOS
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              directionalLockEnabled={false}
+              // Enable required WebView settings for zooming
+              androidLayerType="hardware"
+              scrollEnabled={true}
+              bounces={false}
+              allowFileAccess={true}
+              useWebKit={true}
+              cacheEnabled={true}
+              javaScriptEnabledAndroid={true}
+              geolocationEnabled={true}
+              mediaPlaybackRequiresUserAction={false}
+              mixedContentMode="always"
+              allowsInlineMediaPlayback={true}
+              allowsBackForwardNavigationGestures={false}
+              injectedJavaScript={`
+                // Force touch handlers to re-register after WebView loads
+                if (map) {
+                  map.invalidateSize();
+                  debug("Map size invalidated to ensure proper rendering");
+                }
+                true;
+              `}
+            />
+          </TouchableOpacity>
+          {tiffLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#ffffff" />
+              <Text style={styles.loadingText}>Loading TIFF file...</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Zoom controls in React Native UI */}
+        <View style={styles.zoomControls}>
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
+            <Text style={styles.zoomButtonText}>+</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut}>
+            <Text style={styles.zoomButtonText}>-</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Current location info button */}
+      <TouchableOpacity
+        style={styles.locationButton}
+        onPress={showCurrentLocation}>
+        <Text style={styles.buttonText}>View Info</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
-  headerText: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: 10,
   },
-  status: {
+  button: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginLeft: 10,
+  },
+  disabledButton: {
+    backgroundColor: '#B0BEC5',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  statusText: {
     padding: 10,
-    backgroundColor: '#f0f0f0',
+    color: '#666',
     fontSize: 12,
   },
   searchContainer: {
     flexDirection: 'row',
     padding: 10,
+    zIndex: 2,
+  },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    padding: 10,
+    backgroundColor: '#fff',
+  },
+  searchButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    borderRadius: 4,
+    marginLeft: 10,
+  },
+  searchDropdown: {
+    position: 'absolute',
+    top: 140, // Adjusted to position below search bar
+    left: 10,
+    right: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    maxHeight: 200,
+    zIndex: 10,
+    elevation: 5, // For Android
+  },
+  touchableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
+  },
+  searchResultItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchResultText: {
+    fontSize: 14,
+  },
+  predefinedContainer: {
+    padding: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    zIndex: 100,
+    marginBottom: 10,
   },
-  inputContainer: {
-    flex: 1,
+  dropdownLabel: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  predefinedItem: {
+    padding: 8,
     marginRight: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+  },
+  predefinedText: {
+    fontSize: 14,
+  },
+  mapCardContainer: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
     position: 'relative',
   },
-  searchInput: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    paddingHorizontal: 10,
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 42,
-    left: 0,
-    right: 0,
-    maxHeight: 200,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    zIndex: 1000,
-    elevation: 5,
+  mapCard: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
   },
-  suggestionItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  mapTouchable: {
+    flex: 1,
   },
-  suggestionPrimary: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  suggestionSecondary: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  noResultsContainer: {
-    padding: 15,
-    alignItems: 'center',
-  },
-  noResultsText: {
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  loaderContainer: {
-    padding: 15,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  loaderText: {
-    marginLeft: 10,
-    color: '#666',
-  },
-  searchButton: {
-    backgroundColor: '#0078D7',
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    borderRadius: 4,
-  },
-  searchButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  mapContainer: {
-    flex: 1,
-    margin: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  webview: {
-    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
-  overlayText: {
+  loadingText: {
+    color: '#fff',
     marginTop: 10,
-    fontSize: 16,
-    fontWeight: '500',
+  },
+  locationButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: 'rgba(33, 150, 243, 0.8)',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 4,
+  },
+  zoomControls: {
+    position: 'absolute',
+    right: 25,
+    top: 20,
+    zIndex: 2,
+  },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  zoomButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
   },
 });
 

@@ -14,14 +14,40 @@ import {
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 
-const DummyMap = () => {
+const LahoreMap = () => {
   const [status, setStatus] = useState('Ready');
   const [tiffLoading, setTiffLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showPollutantDropdown, setShowPollutantDropdown] = useState(false);
   const webViewRef = useRef(null);
   const [webViewLoaded, setWebViewLoaded] = useState(false);
+  const [currentLayer, setCurrentLayer] = useState(null);
+
+  // Define different pollutant layers - ensuring consistent capitalization
+  const tiffLayers = [
+    {
+      name: 'NO2 Concentration',
+      filename: 'NO2_clipped.tif',
+      description: 'Nitrogen Dioxide pollution levels',
+    },
+    {
+      name: 'CH4 Levels',
+      filename: 'NO2_clipped.tif',
+      description: 'Methane concentration',
+    },
+    {
+      name: 'Ozone Levels',
+      filename: 'NO2_clipped.tif',
+      description: 'Ground-level ozone concentration',
+    },
+    {
+      name: 'SO2 Emissions',
+      filename: 'SO2_clipped.tif',
+      description: 'Sulfur Dioxide emission data',
+    },
+  ];
 
   // Predefined locations
   const predefinedLocations = [
@@ -52,8 +78,24 @@ const DummyMap = () => {
       <script src="https://unpkg.com/georaster"></script>
       <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
       <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
+        html, body { 
+          margin: 0; 
+          padding: 0; 
+          height: 100%; 
+          width: 100%;
+          overflow: hidden;
+          touch-action: manipulation;
+          -webkit-overflow-scrolling: touch;
+        }
+        #map { 
+          position: absolute; 
+          top: 0; 
+          bottom: 0; 
+          width: 100%; 
+          height: 100%;
+          touch-action: manipulation;
+          z-index: 1;
+        }
         .custom-popup .leaflet-popup-content-wrapper {
           background: rgba(255, 255, 255, 0.9);
           border-radius: 5px;
@@ -117,6 +159,11 @@ const DummyMap = () => {
         <div class="zoom-btn" id="zoom-out">-</div>
       </div>
       <script>
+        // Explicitly enable touch detection
+        L.Browser.touch = true;
+        L.Browser.pointer = false;
+        L.Browser.mobile = true;
+        
         // Initialize map with touch zoom and drag enabled
         var map = L.map('map', {
           zoomControl: false,
@@ -125,7 +172,12 @@ const DummyMap = () => {
           touchZoom: true,
           scrollWheelZoom: true,
           doubleClickZoom: true,
-          boxZoom: true
+          boxZoom: true,
+          bounceAtZoomLimits: false,
+          inertia: true,
+          inertiaDeceleration: 3000,
+          inertiaMaxSpeed: 1500,
+          zoomAnimationThreshold: 4
         }).setView([31.5204, 74.3587], 11); // Lahore
         
         var tiffLayer = null;
@@ -141,6 +193,14 @@ const DummyMap = () => {
         function debug(message) {
           window.ReactNativeWebView.postMessage(message);
         }
+        
+        // Specific handler for touch events
+        document.addEventListener('touchstart', function(e) {
+          if (e.touches.length > 1) {
+            map._enforcingBounds = false;
+            debug("Multi-touch detected");
+          }
+        }, { passive: false });
         
         // Connect zoom button events
         document.getElementById('zoom-in').addEventListener('click', function() {
@@ -165,25 +225,38 @@ const DummyMap = () => {
           }
         }
         
-        // Function to search for a location
+        // Function to search for a location - RESTORED
         function searchLocation(query) {
           debug("Searching for: " + query);
-          // Use a geocoding service like Nominatim
-          fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+          
+          // First try local search
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'localSearch',
+            query: query
+          }));
+          
+          // Then try with Nominatim API
+          fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query), {
+            headers: {
+              'User-Agent': 'LahoreMapApp/1.0'
+            }
+          })
             .then(response => response.json())
             .then(data => {
               if (data && data.length > 0) {
+                const results = data.slice(0, 5).map(item => ({
+                  name: item.display_name,
+                  lat: parseFloat(item.lat),
+                  lon: parseFloat(item.lon)
+                }));
+                
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'searchResults',
-                  results: data.slice(0, 5).map(item => ({
-                    name: item.display_name,
-                    lat: parseFloat(item.lat),
-                    lon: parseFloat(item.lon)
-                  }))
+                  results: results
                 }));
-                debug("Found " + data.length + " locations");
+                debug("Found " + results.length + " locations");
               } else {
-                debug("Location not found");
+                debug("No online locations found");
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'searchResults',
                   results: []
@@ -192,9 +265,10 @@ const DummyMap = () => {
             })
             .catch(error => {
               debug("Error searching: " + error.message);
+              // We already tried local search
               window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'searchResults',
-                results: []
+                type: 'searchError',
+                error: error.message
               }));
             });
         }
@@ -238,73 +312,165 @@ const DummyMap = () => {
           markers = [];
         }
         
-        // Function to display information about current view
+        // Simplified function to display information about current view
         function showCurrentLocation() {
           const center = map.getCenter();
           const zoom = map.getZoom();
           
-          // Reverse geocode to get location name
-          fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + 
-                center.lat + '&lon=' + center.lng)
-            .then(response => response.json())
-            .then(data => {
-              if (data && data.display_name) {
-                // Create or update info box
-                if (currentInfoBox) {
-                  map.removeControl(currentInfoBox);
-                }
-                
-                const infoBoxControl = L.Control.extend({
-                  options: {
-                    position: 'bottomright'
-                  },
-                  onAdd: function() {
-                    const div = L.DomUtil.create('div', 'info-box');
-                    div.innerHTML = '<strong>Current Location:</strong><br>' + 
-                                   data.display_name + '<br>' +
-                                   '<strong>Coordinates:</strong> ' + 
-                                   center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
-                                   '<strong>Zoom Level:</strong> ' + zoom;
-                    return div;
-                  }
-                });
-                
-                currentInfoBox = new infoBoxControl();
-                map.addControl(currentInfoBox);
-                
-                debug("Current location: " + data.display_name);
-              }
-            })
-            .catch(error => {
-              debug("Error getting location info: " + error.message);
-            });
+          // Create a basic info box with coordinates
+          if (currentInfoBox) {
+            map.removeControl(currentInfoBox);
+          }
+          
+          const infoBoxControl = L.Control.extend({
+            options: {
+              position: 'bottomright'
+            },
+            onAdd: function() {
+              const div = L.DomUtil.create('div', 'info-box');
+              div.innerHTML = '<strong>Current View:</strong><br>' +
+                             '<strong>Coordinates:</strong> ' + 
+                             center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
+                             '<strong>Zoom Level:</strong> ' + zoom;
+              return div;
+            }
+          });
+          
+          currentInfoBox = new infoBoxControl();
+          map.addControl(currentInfoBox);
+          
+          debug("Map info updated");
         }
         
         // Listen for map move events
         map.on('moveend', function() {
           debug("Map moved");
-          showCurrentLocation();
         });
         
         // Listen for zoom events
         map.on('zoomend', function() {
           debug("Map zoomed to level: " + map.getZoom());
         });
-        
-        // Initialize with current location info
-        showCurrentLocation();
       </script>
     </body>
     </html>
   `;
 
+  // Function to perform local search (to avoid relying only on external API)
+  const performLocalSearch = query => {
+    if (!query || query.length < 2) return [];
+
+    query = query.toLowerCase();
+
+    // Search through predefined locations
+    const results = predefinedLocations.filter(
+      location =>
+        location.name.toLowerCase().includes(query) ||
+        (location.description &&
+          location.description.toLowerCase().includes(query)),
+    );
+
+    // Add some common locations in Lahore
+    const commonLocations = [
+      {
+        name: 'Lahore',
+        lat: 31.5204,
+        lon: 74.3587,
+        description: 'City in Pakistan',
+      },
+      {
+        name: 'Johar Town',
+        lat: 31.4697,
+        lon: 74.2728,
+        description: 'Lahore district',
+      },
+      {
+        name: 'Model Town',
+        lat: 31.4793,
+        lon: 74.3248,
+        description: 'Residential area',
+      },
+      {
+        name: 'DHA Lahore',
+        lat: 31.4794,
+        lon: 74.4214,
+        description: 'Defense Housing Authority',
+      },
+      {
+        name: 'Badshahi Mosque',
+        lat: 31.583,
+        lon: 74.3097,
+        description: 'Historical landmark',
+      },
+    ].filter(
+      loc =>
+        loc.name.toLowerCase().includes(query) ||
+        loc.description.toLowerCase().includes(query),
+    );
+
+    return [...results, ...commonLocations].slice(0, 5);
+  };
+
+  // Function to verify TIFF file existence
+  const verifyTiffFile = async filename => {
+    try {
+      if (Platform.OS === 'android') {
+        // Try to check if the file exists in assets
+        try {
+          const files = await RNFS.readDirAssets('');
+          const fileExists = files.some(
+            file => file.name === filename || file.path.includes(filename),
+          );
+          console.log(`File ${filename} exists in assets: ${fileExists}`);
+          return fileExists;
+        } catch (e) {
+          console.log(`Error checking assets: ${e.message}`);
+          // Try direct path
+          const filePath = `file:///android_asset/${filename}`;
+          const exists = await RNFS.exists(filePath);
+          console.log(`File ${filename} exists at ${filePath}: ${exists}`);
+          return exists;
+        }
+      } else {
+        // iOS
+        const filePath = `${RNFS.MainBundlePath}/${filename}`;
+        const exists = await RNFS.exists(filePath);
+        console.log(`File ${filename} exists at ${filePath}: ${exists}`);
+        return exists;
+      }
+    } catch (e) {
+      console.log(`Error verifying file ${filename}: ${e.message}`);
+      return false;
+    }
+  };
+
+  // Check all TIFF files on component mount
+  useEffect(() => {
+    const checkFiles = async () => {
+      console.log('Checking TIFF files...');
+      for (const layer of tiffLayers) {
+        const exists = await verifyTiffFile(layer.filename);
+        console.log(
+          `${layer.name} (${layer.filename}): ${
+            exists ? 'Found' : 'Not found'
+          }`,
+        );
+      }
+    };
+
+    if (webViewLoaded) {
+      checkFiles();
+    }
+  }, [webViewLoaded]);
+
   // Function to load and display a TIFF file
-  const loadTiffFile = async () => {
-    const filename = 'NO2_clipped.tif';
+  const loadTiffFile = async layer => {
+    const filename = layer.filename;
     try {
       console.log(`Starting to load TIFF: ${filename}`);
       setTiffLoading(true);
-      setStatus(`Loading TIFF: ${filename}...`);
+      setStatus(`Loading ${layer.name}...`);
+      setCurrentLayer(layer);
 
       // Define path to the TIFF file based on platform
       let filePath;
@@ -360,6 +526,43 @@ const DummyMap = () => {
         throw new Error('WebView is not ready');
       }
 
+      // Create color scale based on layer type
+      let colorScaleCode = '';
+
+      if (layer.name.includes('NO2')) {
+        colorScaleCode = `
+          if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green
+          else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow
+          else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange
+          else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red
+          else return 'rgba(128, 0, 128, 0.7)';                  // purple
+        `;
+      } else if (layer.name.includes('CH4')) {
+        colorScaleCode = `
+          if (value < 0.2) return 'rgba(173, 216, 230, 0.7)';    // light blue
+          else if (value < 0.4) return 'rgba(135, 206, 235, 0.7)'; // sky blue
+          else if (value < 0.6) return 'rgba(70, 130, 180, 0.7)'; // steel blue
+          else if (value < 0.8) return 'rgba(0, 0, 255, 0.7)';   // blue
+          else return 'rgba(0, 0, 128, 0.7)';                    // navy
+        `;
+      } else if (layer.name.includes('Ozone')) {
+        colorScaleCode = `
+          if (value < 0.2) return 'rgba(152, 251, 152, 0.7)';    // pale green
+          else if (value < 0.4) return 'rgba(144, 238, 144, 0.7)'; // light green
+          else if (value < 0.6) return 'rgba(60, 179, 113, 0.7)'; // medium sea green
+          else if (value < 0.8) return 'rgba(46, 139, 87, 0.7)';  // sea green
+          else return 'rgba(0, 100, 0, 0.7)';                    // dark green
+        `;
+      } else {
+        colorScaleCode = `
+          if (value < 0.2) return 'rgba(255, 228, 181, 0.7)';    // moccasin
+          else if (value < 0.4) return 'rgba(255, 165, 0, 0.7)'; // orange
+          else if (value < 0.6) return 'rgba(255, 140, 0, 0.7)'; // dark orange
+          else if (value < 0.8) return 'rgba(255, 69, 0, 0.7)';  // red-orange
+          else return 'rgba(178, 34, 34, 0.7)';                  // firebrick
+        `;
+      }
+
       // Inject script to load the base64 data
       const script = `
         try {
@@ -394,12 +597,8 @@ const DummyMap = () => {
               const colorScale = function(value) {
                 if (value === null || isNaN(value)) return null;
                 
-                // Simple color scale
-                if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green
-                else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow
-                else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange
-                else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red
-                else return 'rgba(128, 0, 128, 0.7)';                  // purple
+                // Layer-specific color scale
+                ${colorScaleCode}
               };
               
               debug("Creating GeoRaster layer");
@@ -448,7 +647,7 @@ const DummyMap = () => {
     } catch (error) {
       console.error('React Native error loading TIFF:', error);
       setStatus(`Error loading TIFF: ${error.message}`);
-      Alert.alert('Error', `Failed to load TIFF: ${error.message}`);
+      Alert.alert('Error', `Failed to load ${layer.name}: ${error.message}`);
     } finally {
       setTiffLoading(false);
     }
@@ -463,8 +662,13 @@ const DummyMap = () => {
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-        searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-        true;
+        try {
+          searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+          true;
+        } catch(e) {
+          debug("Search error: " + e.message);
+          true;
+        }
       `;
       webViewRef.current.injectJavaScript(script);
       setShowDropdown(true);
@@ -503,16 +707,16 @@ const DummyMap = () => {
     }
   };
 
-  // Handle location selection - Fixed to immediately close dropdown
+  // Handle location selection
   const handleLocationSelect = location => {
-    // First, set states that should change immediately
-    setShowDropdown(false);
-    setSearchResults([]); // Clear results immediately
-
     // Dismiss the keyboard
     Keyboard.dismiss();
 
-    // Set the search query text (this won't re-trigger the dropdown because we cleared results)
+    // Clear search results and hide dropdown
+    setSearchResults([]);
+    setShowDropdown(false);
+
+    // Update search query
     setSearchQuery(location.name);
 
     // Navigate to the location
@@ -535,53 +739,54 @@ const DummyMap = () => {
     }
   };
 
-  // Live search as user types - with timeout to prevent excessive API calls
-  useEffect(() => {
-    let timeoutId;
-
-    if (searchQuery.length >= 3 && webViewRef.current && webViewLoaded) {
-      // Set status to show searching
-      setStatus('Searching...');
-
-      timeoutId = setTimeout(() => {
-        const script = `
-          searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-          true;
-        `;
-        webViewRef.current.injectJavaScript(script);
-      }, 500); // Debounce for 500ms
-    } else if (searchQuery.length < 3) {
-      setSearchResults([]);
-      setShowDropdown(false);
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [searchQuery, webViewLoaded]);
-
   // Handle messages from WebView
   const handleWebViewMessage = event => {
     console.log('WebView message:', event.nativeEvent.data);
 
+    // Try to parse as JSON
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
       if (data.type === 'searchResults') {
-        // Handle search results from WebView
-        setSearchResults(data.results);
-
-        if (data.results.length === 0) {
-          setStatus('No locations found');
-          setShowDropdown(false);
-        } else {
-          setStatus(`Found ${data.results.length} locations`);
+        // Handle search results
+        setSearchResults(data.results || []);
+        if (data.results && data.results.length > 0) {
           setShowDropdown(true);
+          setStatus(`Found ${data.results.length} locations`);
+        } else {
+          setShowDropdown(false);
+          setStatus('No locations found');
+        }
+      } else if (data.type === 'localSearch') {
+        // Perform local search
+        const results = performLocalSearch(data.query);
+        if (results.length > 0) {
+          setSearchResults(results);
+          setShowDropdown(true);
+          setStatus(`Found ${results.length} local locations`);
+        }
+      } else if (data.type === 'searchError') {
+        console.warn('Search error:', data.error);
+        // Try local search as fallback
+        const results = performLocalSearch(searchQuery);
+        if (results.length > 0) {
+          setSearchResults(results);
+          setShowDropdown(true);
+          setStatus(`Found ${results.length} local locations`);
+        } else {
+          setShowDropdown(false);
+          setStatus('No locations found');
         }
       }
     } catch (e) {
       // Not JSON data, handle as regular message
-      console.log('Regular message:', event.nativeEvent.data);
+      // Update status when needed
+      if (!event.nativeEvent.data.includes('Error')) {
+        // Don't show errors to the user
+        setStatus(event.nativeEvent.data);
+      } else {
+        console.warn('WebView error:', event.nativeEvent.data);
+      }
     }
   };
 
@@ -593,33 +798,53 @@ const DummyMap = () => {
     }
   };
 
+  // Live search as user types - with timeout to prevent excessive API calls
+  useEffect(() => {
+    let timeoutId;
+
+    if (searchQuery.length >= 2 && webViewRef.current && webViewLoaded) {
+      // Set status to show searching
+      setStatus('Searching...');
+
+      timeoutId = setTimeout(() => {
+        console.log('Searching for:', searchQuery);
+        const script = `
+          try {
+            searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+            true;
+          } catch(e) {
+            debug("Search error: " + e.message);
+            true;
+          }
+        `;
+        webViewRef.current.injectJavaScript(script);
+      }, 500); // Debounce for 500ms
+    } else if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchQuery, webViewLoaded]);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>World Map</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={[styles.button, tiffLoading && styles.disabledButton]}
-            onPress={loadTiffFile}
-            disabled={tiffLoading}>
-            <Text style={styles.buttonText}>LOAD TIFF</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              if (webViewRef.current) {
-                webViewRef.current.reload();
-                setStatus('Reloading...');
-              }
-            }}>
-            <Text style={styles.buttonText}>REFRESH</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.title}>Lahore Pollution Map</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setShowPollutantDropdown(!showPollutantDropdown)}>
+          <Text style={styles.buttonText}>
+            {currentLayer ? currentLayer.name : 'POLLUTANTS'} ▼
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.statusText}>{status}</Text>
 
+      {/* Search Input - RESTORED */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -633,7 +858,7 @@ const DummyMap = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Search Results Dropdown */}
+      {/* Search Results Dropdown - RESTORED */}
       {showDropdown && searchResults.length > 0 && (
         <View style={styles.searchDropdown}>
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -643,6 +868,28 @@ const DummyMap = () => {
                 style={styles.searchResultItem}
                 onPress={() => handleLocationSelect(result)}>
                 <Text style={styles.searchResultText}>{result.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Pollutant Layers Dropdown */}
+      {showPollutantDropdown && (
+        <View style={styles.dropdownMenu}>
+          <ScrollView>
+            {tiffLayers.map((layer, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  loadTiffFile(layer);
+                  setShowPollutantDropdown(false);
+                }}>
+                <Text style={styles.dropdownItemText}>{layer.name}</Text>
+                <Text style={styles.dropdownItemDescription}>
+                  {layer.description}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -665,7 +912,7 @@ const DummyMap = () => {
       </View>
 
       {/* Touch handler to close dropdown when clicking outside */}
-      {showDropdown && (
+      {(showDropdown || showPollutantDropdown) && (
         <TouchableOpacity
           style={styles.touchableOverlay}
           activeOpacity={0}
@@ -678,7 +925,11 @@ const DummyMap = () => {
           <TouchableOpacity
             activeOpacity={1}
             style={styles.mapTouchable}
-            onPress={handleOutsideTouch}>
+            onPress={() => {
+              if (showDropdown) setShowDropdown(false);
+              if (showPollutantDropdown) setShowPollutantDropdown(false);
+              Keyboard.dismiss();
+            }}>
             <WebView
               ref={webViewRef}
               originWhitelist={['*']}
@@ -702,6 +953,13 @@ const DummyMap = () => {
                   <ActivityIndicator size="large" color="#0000ff" />
                 </View>
               )}
+              // Critical WebView settings for proper touch handling
+              containerStyle={{flex: 1}}
+              nestedScrollEnabled={true}
+              scalesPageToFit={false} // Important for iOS
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              directionalLockEnabled={false}
               // Enable required WebView settings for zooming
               androidLayerType="hardware"
               scrollEnabled={true}
@@ -709,19 +967,26 @@ const DummyMap = () => {
               allowFileAccess={true}
               useWebKit={true}
               cacheEnabled={true}
-              // Very important for React Native WebView to allow gesture-based zoom
               javaScriptEnabledAndroid={true}
               geolocationEnabled={true}
               mediaPlaybackRequiresUserAction={false}
               mixedContentMode="always"
               allowsInlineMediaPlayback={true}
               allowsBackForwardNavigationGestures={false}
+              injectedJavaScript={`
+               // Force touch handlers to re-register after WebView loads
+               if (map) {
+                 map.invalidateSize();
+                 debug("Map size invalidated to ensure proper rendering");
+               }
+               true;
+             `}
             />
           </TouchableOpacity>
           {tiffLoading && (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="#ffffff" />
-              <Text style={styles.loadingText}>Loading TIFF file...</Text>
+              <Text style={styles.loadingText}>Loading pollution data...</Text>
             </View>
           )}
         </View>
@@ -765,18 +1030,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  headerButtons: {
-    flexDirection: 'row',
-  },
   button: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 4,
-    marginLeft: 10,
-  },
-  disabledButton: {
-    backgroundColor: '#B0BEC5',
   },
   buttonText: {
     color: 'white',
@@ -809,7 +1067,7 @@ const styles = StyleSheet.create({
   },
   searchDropdown: {
     position: 'absolute',
-    top: 140, // Adjusted to position below search bar
+    top: 140, // Positioned below search bar
     left: 10,
     right: 10,
     backgroundColor: '#fff',
@@ -817,8 +1075,16 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 4,
     maxHeight: 200,
+    elevation: 5,
     zIndex: 10,
-    elevation: 5, // For Android
+  },
+  searchResultItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchResultText: {
+    fontSize: 14,
   },
   touchableOverlay: {
     position: 'absolute',
@@ -828,13 +1094,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 5,
   },
-  searchResultItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  dropdownMenu: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    marginHorizontal: 10,
+    maxHeight: 200,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    zIndex: 100,
   },
-  searchResultText: {
-    fontSize: 14,
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 3,
+  },
+  dropdownItemDescription: {
+    fontSize: 12,
+    color: '#666',
   },
   predefinedContainer: {
     padding: 10,
@@ -936,4 +1222,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DummyMap;
+export default LahoreMap;

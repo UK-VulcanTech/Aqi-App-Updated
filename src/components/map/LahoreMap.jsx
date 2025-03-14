@@ -24,6 +24,9 @@ const LahoreMap = () => {
   const webViewRef = useRef(null);
   const [webViewLoaded, setWebViewLoaded] = useState(false);
   const [currentLayer, setCurrentLayer] = useState(null);
+  // New state for showing pollution card
+  const [showPollutionCard, setShowPollutionCard] = useState(false);
+  const [selectedMarkerData, setSelectedMarkerData] = useState(null);
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -46,6 +49,11 @@ const LahoreMap = () => {
       name: 'SO2 Emissions',
       filename: 'SO2_clipped.tif',
       description: 'Sulfur Dioxide emission data',
+    },
+    {
+      name: 'PM2.5 Levels',
+      filename: 'PM25_clipped.tif',
+      description: 'Particulate Matter (PM2.5) concentration',
     },
   ];
 
@@ -743,6 +751,12 @@ const LahoreMap = () => {
     }
   };
 
+  // Function to handle marker click
+  const handleMarkerClick = marker => {
+    setSelectedMarkerData(marker);
+    setShowPollutionCard(true);
+  };
+
   // Handle messages from WebView
   const handleWebViewMessage = event => {
     console.log('WebView message:', event.nativeEvent.data);
@@ -800,6 +814,12 @@ const LahoreMap = () => {
       setShowDropdown(false);
       Keyboard.dismiss();
     }
+    if (showPollutantDropdown) {
+      setShowPollutantDropdown(false);
+    }
+    if (showPollutionCard) {
+      setShowPollutionCard(false);
+    }
   };
 
   // Live search as user types - with timeout to prevent excessive API calls
@@ -835,167 +855,89 @@ const LahoreMap = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Lahore Pollution Map</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setShowPollutantDropdown(!showPollutantDropdown)}>
-          <Text style={styles.buttonText}>
-            {currentLayer ? currentLayer.name : 'POLLUTANTS'} ▼
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.statusText}>{status}</Text>
-
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for a location..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={handleSearch}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.buttonText}>Search</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Results Dropdown */}
-      {showDropdown && searchResults.length > 0 && (
-        <View style={styles.searchDropdown}>
-          <ScrollView keyboardShouldPersistTaps="handled">
-            {searchResults.map((result, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.searchResultItem}
-                onPress={() => handleLocationSelect(result)}>
-                <Text style={styles.searchResultText}>{result.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Pollutant Layers Dropdown */}
-      {showPollutantDropdown && (
-        <View style={styles.dropdownMenu}>
-          <ScrollView>
-            {tiffLayers.map((layer, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.dropdownItem}
-                onPress={() => {
-                  loadTiffFile(layer);
-                  setShowPollutantDropdown(false);
-                }}>
-                <Text style={styles.dropdownItemText}>{layer.name}</Text>
-                <Text style={styles.dropdownItemDescription}>
-                  {layer.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Predefined Locations */}
-      <View style={styles.predefinedContainer}>
-        <Text style={styles.dropdownLabel}>Quick Select:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {predefinedLocations.map((location, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.predefinedItem}
-              onPress={() => handleLocationSelect(location)}>
-              <Text style={styles.predefinedText}>{location.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Touch handler to close dropdown when clicking outside */}
-      {(showDropdown || showPollutantDropdown) && (
-        <TouchableOpacity
-          style={styles.touchableOverlay}
-          activeOpacity={0}
-          onPress={handleOutsideTouch}
-        />
-      )}
-
+      {/* Map View - Full Screen */}
       <View style={styles.mapCardContainer}>
-        <View style={styles.mapCard}>
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.mapTouchable}
-            onPress={() => {
-              if (showDropdown) setShowDropdown(false);
-              if (showPollutantDropdown) setShowPollutantDropdown(false);
-              Keyboard.dismiss();
-            }}>
-            <WebView
-              ref={webViewRef}
-              originWhitelist={['*']}
-              source={{html: htmlContent}}
-              onMessage={handleWebViewMessage}
-              onLoad={() => {
-                setWebViewLoaded(true);
-                setStatus('Map loaded');
-                showCurrentLocation();
-              }}
-              onError={syntheticEvent => {
-                const {nativeEvent} = syntheticEvent;
-                console.error('WebView error:', nativeEvent);
-                setStatus(`WebView error: ${nativeEvent.description}`);
-              }}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              startInLoadingState={true}
-              renderLoading={() => (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#0000ff" />
-                </View>
-              )}
-              // Critical WebView settings for proper touch handling
-              containerStyle={{flex: 1}}
-              nestedScrollEnabled={true}
-              scalesPageToFit={false} // Important for iOS
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              directionalLockEnabled={false}
-              // Enable required WebView settings for zooming
-              androidLayerType="hardware"
-              scrollEnabled={true}
-              bounces={false}
-              allowFileAccess={true}
-              useWebKit={true}
-              cacheEnabled={true}
-              javaScriptEnabledAndroid={true}
-              geolocationEnabled={true}
-              mediaPlaybackRequiresUserAction={false}
-              mixedContentMode="always"
-              allowsInlineMediaPlayback={true}
-              allowsBackForwardNavigationGestures={false}
-              injectedJavaScript={`
-              // Force touch handlers to re-register after WebView loads
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.mapTouchable}
+          onPress={() => {
+            if (showDropdown) setShowDropdown(false);
+            if (showPollutantDropdown) setShowPollutantDropdown(false);
+            if (showPollutionCard) setShowPollutionCard(false);
+            Keyboard.dismiss();
+          }}>
+          <WebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{html: htmlContent}}
+            onMessage={handleWebViewMessage}
+            onLoad={() => {
+              setWebViewLoaded(true);
+              setStatus('Map loaded');
+              showCurrentLocation();
+            }}
+            onError={syntheticEvent => {
+              const {nativeEvent} = syntheticEvent;
+              console.error('WebView error:', nativeEvent);
+              setStatus(`WebView error: ${nativeEvent.description}`);
+            }}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FFD700" />
+              </View>
+            )}
+            // All the WebView props remain the same
+            containerStyle={{flex: 1}}
+            nestedScrollEnabled={true}
+            scalesPageToFit={false}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            directionalLockEnabled={false}
+            androidLayerType="hardware"
+            scrollEnabled={true}
+            bounces={false}
+            allowFileAccess={true}
+            useWebKit={true}
+            cacheEnabled={true}
+            javaScriptEnabledAndroid={true}
+            geolocationEnabled={true}
+            mediaPlaybackRequiresUserAction={false}
+            mixedContentMode="always"
+            allowsInlineMediaPlayback={true}
+            allowsBackForwardNavigationGestures={false}
+            injectedJavaScript={`
               if (map) {
                 map.invalidateSize();
                 debug("Map size invalidated to ensure proper rendering");
               }
               true;
             `}
+          />
+        </TouchableOpacity>
+
+        {/* Search Bar */}
+        <View style={styles.header}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search"
+              placeholderTextColor="white"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
             />
-          </TouchableOpacity>
-          {tiffLoading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#ffffff" />
-              <Text style={styles.loadingText}>Loading pollution data...</Text>
-            </View>
-          )}
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={handleSearch}>
+              <Text style={styles.searchIcon}>🔍</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Zoom controls in React Native UI */}
+        {/* Zoom Controls - Moved to bottom right */}
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
             <Text style={styles.zoomButtonText}>+</Text>
@@ -1004,14 +946,130 @@ const LahoreMap = () => {
             <Text style={styles.zoomButtonText}>-</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Current location info button */}
-      <TouchableOpacity
-        style={styles.locationButton}
-        onPress={showCurrentLocation}>
-        <Text style={styles.buttonText}>View Info</Text>
-      </TouchableOpacity>
+        {/* Marker yellow circles with touch functionality */}
+        {webViewLoaded && (
+          <>
+            <TouchableOpacity
+              style={[styles.pollutantMarker, {top: '45%', left: '50%'}]}
+              onPress={() =>
+                handleMarkerClick({
+                  id: 1,
+                  value: 105,
+                  source: 'WWF-Pakistan',
+                  location: 'Lahore',
+                  type: 'Particulate Matter (PM2.5)',
+                  status: 'Moderate',
+                })
+              }>
+              <Text style={styles.pollutantMarkerText}>105</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.pollutantMarker, {top: '25%', left: '30%'}]}
+              onPress={() =>
+                handleMarkerClick({
+                  id: 2,
+                  value: 125,
+                  source: 'WWF-Pakistan',
+                  location: 'Lahore',
+                  type: 'Particulate Matter (PM2.5)',
+                  status: 'Moderate',
+                })
+              }>
+              <Text style={styles.pollutantMarkerText}>105</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Pollution Information Card - Only shows when a marker is clicked */}
+        {showPollutionCard && selectedMarkerData && (
+          <View style={styles.pollutionInfoCardContainer}>
+            <View style={styles.pollutionInfoCard}>
+              <Text style={styles.pollutionInfoSource}>
+                {selectedMarkerData.source}, {selectedMarkerData.location}
+              </Text>
+              <Text style={styles.pollutionInfoType}>
+                {selectedMarkerData.type}
+              </Text>
+              <Text style={styles.pollutionInfoValue}>
+                {selectedMarkerData.value}
+              </Text>
+              <View style={styles.pollutionInfoStatus}>
+                <Text style={styles.pollutionInfoStatusText}>
+                  {selectedMarkerData.status}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* AQI Indicator */}
+        <View style={styles.aqiIndicator}>
+          <Text style={styles.aqiText}>AQI</Text>
+          <Text style={styles.aqiValue}>PM2.5</Text>
+        </View>
+
+        {/* Pollutant Selection Button */}
+        <TouchableOpacity
+          style={styles.pollutantButton}
+          onPress={() => setShowPollutantDropdown(!showPollutantDropdown)}>
+          <Text style={styles.pollutantButtonText}>
+            {currentLayer ? currentLayer.name : 'Select Pollutant'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Loading Overlay */}
+        {tiffLoading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#FFD700" />
+            <Text style={styles.loadingText}>Loading pollution data...</Text>
+          </View>
+        )}
+
+        {/* Search Results Dropdown */}
+        {showDropdown && searchResults.length > 0 && (
+          <View style={styles.searchDropdown}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {searchResults.map((result, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.searchResultItem}
+                  onPress={() => handleLocationSelect(result)}>
+                  <Text style={styles.searchResultText}>{result.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Pollutant Layers Dropdown */}
+        {showPollutantDropdown && (
+          <View style={styles.pollutantDropdown}>
+            <ScrollView>
+              {tiffLayers.map((layer, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.pollutantDropdownItem}
+                  onPress={() => {
+                    loadTiffFile(layer);
+                    setShowPollutantDropdown(false);
+                  }}>
+                  <Text style={styles.pollutantDropdownText}>{layer.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Touch handler to close dropdowns when clicking outside */}
+        {(showDropdown || showPollutantDropdown || showPollutionCard) && (
+          <TouchableOpacity
+            style={styles.touchableOverlay}
+            activeOpacity={0}
+            onPress={handleOutsideTouch}
+          />
+        )}
+      </View>
     </View>
   );
 };
@@ -1019,152 +1077,165 @@ const LahoreMap = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#000000',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  button: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 4,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  statusText: {
-    padding: 10,
-    color: '#666',
-    fontSize: 12,
+    position: 'absolute',
+    top: 20,
+    left: 10,
+    right: 10,
+    zIndex: 10,
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 10,
-    zIndex: 2,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    overflow: 'hidden',
+    height: 50,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   searchInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 10,
-    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    color: 'white',
+    fontSize: 16,
+    height: '100%',
   },
   searchButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 15,
+    width: 50,
+    height: 50,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
-    borderRadius: 4,
-    marginLeft: 10,
+    alignItems: 'center',
   },
-  searchDropdown: {
-    position: 'absolute',
-    top: 140, // Positioned below search bar
-    left: 10,
-    right: 10,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    maxHeight: 200,
-    elevation: 5,
-    zIndex: 10,
-  },
-  searchResultItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  searchResultText: {
-    fontSize: 14,
-  },
-  touchableOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 5,
-  },
-  dropdownMenu: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginHorizontal: 10,
-    maxHeight: 200,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    zIndex: 100,
-  },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 3,
-  },
-  dropdownItemDescription: {
-    fontSize: 12,
-    color: '#666',
-  },
-  predefinedContainer: {
-    padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    marginBottom: 10,
-  },
-  dropdownLabel: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  predefinedItem: {
-    padding: 8,
-    marginRight: 10,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-  },
-  predefinedText: {
-    fontSize: 14,
+  searchIcon: {
+    color: 'white',
+    fontSize: 20,
   },
   mapCardContainer: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    position: 'relative',
   },
   mapCard: {
     flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   mapTouchable: {
     flex: 1,
+  },
+  zoomControls: {
+    position: 'absolute',
+    right: 15,
+    bottom: 80,
+    zIndex: 10,
+  },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  zoomButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  pollutantMarker: {
+    position: 'absolute',
+    backgroundColor: '#FFD700',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+    zIndex: 5,
+  },
+  pollutantMarkerText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  pollutionInfoCardContainer: {
+    position: 'absolute',
+    top: '35%', // Center vertically
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  pollutionInfoCard: {
+    width: 250,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 10,
+  },
+  pollutionInfoSource: {
+    color: 'rgba(255, 0, 0, 0.8)',
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  pollutionInfoType: {
+    color: 'white',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  pollutionInfoValue: {
+    color: '#FFD700', // Gold color for the value
+    fontSize: 36,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  pollutionInfoStatus: {
+    alignSelf: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  pollutionInfoStatusText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  aqiIndicator: {
+    position: 'absolute',
+    left: 20,
+    bottom: 20,
+    backgroundColor: '#4CAF50', // Green for good AQI
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  aqiText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  aqiValue: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   loadingContainer: {
     position: 'absolute',
@@ -1174,7 +1245,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -1190,39 +1261,68 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 10,
   },
-  locationButton: {
+  searchDropdown: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    backgroundColor: 'rgba(33, 150, 243, 0.8)',
+    top: 75,
+    left: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 10,
+    maxHeight: 200,
+    elevation: 5,
+    zIndex: 10,
+  },
+  searchResultItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  searchResultText: {
+    fontSize: 14,
+    color: 'white',
+  },
+  touchableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
+  },
+  pollutantButton: {
+    position: 'absolute',
+    top: 80,
+    right: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 8,
     paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 4,
+    borderRadius: 20,
+    zIndex: 10,
   },
-  zoomControls: {
-    position: 'absolute',
-    right: 25,
-    top: 20,
-    zIndex: 2,
-  },
-  zoomButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  zoomButtonText: {
-    fontSize: 24,
+  pollutantButtonText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+  },
+  pollutantDropdown: {
+    position: 'absolute',
+    top: 120,
+    right: 15,
+    width: 200,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 10,
+    padding: 5,
+    maxHeight: 250,
+    zIndex: 10,
+  },
+  pollutantDropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  pollutantDropdownText: {
+    color: 'white',
+    fontSize: 14,
   },
 });
 

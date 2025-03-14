@@ -1,19 +1,30 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {StyleSheet} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import LahoreMap from './src/components/map/LahoreMap';
-// import DummyMap from './src/components/map/DummyMap';
-// import Login from './src/components/auth/Login';
-// import Map from './src/components/Map';
-// import DummyMap from './src/components/map/DummyMap';
+
+// Import or create these additional screens
+import HomeScreen from './src/screens/HomeScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import LoginScreen from './src/screens/LoginScreen';
+
+const Tab = createBottomTabNavigator();
 
 function App() {
   return (
-    <View style={styles.container}>
-      {/* <Login /> */}
-      {/* <DummyMap /> */}
-      {/* <DummyMap /> */}
-      <LahoreMap />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: '#0066CC',
+          tabBarInactiveTintColor: 'gray',
+        }}>
+        <Tab.Screen name="Map" component={LahoreMap} />
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Login" component={LoginScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
 

@@ -53,14 +53,14 @@ const SearchBox = ({
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-       try {
-         searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-         true;
-       } catch(e) {
-         debug("Search error: " + e.message);
-         true;
-       }
-     `;
+        try {
+          searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+          true;
+        } catch(e) {
+          debug("Search error: " + e.message);
+          true;
+        }
+      `;
       webViewRef.current.injectJavaScript(script);
       setShowDropdown(true);
     } else {
@@ -105,14 +105,14 @@ const SearchBox = ({
       timeoutId = setTimeout(() => {
         console.log('Searching for:', searchQuery);
         const script = `
-         try {
-           searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-           true;
-         } catch(e) {
-           debug("Search error: " + e.message);
-           true;
-         }
-       `;
+          try {
+            searchLocation("${searchQuery.replace(/"/g, '\\"')}");
+            true;
+          } catch(e) {
+            debug("Search error: " + e.message);
+            true;
+          }
+        `;
         webViewRef.current.injectJavaScript(script);
       }, 500); // Debounce for 500ms
     } else if (searchQuery.length < 2) {

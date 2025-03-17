@@ -14,45 +14,52 @@ import {
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
+import Papa from 'papaparse';
 
 const LahoreMap = () => {
   const [status, setStatus] = useState('Ready');
   const [tiffLoading, setTiffLoading] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPollutantDropdown, setShowPollutantDropdown] = useState(false);
   const webViewRef = useRef(null);
   const [webViewLoaded, setWebViewLoaded] = useState(false);
   const [currentLayer, setCurrentLayer] = useState(null);
-  // State for showing pollution card
   const [showPollutionCard, setShowPollutionCard] = useState(false);
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
+  const [csvMarkers, setCsvMarkers] = useState([]);
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
     {
       name: 'NO2 Concentration',
       filename: 'NO2_clipped.tif',
+      csvFilename: 'NO2_clipped.csv',
       description: 'Nitrogen Dioxide pollution levels',
     },
     {
       name: 'CH4 Levels',
       filename: 'CH4_clipped.tif',
+      csvFilename: 'CH4_clipped.csv',
       description: 'Methane concentration',
     },
     {
       name: 'Ozone Levels',
       filename: 'O3_clipped.tif',
+      csvFilename: 'O3_clipped.csv',
       description: 'Ground-level ozone concentration',
     },
     {
       name: 'SO2 Emissions',
       filename: 'SO2_clipped.tif',
+      csvFilename: 'SO2_clipped.csv',
       description: 'Sulfur Dioxide emission data',
     },
     {
       name: 'PM2.5 Levels',
       filename: 'PM25_clipped.tif',
+      csvFilename: 'PM25_clipped.csv',
       description: 'Particulate Matter (PM2.5) concentration',
     },
   ];
@@ -141,6 +148,15 @@ const LahoreMap = () => {
   // Combined location data source for dynamic searching
   const allLocations = [...predefinedLocations, ...commonLocations];
 
+  // Helper function to determine status based on value
+  const getStatusFromValue = value => {
+    if (value < 0.2) return 'Good';
+    else if (value < 0.4) return 'Moderate';
+    else if (value < 0.6) return 'Unhealthy for Sensitive Groups';
+    else if (value < 0.8) return 'Unhealthy';
+    else return 'Hazardous';
+  };
+
   // Initial HTML with Leaflet map
   const htmlContent = `
    <!DOCTYPE html>
@@ -185,6 +201,15 @@ const LahoreMap = () => {
        }
        .marker-description {
          font-size: 0.9em;
+       }
+       .marker-value {
+         font-weight: bold;
+         font-size: 1.1em;
+         color: #d32f2f;
+       }
+       .marker-coordinates {
+         font-size: 0.8em;
+         color: #666;
        }
        .info-box {
          padding: 8px;
@@ -257,6 +282,7 @@ const LahoreMap = () => {
        
        var tiffLayer = null;
        var markers = [];
+       var csvMarkers = [];
        var currentInfoBox = null;
        
        // Add OpenStreetMap base layer
@@ -386,6 +412,70 @@ const LahoreMap = () => {
          });
          markers = [];
        }
+
+       // Function to clear all CSV markers
+       function clearCSVMarkers() {
+         csvMarkers.forEach(marker => {
+           map.removeLayer(marker);
+         });
+         csvMarkers = [];
+         debug("Cleared CSV markers");
+       }
+
+       // Function to add CSV data points as markers
+       function addCSVMarkers(points) {
+         debug("Adding " + points.length + " CSV markers");
+         
+         points.forEach(point => {
+           // Create a circular marker with size based on value
+           const radius = Math.min(Math.max(point.value * 0.05, 5), 15); // Adjust scale as needed
+           
+           const circleMarker = L.circleMarker([point.lat, point.lon], {
+             radius: radius,
+             fillColor: getValueColor(point.value),
+             color: '#fff',
+             weight: 1,
+             opacity: 1,
+             fillOpacity: 0.8
+           }).addTo(map);
+           
+           // Add popup with value information
+           circleMarker.bindPopup(
+             '<div class="marker-info">' +
+             '<div class="marker-title">' + point.type + '</div>' +
+             '<div class="marker-value">Value: ' + point.value.toFixed(2) + '</div>' +
+             '<div class="marker-coordinates">Lat: ' + point.lat.toFixed(5) + ', Lon: ' + point.lon.toFixed(5) + '</div>' +
+             '</div>'
+           );
+           
+           // Add click handler to notify React Native
+           circleMarker.on('click', function(e) {
+             window.ReactNativeWebView.postMessage(JSON.stringify({
+               type: 'csvMarkerClick',
+               data: {
+                 lat: point.lat,
+                 lon: point.lon,
+                 value: point.value,
+                 markerType: point.type
+               }
+             }));
+           });
+           
+           csvMarkers.push(circleMarker);
+         });
+         
+         debug("Added " + points.length + " CSV markers");
+       }
+
+       // Helper function to get color based on value
+       function getValueColor(value) {
+         // Color scale for visualization
+         if (value < 0.2) return '#00FF00';      // green (low)
+         else if (value < 0.4) return '#FFFF00'; // yellow (medium-low)
+         else if (value < 0.6) return '#FFA500'; // orange (medium)
+         else if (value < 0.8) return '#FF0000'; // red (medium-high)
+         else return '#800080';                  // purple (high)
+       }
        
        // Simplified function to display information about current view
        function showCurrentLocation() {
@@ -448,8 +538,8 @@ const LahoreMap = () => {
     return results.slice(0, 5);
   };
 
-  // Function to verify TIFF file existence
-  const verifyTiffFile = async filename => {
+  // Function to verify file existence
+  const verifyFile = async filename => {
     try {
       if (Platform.OS === 'android') {
         // Try to check if the file exists in assets
@@ -481,15 +571,16 @@ const LahoreMap = () => {
     }
   };
 
-  // Check all TIFF files on component mount
+  // Check all files on component mount
   useEffect(() => {
     const checkFiles = async () => {
-      console.log('Checking TIFF files...');
+      console.log('Checking files...');
       for (const layer of tiffLayers) {
-        const exists = await verifyTiffFile(layer.filename);
+        const tiffExists = await verifyFile(layer.filename);
+        const csvExists = await verifyFile(layer.csvFilename);
         console.log(
-          `${layer.name} (${layer.filename}): ${
-            exists ? 'Found' : 'Not found'
+          `${layer.name}: TIFF ${tiffExists ? 'Found' : 'Not found'}, CSV ${
+            csvExists ? 'Found' : 'Not found'
           }`,
         );
       }
@@ -508,6 +599,94 @@ const LahoreMap = () => {
    else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red (medium-high)
    else return 'rgba(128, 0, 128, 0.7)';                  // purple (high)
  `;
+
+  // Function to load and parse CSV data
+  const loadCSVData = async layer => {
+    if (!layer) return;
+
+    try {
+      setCsvLoading(true);
+      setStatus(`Loading ${layer.name} data points...`);
+
+      // Get the CSV filename
+      const csvFilename = layer.csvFilename;
+
+      let csvData;
+
+      if (Platform.OS === 'android') {
+        try {
+          // Try to copy from assets to cache directory first
+          const destPath = `${RNFS.CachesDirectoryPath}/${csvFilename}`;
+          await RNFS.copyFileAssets(csvFilename, destPath);
+          csvData = await RNFS.readFile(destPath, 'utf8');
+        } catch (copyError) {
+          console.error('Error copying CSV file:', copyError);
+
+          // Fallback to direct asset access
+          const filePath = `file:///android_asset/${csvFilename}`;
+          csvData = await RNFS.readFile(filePath, 'utf8');
+        }
+      } else {
+        // iOS path
+        const filePath = `${RNFS.MainBundlePath}/${csvFilename}`;
+        csvData = await RNFS.readFile(filePath, 'utf8');
+      }
+
+      console.log(`CSV data loaded, length: ${csvData.length}`);
+
+      // Parse CSV data
+      Papa.parse(csvData, {
+        header: true,
+        skipEmptyLines: true,
+        complete: results => {
+          // Assuming CSV has X, Y, Value columns
+          const parsedMarkers = results.data
+            .filter(row => row.X && row.Y && row.Value)
+            .map(row => ({
+              lat: parseFloat(row.Y),
+              lon: parseFloat(row.X),
+              value: parseFloat(row.Value),
+              type: layer.name,
+            }));
+
+          console.log(`Parsed ${parsedMarkers.length} CSV data points`);
+          setCsvMarkers(parsedMarkers);
+
+          // Add markers to the map through WebView
+          if (webViewRef.current && webViewLoaded) {
+            const markersScript = `
+              try {
+                // Clear existing CSV markers
+                clearCSVMarkers();
+                
+                // Add new markers from CSV data
+                const csvPoints = ${JSON.stringify(parsedMarkers)};
+                addCSVMarkers(csvPoints);
+                true;
+              } catch(e) {
+                debug("Error adding CSV markers: " + e.message);
+                true;
+              }
+            `;
+            webViewRef.current.injectJavaScript(markersScript);
+          }
+
+          setStatus(
+            `Loaded ${parsedMarkers.length} data points for ${layer.name}`,
+          );
+        },
+        error: error => {
+          console.error('CSV parsing error:', error);
+          setStatus(`Error parsing CSV: ${error.message}`);
+        },
+      });
+    } catch (error) {
+      console.error('Error loading CSV:', error);
+      setStatus(`Error loading CSV data: ${error.message}`);
+    } finally {
+      setCsvLoading(false);
+    }
+  };
 
   // Function to load and display a TIFF file
   const loadTiffFile = async layer => {
@@ -656,6 +835,9 @@ const LahoreMap = () => {
      `;
 
       webViewRef.current.injectJavaScript(script);
+
+      // Load the corresponding CSV data after TIFF is loaded
+      await loadCSVData(layer);
     } catch (error) {
       console.error('React Native error loading TIFF:', error);
       setStatus(`Error loading TIFF: ${error.message}`);
@@ -704,18 +886,18 @@ const LahoreMap = () => {
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-       goToLocation(
-         ${location.lat}, 
-         ${location.lon}, 
-         "${location.name.replace(/"/g, '\\"')}", 
-         "${
-           location.description
-             ? location.description.replace(/"/g, '\\"')
-             : 'Selected location'
-         }"
-       );
-       true;
-     `;
+     goToLocation(
+       ${location.lat}, 
+       ${location.lon}, 
+       "${location.name.replace(/"/g, '\\"')}", 
+       "${
+         location.description
+           ? location.description.replace(/"/g, '\\"')
+           : 'Selected location'
+       }"
+     );
+     true;
+   `;
       webViewRef.current.injectJavaScript(script);
       setStatus(`Navigated to ${location.name}`);
     }
@@ -735,8 +917,23 @@ const LahoreMap = () => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
+      // Handle CSV marker clicks
+      if (data.type === 'csvMarkerClick') {
+        const markerData = data.data;
+        setSelectedMarkerData({
+          id: `${markerData.lat}-${markerData.lon}`,
+          value: markerData.value.toFixed(2),
+          source: 'CSV Data',
+          location: `Lat: ${markerData.lat.toFixed(
+            5,
+          )}, Lon: ${markerData.lon.toFixed(5)}`,
+          type: markerData.markerType,
+          status: getStatusFromValue(markerData.value),
+        });
+        setShowPollutionCard(true);
+      }
       // Process search-related messages
-      if (data.type === 'searchResults') {
+      else if (data.type === 'searchResults') {
         // Handle search results
         setSearchResults(data.results || []);
         if (data.results && data.results.length > 0) {
@@ -853,12 +1050,12 @@ const LahoreMap = () => {
             allowsInlineMediaPlayback={true}
             allowsBackForwardNavigationGestures={false}
             injectedJavaScript={`
-              if (map) {
-                map.invalidateSize();
-                debug("Map size invalidated to ensure proper rendering");
-              }
-              true;
-            `}
+            if (map) {
+              map.invalidateSize();
+              debug("Map size invalidated to ensure proper rendering");
+            }
+            true;
+          `}
           />
         </TouchableOpacity>
 
@@ -887,8 +1084,8 @@ const LahoreMap = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Marker yellow circles with touch functionality */}
-        {webViewLoaded && (
+        {/* Static marker yellow circles with touch functionality - Now only shown if no CSV data */}
+        {webViewLoaded && csvMarkers.length === 0 && (
           <>
             <TouchableOpacity
               style={[styles.pollutantMarker, {top: '45%', left: '50%'}]}
@@ -946,7 +1143,9 @@ const LahoreMap = () => {
         {/* AQI Indicator */}
         <View style={styles.aqiIndicator}>
           <Text style={styles.aqiText}>AQI</Text>
-          <Text style={styles.aqiValue}>PM2.5</Text>
+          <Text style={styles.aqiValue}>
+            {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
+          </Text>
         </View>
 
         {/* Pollutant Selection Button */}
@@ -959,10 +1158,14 @@ const LahoreMap = () => {
         </TouchableOpacity>
 
         {/* Loading Overlay */}
-        {tiffLoading && (
+        {(tiffLoading || csvLoading) && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#FFD700" />
-            <Text style={styles.loadingText}>Loading pollution data...</Text>
+            <Text style={styles.loadingText}>
+              {csvLoading
+                ? 'Loading pollution data points...'
+                : 'Loading pollution layer...'}
+            </Text>
           </View>
         )}
 
@@ -1146,6 +1349,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 15,
   },
   loadingText: {
     color: '#fff',

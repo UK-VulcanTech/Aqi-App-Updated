@@ -1,3 +1,4 @@
+// LahoreMap.js
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
@@ -5,7 +6,6 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
-  TextInput,
   TouchableOpacity,
   Alert,
   ScrollView,
@@ -13,18 +13,18 @@ import {
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
+import SearchBox from './SearchBox';
 
 const LahoreMap = () => {
   const [status, setStatus] = useState('Ready');
   const [tiffLoading, setTiffLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPollutantDropdown, setShowPollutantDropdown] = useState(false);
   const webViewRef = useRef(null);
   const [webViewLoaded, setWebViewLoaded] = useState(false);
   const [currentLayer, setCurrentLayer] = useState(null);
-  // New state for showing pollution card
+  // State for showing pollution card
   const [showPollutionCard, setShowPollutionCard] = useState(false);
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
 
@@ -431,7 +431,7 @@ const LahoreMap = () => {
    </html>
  `;
 
-  // Function to perform dynamic local search
+  // Function to perform dynamic local search - This is needed in both components
   const performLocalSearch = query => {
     if (!query || query.length < 2) return [];
 
@@ -665,28 +665,6 @@ const LahoreMap = () => {
     }
   };
 
-  // Handle search
-  const handleSearch = () => {
-    if (!searchQuery.trim()) return;
-
-    // Show we're waiting for results
-    setStatus('Searching...');
-
-    if (webViewRef.current && webViewLoaded) {
-      const script = `
-       try {
-         searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-         true;
-       } catch(e) {
-         debug("Search error: " + e.message);
-         true;
-       }
-     `;
-      webViewRef.current.injectJavaScript(script);
-      setShowDropdown(true);
-    }
-  };
-
   // Function to show current location information
   const showCurrentLocation = () => {
     if (webViewRef.current && webViewLoaded) {
@@ -719,19 +697,11 @@ const LahoreMap = () => {
     }
   };
 
-  // Handle location selection
+  // Handler for when a location is selected from search
   const handleLocationSelect = location => {
-    // Dismiss the keyboard
-    Keyboard.dismiss();
-
-    // Clear search results and hide dropdown
-    setSearchResults([]);
+    // Close any open dropdowns
     setShowDropdown(false);
 
-    // Update search query
-    setSearchQuery(location.name);
-
-    // Navigate to the location
     if (webViewRef.current && webViewLoaded) {
       const script = `
        goToLocation(
@@ -765,6 +735,7 @@ const LahoreMap = () => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
+      // Process search-related messages
       if (data.type === 'searchResults') {
         // Handle search results
         setSearchResults(data.results || []);
@@ -786,14 +757,16 @@ const LahoreMap = () => {
       } else if (data.type === 'searchError') {
         console.warn('Search error:', data.error);
         // Try local search as fallback
-        const results = performLocalSearch(searchQuery);
-        if (results.length > 0) {
-          setSearchResults(results);
-          setShowDropdown(true);
-          setStatus(`Found ${results.length} local locations`);
-        } else {
-          setShowDropdown(false);
-          setStatus('No locations found');
+        if (data.query) {
+          const results = performLocalSearch(data.query);
+          if (results.length > 0) {
+            setSearchResults(results);
+            setShowDropdown(true);
+            setStatus(`Found ${results.length} local locations`);
+          } else {
+            setShowDropdown(false);
+            setStatus('No locations found');
+          }
         }
       }
     } catch (e) {
@@ -810,10 +783,6 @@ const LahoreMap = () => {
 
   // Touch handler to close dropdown if user taps outside
   const handleOutsideTouch = () => {
-    if (showDropdown) {
-      setShowDropdown(false);
-      Keyboard.dismiss();
-    }
     if (showPollutantDropdown) {
       setShowPollutantDropdown(false);
     }
@@ -821,37 +790,6 @@ const LahoreMap = () => {
       setShowPollutionCard(false);
     }
   };
-
-  // Live search as user types - with timeout to prevent excessive API calls
-  useEffect(() => {
-    let timeoutId;
-
-    if (searchQuery.length >= 2 && webViewRef.current && webViewLoaded) {
-      // Set status to show searching
-      setStatus('Searching...');
-
-      timeoutId = setTimeout(() => {
-        console.log('Searching for:', searchQuery);
-        const script = `
-         try {
-           searchLocation("${searchQuery.replace(/"/g, '\\"')}");
-           true;
-         } catch(e) {
-           debug("Search error: " + e.message);
-           true;
-         }
-       `;
-        webViewRef.current.injectJavaScript(script);
-      }, 500); // Debounce for 500ms
-    } else if (searchQuery.length < 2) {
-      setSearchResults([]);
-      setShowDropdown(false);
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [searchQuery, webViewLoaded]);
 
   return (
     <View style={styles.container}>
@@ -861,9 +799,15 @@ const LahoreMap = () => {
           activeOpacity={1}
           style={styles.mapTouchable}
           onPress={() => {
-            if (showDropdown) setShowDropdown(false);
-            if (showPollutantDropdown) setShowPollutantDropdown(false);
-            if (showPollutionCard) setShowPollutionCard(false);
+            if (showDropdown) {
+              setShowDropdown(false);
+            }
+            if (showPollutantDropdown) {
+              setShowPollutantDropdown(false);
+            }
+            if (showPollutionCard) {
+              setShowPollutionCard(false);
+            }
             Keyboard.dismiss();
           }}>
           <WebView
@@ -918,23 +862,19 @@ const LahoreMap = () => {
           />
         </TouchableOpacity>
 
-        {/* Search Bar */}
+        {/* Search Component */}
         <View style={styles.header}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-              placeholderTextColor="white"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-            />
-            <TouchableOpacity
-              style={styles.searchButton}
-              onPress={handleSearch}>
-              <Text style={styles.searchIcon}>🔍</Text>
-            </TouchableOpacity>
-          </View>
+          <SearchBox
+            webViewRef={webViewRef}
+            webViewLoaded={webViewLoaded}
+            allLocations={allLocations}
+            setStatus={setStatus}
+            onLocationSelect={handleLocationSelect}
+            searchResults={searchResults}
+            setSearchResults={setSearchResults}
+            showDropdown={showDropdown}
+            setShowDropdown={setShowDropdown}
+          />
         </View>
 
         {/* Zoom Controls - Moved to bottom right */}
@@ -976,7 +916,7 @@ const LahoreMap = () => {
                   status: 'Moderate',
                 })
               }>
-              <Text style={styles.pollutantMarkerText}>105</Text>
+              <Text style={styles.pollutantMarkerText}>125</Text>
             </TouchableOpacity>
           </>
         )}
@@ -1026,22 +966,6 @@ const LahoreMap = () => {
           </View>
         )}
 
-        {/* Search Results Dropdown */}
-        {showDropdown && searchResults.length > 0 && (
-          <View style={styles.searchDropdown}>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              {searchResults.map((result, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.searchResultItem}
-                  onPress={() => handleLocationSelect(result)}>
-                  <Text style={styles.searchResultText}>{result.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
         {/* Pollutant Layers Dropdown */}
         {showPollutantDropdown && (
           <View style={styles.pollutantDropdown}>
@@ -1062,7 +986,7 @@ const LahoreMap = () => {
         )}
 
         {/* Touch handler to close dropdowns when clicking outside */}
-        {(showDropdown || showPollutantDropdown || showPollutionCard) && (
+        {(showPollutantDropdown || showPollutionCard) && (
           <TouchableOpacity
             style={styles.touchableOverlay}
             activeOpacity={0}
@@ -1086,41 +1010,7 @@ const styles = StyleSheet.create({
     right: 10,
     zIndex: 10,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    overflow: 'hidden',
-    height: 50,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  searchInput: {
-    flex: 1,
-    paddingHorizontal: 20,
-    color: 'white',
-    fontSize: 16,
-    height: '100%',
-  },
-  searchButton: {
-    width: 50,
-    height: 50,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    color: 'white',
-    fontSize: 20,
-  },
   mapCardContainer: {
-    flex: 1,
-  },
-  mapCard: {
     flex: 1,
   },
   mapTouchable: {
@@ -1261,26 +1151,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 10,
   },
-  searchDropdown: {
-    position: 'absolute',
-    top: 75,
-    left: 10,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 10,
-    maxHeight: 200,
-    elevation: 5,
-    zIndex: 10,
-  },
-  searchResultItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  searchResultText: {
-    fontSize: 14,
-    color: 'white',
-  },
   touchableOverlay: {
     position: 'absolute',
     top: 0,
@@ -1297,7 +1167,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
-    zIndex: 10,
+    zIndex: 8, // Lowered from 10 to be below the search dropdown
   },
   pollutantButtonText: {
     color: 'white',

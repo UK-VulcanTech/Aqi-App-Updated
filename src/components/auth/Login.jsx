@@ -38,22 +38,37 @@ const Login = () => {
 
             <View style={styles.inputContainer}>
               {/* Email Field */}
+              {/* Email Field */}
               <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email Address"
-                  placeholderTextColor="#757575"
-                />
+                <View style={styles.input}>
+                  <Image
+                    source={require('../../assets/icons/mail.png')}
+                    style={styles.inputIcon}
+                    resizeMode="contain"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email Address"
+                    placeholderTextColor="#757575"
+                  />
+                </View>
               </View>
 
               {/* Password Field */}
               <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#757575"
-                  secureTextEntry
-                />
+                <View style={styles.input}>
+                  <Image
+                    source={require('../../assets/icons/password.png')}
+                    style={styles.inputIcon}
+                    resizeMode="contain"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor="#757575"
+                    secureTextEntry
+                  />
+                </View>
                 <Text style={styles.forgotPassword}>Forgot Password?</Text>
               </View>
 
@@ -135,15 +150,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   input: {
-    width: '100%', // Use percentage instead of fixed width
+    width: '100%',
     height: 67,
     flexShrink: 0,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: '#CECECE',
     backgroundColor: '#FFF',
-    padding: 16,
-    fontSize: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+    tintColor: '#757575',
   },
   inputContainer: {
     width: '100%', // Take 90% of the parent width

@@ -75,7 +75,7 @@ function App() {
           }}
         />
         <Tab.Screen
-          name="Profile"
+          name="Ranking"
           component={ProfileScreen}
           options={{
             tabBarIcon: profileIconRender,

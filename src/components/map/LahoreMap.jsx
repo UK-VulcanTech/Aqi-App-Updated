@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
   Keyboard,
+  Image,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
@@ -29,6 +30,7 @@ const LahoreMap = () => {
   const [showPollutionCard, setShowPollutionCard] = useState(false);
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
   const [csvMarkers, setCsvMarkers] = useState([]);
+  const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -64,90 +66,6 @@ const LahoreMap = () => {
     },
   ];
 
-  // Predefined locations
-  const predefinedLocations = [
-    {
-      name: 'Gulberg',
-      lat: 31.5204,
-      lon: 74.3587,
-      description: 'Residential area',
-    },
-    {name: 'Downtown', lat: 31.5497, lon: 74.3436, description: 'City center'},
-    {
-      name: 'Industrial Zone',
-      lat: 31.5102,
-      lon: 74.3389,
-      description: 'Manufacturing area',
-    },
-  ];
-
-  // Additional common locations in Lahore for dynamic search
-  const commonLocations = [
-    {
-      name: 'Lahore',
-      lat: 31.5204,
-      lon: 74.3587,
-      description: 'City in Pakistan',
-    },
-    {
-      name: 'Johar Town',
-      lat: 31.4697,
-      lon: 74.2728,
-      description: 'Lahore district',
-    },
-    {
-      name: 'Model Town',
-      lat: 31.4793,
-      lon: 74.3248,
-      description: 'Residential area',
-    },
-    {
-      name: 'DHA Lahore',
-      lat: 31.4794,
-      lon: 74.4214,
-      description: 'Defense Housing Authority',
-    },
-    {
-      name: 'Badshahi Mosque',
-      lat: 31.583,
-      lon: 74.3097,
-      description: 'Historical landmark',
-    },
-    {
-      name: 'Liberty Market',
-      lat: 31.5161,
-      lon: 74.3385,
-      description: 'Shopping center',
-    },
-    {
-      name: 'Shalimar Gardens',
-      lat: 31.5883,
-      lon: 74.3812,
-      description: 'Historical garden',
-    },
-    {
-      name: 'Fortress Stadium',
-      lat: 31.5342,
-      lon: 74.3438,
-      description: 'Entertainment complex',
-    },
-    {
-      name: 'Punjab University',
-      lat: 31.4987,
-      lon: 74.2972,
-      description: 'Educational institution',
-    },
-    {
-      name: 'Allama Iqbal International Airport',
-      lat: 31.5214,
-      lon: 74.4035,
-      description: 'Airport',
-    },
-  ];
-
-  // Combined location data source for dynamic searching
-  const allLocations = [...predefinedLocations, ...commonLocations];
-
   // Helper function to determine status based on value
   const getStatusFromValue = value => {
     if (value < 0.2) return 'Good';
@@ -157,7 +75,7 @@ const LahoreMap = () => {
     else return 'Hazardous';
   };
 
-  // Initial HTML with Leaflet map
+  // Initial HTML with Leaflet map - modified to restrict to Lahore and hide CSV markers
   const htmlContent = `
    <!DOCTYPE html>
    <html>
@@ -264,7 +182,7 @@ const LahoreMap = () => {
        L.Browser.pointer = false;
        L.Browser.mobile = true;
        
-       // Initialize map with touch zoom and drag enabled
+       // Initialize map with touch zoom and drag enabled, and set minimum zoom
        var map = L.map('map', {
          zoomControl: false,
          tap: true,
@@ -273,12 +191,40 @@ const LahoreMap = () => {
          scrollWheelZoom: true,
          doubleClickZoom: true,
          boxZoom: true,
-         bounceAtZoomLimits: false,
+         bounceAtZoomLimits: true,
          inertia: true,
          inertiaDeceleration: 3000,
          inertiaMaxSpeed: 1500,
-         zoomAnimationThreshold: 4
-       }).setView([31.5204, 74.3587], 11); // Lahore
+         zoomAnimationThreshold: 4,
+         minZoom: 11,  // Set minimum zoom level to prevent seeing outside Lahore
+         maxZoom: 18,  // Set maximum zoom level
+         maxBoundsViscosity: 1.0  // Make bounds "sticky" - prevents bouncing outside bounds
+       }).setView([31.5204, 74.3587], 12); // Lahore, with higher initial zoom
+
+       // Define Lahore bounds more strictly
+       const lahoreBounds = L.latLngBounds(
+         L.latLng(31.3, 74.1),  // Southwest corner
+         L.latLng(31.7, 74.6)   // Northeast corner
+       );
+
+       map.setMaxBounds(lahoreBounds);
+
+       // Add multiple event handlers to really ensure we stay within bounds
+       map.on('drag', function() {
+         map.panInsideBounds(lahoreBounds, { animate: false });
+       });
+
+       map.on('zoomend', function() {
+         if (map.getZoom() < 11) {
+           map.setZoom(11);
+           debug("Zoom restricted to minimum level");
+         }
+         map.panInsideBounds(lahoreBounds, { animate: false });
+       });
+
+       map.on('moveend', function() {
+         map.panInsideBounds(lahoreBounds, { animate: true });
+       });
        
        var tiffLayer = null;
        var markers = [];
@@ -326,18 +272,12 @@ const LahoreMap = () => {
          }
        }
        
-       // Function to search for a location - RESTORED
+       // Function to search for a location - No local search, API only
        function searchLocation(query) {
          debug("Searching for: " + query);
          
-         // First try local search
-         window.ReactNativeWebView.postMessage(JSON.stringify({
-           type: 'localSearch',
-           query: query
-         }));
-         
-         // Then try with Nominatim API
-         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query), {
+         // Only search with Nominatim API
+         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
            headers: {
              'User-Agent': 'LahoreMapApp/1.0'
            }
@@ -345,11 +285,21 @@ const LahoreMap = () => {
            .then(response => response.json())
            .then(data => {
              if (data && data.length > 0) {
-               const results = data.slice(0, 5).map(item => ({
-                 name: item.display_name,
-                 lat: parseFloat(item.lat),
-                 lon: parseFloat(item.lon)
-               }));
+               // Filter to only include results in Lahore area
+               const results = data
+                 .filter(item => {
+                   const lat = parseFloat(item.lat);
+                   const lon = parseFloat(item.lon);
+                   // Check if coordinates are within Lahore bounds
+                   return lat >= 31.3 && lat <= 31.7 && lon >= 74.1 && lon <= 74.6;
+                 })
+                 .slice(0, 5)
+                 .map(item => ({
+                   name: item.display_name,
+                   lat: parseFloat(item.lat),
+                   lon: parseFloat(item.lon),
+                   description: item.type || 'Location in Lahore'
+                 }));
                
                window.ReactNativeWebView.postMessage(JSON.stringify({
                  type: 'searchResults',
@@ -357,7 +307,7 @@ const LahoreMap = () => {
                }));
                debug("Found " + results.length + " locations");
              } else {
-               debug("No online locations found");
+               debug("No locations found");
                window.ReactNativeWebView.postMessage(JSON.stringify({
                  type: 'searchResults',
                  results: []
@@ -366,16 +316,26 @@ const LahoreMap = () => {
            })
            .catch(error => {
              debug("Error searching: " + error.message);
-             // We already tried local search
              window.ReactNativeWebView.postMessage(JSON.stringify({
                type: 'searchError',
                error: error.message
              }));
            });
-       }
+       }     
        
        // Function to go to a specific location and add a marker
        function goToLocation(lat, lon, title, description) {
+         // Ensure location is within Lahore bounds
+         const latlng = L.latLng(lat, lon);
+         if (!lahoreBounds.contains(latlng)) {
+           debug("Location outside Lahore: " + title);
+           // Default to Lahore center
+           lat = 31.5204;
+           lon = 74.3587;
+           title = "Lahore";
+           description = "City in Pakistan";
+         }
+         
          // Set map view to location
          map.setView([lat, lon], 13);
          
@@ -422,21 +382,19 @@ const LahoreMap = () => {
          debug("Cleared CSV markers");
        }
 
-       // Function to add CSV data points as markers
+       // Function to add CSV data points as invisible markers
        function addCSVMarkers(points) {
-         debug("Adding " + points.length + " CSV markers");
+         debug("Adding " + points.length + " invisible CSV markers");
          
          points.forEach(point => {
-           // Create a circular marker with size based on value
-           const radius = Math.min(Math.max(point.value * 0.05, 5), 15); // Adjust scale as needed
-           
+           // Create a circular marker with opacity 0 (invisible)
            const circleMarker = L.circleMarker([point.lat, point.lon], {
-             radius: radius,
+             radius: 15, // Larger clickable area
              fillColor: getValueColor(point.value),
              color: '#fff',
-             weight: 1,
-             opacity: 1,
-             fillOpacity: 0.8
+             weight: 0,
+             opacity: 0,
+             fillOpacity: 0 // Set to 0 to make invisible
            }).addTo(map);
            
            // Add popup with value information
@@ -464,7 +422,7 @@ const LahoreMap = () => {
            csvMarkers.push(circleMarker);
          });
          
-         debug("Added " + points.length + " CSV markers");
+         debug("Added " + points.length + " invisible CSV markers");
        }
 
        // Helper function to get color based on value
@@ -521,21 +479,12 @@ const LahoreMap = () => {
    </html>
  `;
 
-  // Function to perform dynamic local search - This is needed in both components
-  const performLocalSearch = query => {
-    if (!query || query.length < 2) return [];
-
-    query = query.toLowerCase();
-
-    // Search through all locations dynamically
-    const results = allLocations.filter(
-      location =>
-        location.name.toLowerCase().includes(query) ||
-        (location.description &&
-          location.description.toLowerCase().includes(query)),
-    );
-
-    return results.slice(0, 5);
+  // Function to show Lahore-only notification
+  const showLahoreOnlyNotification = () => {
+    setStatus('Only Lahore locations are available');
+    setTimeout(() => {
+      setStatus('Ready');
+    }, 3000);
   };
 
   // Function to verify file existence
@@ -652,14 +601,14 @@ const LahoreMap = () => {
           console.log(`Parsed ${parsedMarkers.length} CSV data points`);
           setCsvMarkers(parsedMarkers);
 
-          // Add markers to the map through WebView
+          // Add markers to the map through WebView - now as invisible markers
           if (webViewRef.current && webViewLoaded) {
             const markersScript = `
               try {
                 // Clear existing CSV markers
                 clearCSVMarkers();
                 
-                // Add new markers from CSV data
+                // Add new markers from CSV data - these will be invisible
                 const csvPoints = ${JSON.stringify(parsedMarkers)};
                 addCSVMarkers(csvPoints);
                 true;
@@ -754,7 +703,7 @@ const LahoreMap = () => {
       // Use unified color scale for all layers
       const colorScaleCode = getUnifiedColorScale();
 
-      // Inject script to load the base64 data
+      // Inject script to load the base64 data - MODIFIED to ensure proper zoom level
       const script = `
        try {
          console.log("WebView: Loading GeoTIFF from base64 data");
@@ -811,13 +760,26 @@ const LahoreMap = () => {
              tiffLayer.addTo(map);
              debug("TIFF layer added to map");
              
-             // Fit bounds
+             // Fit bounds but ensure we stay within Lahore bounds
+             // MODIFIED: Set zoom level to show full layer
              try {
                const bounds = tiffLayer.getBounds();
-               map.fitBounds(bounds);
-               debug("Map fitted to TIFF bounds");
+               const restrictedBounds = bounds.intersects(lahoreBounds) ? 
+                 bounds.intersection(lahoreBounds) : lahoreBounds;
+               map.fitBounds(restrictedBounds);
+               
+               // Force a more zoomed out view to see the entire TIFF layer
+               // Start with a default zoom level that shows more of the map
+               const currentZoom = map.getZoom();
+               if (currentZoom > 12) {
+                 map.setZoom(11);
+               }
+               
+               debug("Map fitted to TIFF bounds with proper zoom level");
              } catch(e) {
                debug("Could not fit to bounds: " + e.message);
+               // Default zoom out in case of error
+               map.setView([31.5204, 74.3587], 11);
              }
              
              debug("TIFF loaded successfully");
@@ -883,21 +845,31 @@ const LahoreMap = () => {
   const handleLocationSelect = location => {
     // Close any open dropdowns
     setShowDropdown(false);
+    // Check if location is in Lahore
+    if (!location.name.toLowerCase().includes('lahore')) {
+      showLahoreOnlyNotification();
+      location = {
+        name: 'Lahore',
+        lat: 31.5204,
+        lon: 74.3587,
+        description: 'City in Pakistan',
+      };
+    }
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-     goToLocation(
-       ${location.lat}, 
-       ${location.lon}, 
-       "${location.name.replace(/"/g, '\\"')}", 
-       "${
-         location.description
-           ? location.description.replace(/"/g, '\\"')
-           : 'Selected location'
-       }"
-     );
-     true;
-   `;
+       goToLocation(
+         ${location.lat}, 
+         ${location.lon}, 
+         "${location.name.replace(/"/g, '\\"')}", 
+         "${
+           location.description
+             ? location.description.replace(/"/g, '\\"')
+             : 'Selected location'
+         }"
+       );
+       true;
+     `;
       webViewRef.current.injectJavaScript(script);
       setStatus(`Navigated to ${location.name}`);
     }
@@ -934,37 +906,26 @@ const LahoreMap = () => {
       }
       // Process search-related messages
       else if (data.type === 'searchResults') {
-        // Handle search results
-        setSearchResults(data.results || []);
-        if (data.results && data.results.length > 0) {
+        // Filter to only include Lahore results and remove generic "Lahore" entry
+        const lahoreResults = data.results
+          ? data.results.filter(item => {
+              // Include item if it has Lahore in the name but is not just "Lahore"
+              return item.name.toLowerCase().includes('lahore');
+            })
+          : [];
+
+        setSearchResults(lahoreResults);
+        if (lahoreResults.length > 0) {
           setShowDropdown(true);
-          setStatus(`Found ${data.results.length} locations`);
+          setStatus(`Found ${lahoreResults.length} locations in Lahore`);
         } else {
           setShowDropdown(false);
-          setStatus('No locations found');
-        }
-      } else if (data.type === 'localSearch') {
-        // Perform local search
-        const results = performLocalSearch(data.query);
-        if (results.length > 0) {
-          setSearchResults(results);
-          setShowDropdown(true);
-          setStatus(`Found ${results.length} local locations`);
+          setStatus('No locations found in Lahore');
         }
       } else if (data.type === 'searchError') {
         console.warn('Search error:', data.error);
-        // Try local search as fallback
-        if (data.query) {
-          const results = performLocalSearch(data.query);
-          if (results.length > 0) {
-            setSearchResults(results);
-            setShowDropdown(true);
-            setStatus(`Found ${results.length} local locations`);
-          } else {
-            setShowDropdown(false);
-            setStatus('No locations found');
-          }
-        }
+        setStatus('Error searching: ' + data.error);
+        setShowDropdown(false);
       }
     } catch (e) {
       // Not JSON data, handle as regular message
@@ -986,6 +947,11 @@ const LahoreMap = () => {
     if (showPollutionCard) {
       setShowPollutionCard(false);
     }
+  };
+
+  // Function to select a pollutant type from AQI indicator
+  const handlePollutantSelect = () => {
+    setShowPollutantDropdown(!showPollutantDropdown);
   };
 
   return (
@@ -1030,7 +996,6 @@ const LahoreMap = () => {
                 <ActivityIndicator size="large" color="#FFD700" />
               </View>
             )}
-            // All the WebView props remain the same
             containerStyle={{flex: 1}}
             nestedScrollEnabled={true}
             scalesPageToFit={false}
@@ -1050,12 +1015,12 @@ const LahoreMap = () => {
             allowsInlineMediaPlayback={true}
             allowsBackForwardNavigationGestures={false}
             injectedJavaScript={`
-            if (map) {
-              map.invalidateSize();
-              debug("Map size invalidated to ensure proper rendering");
-            }
-            true;
-          `}
+           if (map) {
+             map.invalidateSize();
+             debug("Map size invalidated to ensure proper rendering");
+           }
+           true;
+         `}
           />
         </TouchableOpacity>
 
@@ -1064,7 +1029,6 @@ const LahoreMap = () => {
           <SearchBox
             webViewRef={webViewRef}
             webViewLoaded={webViewLoaded}
-            allLocations={allLocations}
             setStatus={setStatus}
             onLocationSelect={handleLocationSelect}
             searchResults={searchResults}
@@ -1118,35 +1082,34 @@ const LahoreMap = () => {
           </>
         )}
 
-        {/* Pollution Information Card - Only shows when a marker is clicked */}
-        {showPollutionCard && selectedMarkerData && (
-          <View style={styles.pollutionInfoCardContainer}>
-            <View style={styles.pollutionInfoCard}>
-              <Text style={styles.pollutionInfoSource}>
-                {selectedMarkerData.source}, {selectedMarkerData.location}
-              </Text>
-              <Text style={styles.pollutionInfoType}>
-                {selectedMarkerData.type}
-              </Text>
-              <Text style={styles.pollutionInfoValue}>
-                {selectedMarkerData.value}
-              </Text>
-              <View style={styles.pollutionInfoStatus}>
-                <Text style={styles.pollutionInfoStatusText}>
-                  {selectedMarkerData.status}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* AQI Indicator */}
-        <View style={styles.aqiIndicator}>
+        {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
+        <TouchableOpacity
+          style={styles.aqiIndicator}
+          onPress={handlePollutantSelect}>
           <Text style={styles.aqiText}>AQI</Text>
           <Text style={styles.aqiValue}>
             {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
           </Text>
-        </View>
+        </TouchableOpacity>
+
+        {/* Second: Location Button - Positioned directly below AQI indicator */}
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={() => {
+            if (webViewRef.current && webViewLoaded) {
+              const script = `
+        map.setView([31.5204, 74.3587], 12);
+        true;
+      `;
+              webViewRef.current.injectJavaScript(script);
+            }
+          }}>
+          {/* Replace the Text component with an Image or Icon component */}
+          <Image
+            source={require('../../assets/icons/current-location.png')}
+            style={{width: 60, height: 60}}
+          />
+        </TouchableOpacity>
 
         {/* Pollutant Selection Button */}
         <TouchableOpacity
@@ -1188,6 +1151,31 @@ const LahoreMap = () => {
           </View>
         )}
 
+        {/* Add this after the Pollutant Selection Button */}
+        {currentLayer && (
+          <TouchableOpacity
+            style={styles.removeLayerButton}
+            onPress={() => {
+              if (webViewRef.current && webViewLoaded) {
+                const script = `
+                  if (tiffLayer) {
+                    map.removeLayer(tiffLayer);
+                    tiffLayer = null;
+                    debug("Removed TIFF layer");
+                  }
+                  clearCSVMarkers();
+                  true;
+                `;
+                webViewRef.current.injectJavaScript(script);
+                setCurrentLayer(null);
+                setCsvMarkers([]);
+                setStatus('Layer removed');
+              }
+            }}>
+            <Text style={styles.removeLayerButtonText}>Remove Layer</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Touch handler to close dropdowns when clicking outside */}
         {(showPollutantDropdown || showPollutionCard) && (
           <TouchableOpacity
@@ -1205,6 +1193,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  // MODIFIED: Location button now positioned further below AQI indicator
+  locationButton: {
+    position: 'absolute',
+    left: 20,
+    bottom: 20, // Bottom position = AQI bottom (20) + AQI height (~70)
+    backgroundColor: '#222',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    zIndex: 10,
+  },
+  locationIcon: {
+    fontSize: 24,
+    color: 'white',
+  },
+  removeLayerButton: {
+    position: 'absolute',
+    top: 120,
+    right: 15,
+    backgroundColor: 'rgba(255, 0, 0, 0.7)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    zIndex: 8,
+  },
+  removeLayerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   header: {
     position: 'absolute',
@@ -1309,10 +1331,11 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
   },
+  // MODIFIED: Added styling to make AQI indicator look clickable
   aqiIndicator: {
     position: 'absolute',
     left: 20,
-    bottom: 20,
+    bottom: 80, // Higher position from bottom
     backgroundColor: '#4CAF50', // Green for good AQI
     padding: 10,
     borderRadius: 5,
@@ -1320,15 +1343,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 10,
   },
+  // MODIFIED: Added underline to indicate text is clickable
   aqiText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 12,
+    textDecorationLine: 'underline',
   },
+  // MODIFIED: Added underline to indicate text is clickable
   aqiValue: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+    textDecorationLine: 'underline',
   },
   loadingContainer: {
     position: 'absolute',

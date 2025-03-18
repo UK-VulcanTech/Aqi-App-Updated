@@ -9,6 +9,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 // import LoginScreen from './src/screens/LoginScreen';
 import Login from './src/components/auth/Login';
+import ReankingsScreen from './src/screens/RankingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -76,7 +77,7 @@ function App() {
         />
         <Tab.Screen
           name="Ranking"
-          component={ProfileScreen}
+          component={ReankingsScreen}
           options={{
             tabBarIcon: profileIconRender,
           }}

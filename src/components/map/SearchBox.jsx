@@ -13,7 +13,6 @@ import {
 const SearchBox = ({
   webViewRef,
   webViewLoaded,
-  allLocations,
   setStatus,
   onLocationSelect,
   searchResults,
@@ -22,25 +21,6 @@ const SearchBox = ({
   setShowDropdown,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Function to perform dynamic local search
-  const performLocalSearch = query => {
-    if (!query || query.length < 2) {
-      return [];
-    }
-
-    query = query.toLowerCase();
-
-    // Search through all locations dynamically
-    const results = allLocations.filter(
-      location =>
-        location.name.toLowerCase().includes(query) ||
-        (location.description &&
-          location.description.toLowerCase().includes(query)),
-    );
-
-    return results.slice(0, 5);
-  };
 
   // Handle search
   const handleSearch = () => {
@@ -63,16 +43,6 @@ const SearchBox = ({
       `;
       webViewRef.current.injectJavaScript(script);
       setShowDropdown(true);
-    } else {
-      // Fallback to local search if WebView isn't ready
-      const results = performLocalSearch(searchQuery);
-      setSearchResults(results);
-      setShowDropdown(results.length > 0);
-      setStatus(
-        results.length > 0
-          ? `Found ${results.length} locations`
-          : 'No locations found',
-      );
     }
   };
 

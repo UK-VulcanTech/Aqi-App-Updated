@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -45,9 +46,14 @@ const Pagination = ({currentPage, totalPages, onPageChange}) => {
   );
 };
 
-const ReankingsScreen = () => {
+const ReankingScreen = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 7;
+  const navigation = useNavigation();
+
+  const goToDashboard = () => {
+    navigation.navigate('Home');
+  };
 
   const data = [
     {
@@ -113,6 +119,14 @@ const ReankingsScreen = () => {
         <View style={styles.headerLine} />
 
         <View style={styles.content}>
+          <View style={styles.dashboardButtonContainer}>
+            <TouchableOpacity
+              style={styles.dashboardButton}
+              onPress={goToDashboard}>
+              <Text style={styles.dashboardButtonText}>Dashboard</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.headerInfo}>
             <Text style={styles.infoText}>Sensor Reading Records</Text>
             <Text style={styles.infoText}>06 March 2025</Text>
@@ -192,11 +206,27 @@ const styles = StyleSheet.create({
     width: '95%',
     alignSelf: 'center',
   },
+  dashboardButtonContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 12,
+  },
+  dashboardButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  dashboardButtonText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 14,
+  },
   headerInfo: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     width: '100%',
     justifyContent: 'space-between',
     marginBottom: 24,
+    gap: 8,
   },
   infoText: {
     color: '#878787',
@@ -271,4 +301,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReankingsScreen;
+export default ReankingScreen;

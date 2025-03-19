@@ -1,3 +1,4 @@
+import {useNavigation} from '@react-navigation/native';
 import React, {useState} from 'react';
 import {
   View,
@@ -7,18 +8,17 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
 
-const Dashboard = () => {
+const HomeScreen = () => {
+  const navigation = useNavigation();
+
   const [location, setLocation] = useState('Lahore-Punjab, Pakistan');
   const [sensor, setSensor] = useState('GAIA A12, MQ-135');
   const [gaiaReading, setGaiaReading] = useState('50-300 μg/m³');
   const [mqReading, setMqReading] = useState('50-300 μg/m³');
 
-  const navigation = useNavigation();
-
-  const goToHistory = () => {
-    navigation.navigate('History');
+  const gotoHistory = () => {
+    navigation.navigate('Ranking');
   };
 
   return (
@@ -28,7 +28,7 @@ const Dashboard = () => {
         <View style={styles.headerLine} />
 
         <View style={styles.historyButtonContainer}>
-          <TouchableOpacity style={styles.historyButton} onPress={goToHistory}>
+          <TouchableOpacity style={styles.historyButton} onPress={gotoHistory}>
             <Text style={styles.historyButtonText}>History</Text>
           </TouchableOpacity>
         </View>
@@ -46,7 +46,7 @@ const Dashboard = () => {
               <TextInput
                 value={location}
                 onChangeText={setLocation}
-                style={styles.redInput}
+                style={styles.input}
                 placeholderTextColor="#FF5757"
               />
             </View>
@@ -58,7 +58,7 @@ const Dashboard = () => {
               <TextInput
                 value={sensor}
                 onChangeText={setSensor}
-                style={styles.redInput}
+                style={styles.input}
                 placeholderTextColor="#FF5757"
               />
               <TouchableOpacity style={styles.dropdownButton}>
@@ -80,7 +80,7 @@ const Dashboard = () => {
               placeholderTextColor="#777"
             />
 
-            <Text style={[styles.sensorSubLabel, {marginTop: 15}]}>MQ-135</Text>
+            <Text style={[styles.sensorSubLabel]}>MQ-135</Text>
             <TextInput
               value={mqReading}
               onChangeText={setMqReading}
@@ -101,7 +101,6 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  // All your existing styles...
   scrollContainer: {
     flex: 1,
     backgroundColor: '#f0f0f0',
@@ -193,21 +192,14 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
   },
   locationIcon: {
-    color: '#FF5757',
+    color: '#878787',
     marginRight: 5,
   },
   input: {
     padding: 14,
     paddingLeft: 5,
     width: '90%',
-    color: '#333333',
-    fontSize: 16,
-  },
-  redInput: {
-    padding: 14,
-    paddingLeft: 5,
-    width: '90%',
-    color: '#FF5757',
+    color: '#878787',
     fontSize: 16,
   },
   dropdownButton: {
@@ -226,7 +218,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 'auto',
     alignItems: 'center',
-    paddingTop: 24,
+    // paddingTop: 16,
   },
   submitButton: {
     backgroundColor: '#10B981',
@@ -250,4 +242,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Dashboard;
+export default HomeScreen;

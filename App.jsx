@@ -2,17 +2,21 @@ import React from 'react';
 import {StyleSheet, Image} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createStackNavigator} from '@react-navigation/stack';
 import LahoreMap from './src/components/map/LahoreMap';
 
-// Import or create these additional screens
+// Import screens
 import HomeScreen from './src/screens/HomeScreen';
-import Login from './src/components/auth/Login';
+import LoginScreen from './src/screens/LoginScreen';
 import ReankingScreen from './src/screens/RankingScreen';
+import AdminDashboard from './src/components/admin/AdminDashboard';
+import CreateUser from './src/components/admin/CreateUser';
+import Profile from './src/components/admin/Profile';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-// Define all icon render functions outside of the component completely
-
+// Icon renderers
 const homeIconRender = ({focused}) => (
   <Image
     source={require('./src/assets/icons/home_outline.png')}
@@ -25,20 +29,31 @@ const mapIconRender = ({focused}) => (
     style={focused ? styles.activeIcon : styles.inactiveIcon}
   />
 );
-
 const loginIconRender = ({focused}) => (
   <Image
     source={require('./src/assets/icons/profile.png')}
     style={focused ? styles.activeIcon : styles.inactiveIcon}
   />
 );
-
 const profileIconRender = ({focused}) => (
   <Image
     source={require('./src/assets/icons/ranking.png')}
     style={focused ? styles.activeIcon : styles.inactiveIcon}
   />
 );
+
+// Create a stack for the Login flow
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+      <Stack.Screen name="CreateUser" component={CreateUser} />
+      <Stack.Screen name="Profile" component={Profile} />
+      {/* <Stack.Screen name="CreateUser" component={CreateUser} /> */}
+    </Stack.Navigator>
+  );
+}
 
 function App() {
   return (
@@ -49,7 +64,7 @@ function App() {
           tabBarInactiveTintColor: 'gray',
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#2A2F34', // Adding red background color to the tab bar
+            backgroundColor: '#2A2F34',
           },
         }}>
         <Tab.Screen
@@ -68,7 +83,7 @@ function App() {
         />
         <Tab.Screen
           name="Login"
-          component={Login}
+          component={AuthStack}
           options={{
             tabBarIcon: loginIconRender,
           }}

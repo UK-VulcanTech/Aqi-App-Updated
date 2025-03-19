@@ -9,8 +9,15 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const LoginScreen = () => {
+  const navigation = useNavigation();
+
+  const goToAdmin = () => {
+    navigation.navigate('AdminDashboard');
+  };
+
   return (
     <View style={styles.container}>
       {/* Background image as a container */}
@@ -38,22 +45,46 @@ const LoginScreen = () => {
 
             <View style={styles.inputContainer}>
               {/* Email Field */}
-              <TextInput
-                style={styles.input}
-                placeholder="Email Address"
-                placeholderTextColor="#757575"
-              />
+              {/* Email Field */}
+              <View style={styles.inputWrapper}>
+                <View style={styles.input}>
+                  <Image
+                    source={require('../assets/icons/mail.png')}
+                    style={styles.inputIcon}
+                    resizeMode="contain"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email Address"
+                    placeholderTextColor="#757575"
+                  />
+                </View>
+              </View>
 
               {/* Password Field */}
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#757575"
-                secureTextEntry
-              />
+              <View style={styles.inputWrapper}>
+                <View style={styles.input}>
+                  <Image
+                    source={require('../assets/icons/password.png')}
+                    style={styles.inputIcon}
+                    resizeMode="contain"
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor="#757575"
+                    secureTextEntry
+                  />
+                </View>
+                <Text style={styles.forgotPassword}>Forgot Password?</Text>
+              </View>
 
               {/* Login Button */}
-              <TouchableOpacity style={styles.loginButton}>
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={goToAdmin}
+                activeOpacity={0.7} // Add this for better touch feedback
+              >
                 <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -79,16 +110,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Semi-transparent overlay
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Darker overlay to match screenshot
   },
   innerContainer: {
     width: '100%',
     height: '100%',
-    padding: 24,
-    alignItems: 'center',
+    padding: 20,
   },
   logoContainer: {
-    marginTop: height * 0.16,
+    marginTop: height * 0.1, // Reduced top margin
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -97,42 +127,87 @@ const styles = StyleSheet.create({
     width: width * 0.8,
   },
   welcomeContainer: {
-    alignItems: 'center',
-    marginTop: 30,
+    width: '100%',
+    marginTop: 20,
     marginBottom: 16,
+    paddingHorizontal: 10,
   },
   welcomeText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'black',
+    fontSize: 45,
+    fontWeight: '700',
+    color: '#FFF',
+    textAlign: 'left',
+    fontFamily: 'Poppins',
+    fontStyle: 'normal',
+    lineHeight: 45,
+    textShadowColor: 'rgba(0, 0, 0, 0.50)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
   },
   subText: {
-    fontSize: 16,
-    color: '#837d7d',
-    textAlign: 'center',
-    marginTop: 8,
+    fontSize: 18,
+    fontWeight: '400',
+    color: '#FFF',
+    textAlign: 'left',
+    fontFamily: 'Poppins',
+    fontStyle: 'normal',
+    lineHeight: 18,
+    textShadowColor: 'rgba(0, 0, 0, 0.25)',
+    textShadowOffset: {width: 0, height: 4},
+    textShadowRadius: 4,
+    marginTop: 5,
   },
-  inputContainer: {
-    width: '90%',
-    marginTop: 20,
+  inputWrapper: {
+    marginBottom: 16,
   },
   input: {
     width: '100%',
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 25,
+    height: 67,
+    flexShrink: 0,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: '#2A2F34',
-    fontSize: 16,
+    borderColor: '#CECECE',
+    backgroundColor: '#FFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+    tintColor: '#757575',
+  },
+  inputContainer: {
+    width: '100%', // Take 90% of the parent width
+    alignSelf: 'center', // Center the container
+    marginTop: 20,
+  },
+  forgotPassword: {
+    color: 'red',
+    textAlign: 'right',
+    marginTop: 5,
+    fontSize: 14,
   },
   loginButton: {
-    width: '100%',
-    padding: 14,
-    backgroundColor: '#0EA959',
-    borderRadius: 25,
+    display: 'flex',
+    width: '100%', // Making it responsive while matching your design
+    height: 66,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    flexShrink: 0,
+    borderRadius: 79,
+    backgroundColor: '#0EA959',
+    marginTop: 20,
+    // React Native shadow properties (equivalent to box-shadow)
+    shadowColor: 'rgba(0, 0, 0, 0.25)',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 5, // For Android shadow
   },
   buttonText: {
     color: 'white',
@@ -142,3 +217,5 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+
+// rgba(255, 255, 255, 0.5)

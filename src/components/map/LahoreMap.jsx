@@ -9,13 +9,15 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  Keyboard,
+  // Keyboard,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
+// import {SafeAreaView} from 'react-native-safe-area-context';
 
 const LahoreMap = () => {
   const [status, setStatus] = useState('Ready');
@@ -30,7 +32,7 @@ const LahoreMap = () => {
   const [showPollutionCard, setShowPollutionCard] = useState(false);
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
   const [csvMarkers, setCsvMarkers] = useState([]);
-  const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
+  // const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -68,11 +70,17 @@ const LahoreMap = () => {
 
   // Helper function to determine status based on value
   const getStatusFromValue = value => {
-    if (value < 0.2) return 'Good';
-    else if (value < 0.4) return 'Moderate';
-    else if (value < 0.6) return 'Unhealthy for Sensitive Groups';
-    else if (value < 0.8) return 'Unhealthy';
-    else return 'Hazardous';
+    if (value < 0.2) {
+      return 'Good';
+    } else if (value < 0.4) {
+      return 'Moderate';
+    } else if (value < 0.6) {
+      return 'Unhealthy for Sensitive Groups';
+    } else if (value < 0.8) {
+      return 'Unhealthy';
+    } else {
+      return 'Hazardous';
+    }
   };
 
   // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging
@@ -203,7 +211,7 @@ const LahoreMap = () => {
          scrollWheelZoom: false,
          zoomDelta: 1,
          zoomSnap: 1,
-         minZoom: 11,
+         minZoom: 6,
          maxZoom: 18
        }).setView([31.5204, 74.3587], 12);
        
@@ -549,7 +557,9 @@ const LahoreMap = () => {
 
   // Function to load and parse CSV data
   const loadCSVData = async layer => {
-    if (!layer) return;
+    if (!layer) {
+      return;
+    }
 
     try {
       setCsvLoading(true);
@@ -965,7 +975,7 @@ const LahoreMap = () => {
   }, [webViewLoaded]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Map View - Full Screen */}
       <View style={styles.mapCardContainer}>
         <View style={styles.mapTouchable} pointerEvents="box-none">
@@ -1125,7 +1135,7 @@ const LahoreMap = () => {
           {/* Replace the Text component with an Image or Icon component */}
           <Image
             source={require('../../assets/icons/current-location.png')}
-            style={{width: 24, height: 24}}
+            style={{width: 54, height: 54, marginLeft: 15}}
           />
         </TouchableOpacity>
 
@@ -1225,7 +1235,7 @@ const LahoreMap = () => {
           />
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

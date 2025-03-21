@@ -1,4 +1,4 @@
-// LahoreMap.js
+// DummyMap.js
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
@@ -17,7 +17,7 @@ import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
 
-const LahoreMap = () => {
+const DummyMap = () => {
   const [status, setStatus] = useState('Ready');
   const [tiffLoading, setTiffLoading] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -75,7 +75,7 @@ const LahoreMap = () => {
     else return 'Hazardous';
   };
 
-  // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging
+  // Initial HTML with Leaflet map - modified for single-finger dragging
   const htmlContent = `
    <!DOCTYPE html>
    <html>
@@ -93,9 +93,11 @@ const LahoreMap = () => {
          height: 100%; 
          width: 100%;
          overflow: hidden;
-         touch-action: none;
-         -webkit-user-select: none;
+         touch-action: none !important;
+         -ms-touch-action: none !important;
+         -webkit-overflow-scrolling: touch;
          user-select: none;
+         -webkit-user-select: none;
        }
        #map { 
          position: absolute; 
@@ -103,18 +105,22 @@ const LahoreMap = () => {
          bottom: 0; 
          width: 100%; 
          height: 100%;
-         touch-action: none;
+         touch-action: none !important;
+         -ms-touch-action: none !important;
          z-index: 1;
+         background-color: #f2f2f2;
        }
        .leaflet-container {
-         touch-action: none;
-         -ms-touch-action: none;
+         touch-action: none !important;
+         -ms-touch-action: none !important;
+         cursor: grab;
+         background: #f2f2f2;
        }
-       .leaflet-marker-icon,
-       .leaflet-marker-shadow,
-       .leaflet-image-layer,
-       .leaflet-pane > svg path {
-         pointer-events: auto !important;
+       .leaflet-dragging .leaflet-container {
+         cursor: grabbing;
+       }
+       .leaflet-tile-container {
+         opacity: 1 !important;
        }
        .custom-popup .leaflet-popup-content-wrapper {
          background: rgba(255, 255, 255, 0.9);
@@ -188,93 +194,145 @@ const LahoreMap = () => {
        <div class="zoom-btn" id="zoom-out">-</div>
      </div>
      <script>
-       // Force touch detection
+       // Force mobile detection
        L.Browser.touch = true;
        L.Browser.pointer = false;
        L.Browser.mobile = true;
        
-       // Very simple map initialization to avoid conflicts
+       // Initialize map
        var map = L.map('map', {
-         zoomControl: true,
+         zoomControl: false,
+         tap: false,
          dragging: true,
-         tap: true,
-         touchZoom: true,
-         keyboard: false,
-         scrollWheelZoom: false,
-         zoomDelta: 1,
-         zoomSnap: 1,
-         minZoom: 11,
-         maxZoom: 18
-       }).setView([31.5204, 74.3587], 12);
+         touchZoom: false,      // Disable touch zoom
+         doubleClickZoom: false, // Disable double click zoom
+         scrollWheelZoom: false, // Disable scroll wheel zoom
+         boxZoom: false,        // Disable box zoom
+         keyboard: false,       // Disable keyboard navigation
+         bounceAtZoomLimits: false,
+         inertia: true,
+         inertiaDeceleration: 1000,
+         inertiaMaxSpeed: 500,
+         minZoom: 9,
+         maxZoom: 16,
+         maxBoundsViscosity: 1.0,
+         attributionControl: false,
+         preferCanvas: true
+       }).setView([31.5204, 74.3587], 10);
+       
+       // Force enable dragging
+       map.dragging.enable();
+       
+       // Disable all zoom handlers to prevent any zooming from touch
+       map.touchZoom.disable();
+       map.doubleClickZoom.disable();
        
        // Define Lahore bounds
        const lahoreBounds = L.latLngBounds(
-         L.latLng(31.3, 74.1),  // Southwest corner
-         L.latLng(31.7, 74.6)   // Northeast corner
+         L.latLng(31.2, 74.0),
+         L.latLng(31.8, 74.7)
        );
 
        map.setMaxBounds(lahoreBounds);
        
-       // Add OpenStreetMap base layer
-       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-         attribution: '&copy; OpenStreetMap contributors'
-       }).addTo(map);
+       // Gentler bounds handling
+       map.on('dragend', function() {
+         map.panInsideBounds(lahoreBounds, { animate: true, duration: 0.5 });
+       });
+
+       // Prevent zooming from map events
+       map.on('zoomstart', function(e) {
+         // Only allow programmatic zooming through buttons
+         if (!window.programmaticZoom) {
+           e.target._zoom = e.target._oldZoom;
+           return false;
+         }
+       });
+
+       map.on('moveend', function() {
+         map.panInsideBounds(lahoreBounds, { animate: true });
+       });
        
        var tiffLayer = null;
        var markers = [];
        var csvMarkers = [];
        var currentInfoBox = null;
+       var visibleCsvMarkers = true;
+       
+       // Add OpenStreetMap base layer
+       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+         attribution: '&copy; OpenStreetMap contributors',
+         subdomains: 'abc',
+         minZoom: 9,
+         maxZoom: 16,
+         tileSize: 256
+       }).addTo(map);
        
        // Debug function to send messages back to React Native
        function debug(message) {
          window.ReactNativeWebView.postMessage(message);
        }
        
-       // Critical fix: ensure dragging is enabled
-       function forceEnableDragging() {
-         if (map) {
-           map.dragging.enable();
-           map.touchZoom.enable();
-           debug("Map dragging explicitly enabled");
-         }
-       }
-       
-       // Call this immediately and periodically
-       forceEnableDragging();
-       setInterval(forceEnableDragging, 2000);
-       
-       // Specific handler for touch events
+       // Make touch events passive for better performance
        document.addEventListener('touchstart', function(e) {
-         forceEnableDragging();
-         if (e.touches.length > 1) {
-           map._enforcingBounds = false;
-         }
+         // Allow touch events for dragging
        }, {passive: true});
        
-       // Connect zoom button events - improved to respect min/max zoom
+       document.addEventListener('touchmove', function(e) {
+         // Allow touch events for dragging
+       }, {passive: true});
+       
+       document.addEventListener('touchend', function(e) {
+         // Allow touch events for dragging
+       }, {passive: true});
+       
+       // Connect zoom button events
        document.getElementById('zoom-in').addEventListener('click', function() {
-         zoomMap('in');
+         window.programmaticZoom = true;
+         map.zoomIn();
+         window.programmaticZoom = false;
        });
        
        document.getElementById('zoom-out').addEventListener('click', function() {
-         zoomMap('out');
+         window.programmaticZoom = true;
+         map.zoomOut();
+         window.programmaticZoom = false;
        });
        
-       // Improved function to zoom the map programmatically with proper limits
-       function zoomMap(direction) {
-         const currentZoom = map.getZoom();
-         
-         if (direction === 'in') {
-           if (currentZoom < 18) {
-             map.setZoom(currentZoom + 1);
-             debug("Zoomed in to level: " + map.getZoom());
-           }
-         } else if (direction === 'out') {
-           if (currentZoom > 11) {
-             map.setZoom(currentZoom - 1);
-             debug("Zoomed out to level: " + map.getZoom());
-           }
+       // Let React Native know the map is ready
+       debug("Map initialized");
+       
+       // Force re-enable dragging periodically
+       setInterval(function() {
+         if (map && map.dragging) {
+           map.dragging.enable();
          }
+       }, 2000);
+       
+       // Function to zoom the map programmatically
+       function zoomMap(direction) {
+         window.programmaticZoom = true;
+         if (direction === 'in') {
+           map.zoomIn();
+           debug("Zoomed in to level: " + map.getZoom());
+         } else if (direction === 'out') {
+           map.zoomOut();
+           debug("Zoomed out to level: " + map.getZoom());
+         }
+         window.programmaticZoom = false;
+       }
+       
+       // Function to toggle CSV marker visibility
+       function toggleCsvMarkers(show) {
+         visibleCsvMarkers = show;
+         csvMarkers.forEach(marker => {
+           if (show) {
+             marker.setStyle({opacity: 0.8, fillOpacity: 0.6});
+           } else {
+             marker.setStyle({opacity: 0, fillOpacity: 0});
+           }
+         });
+         debug("CSV markers visibility set to: " + show);
        }
        
        // Function to search for a location
@@ -283,7 +341,7 @@ const LahoreMap = () => {
          
          fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
            headers: {
-             'User-Agent': 'LahoreMapApp/1.0'
+             'User-Agent': 'DummyMapApp/1.0'
            }
          })
            .then(response => response.json())
@@ -293,7 +351,7 @@ const LahoreMap = () => {
                  .filter(item => {
                    const lat = parseFloat(item.lat);
                    const lon = parseFloat(item.lon);
-                   return lat >= 31.3 && lat <= 31.7 && lon >= 74.1 && lon <= 74.6;
+                   return lat >= 31.2 && lat <= 31.8 && lon >= 74.0 && lon <= 74.7;
                  })
                  .slice(0, 5)
                  .map(item => ({
@@ -336,8 +394,12 @@ const LahoreMap = () => {
            description = "City in Pakistan";
          }
          
+         window.programmaticZoom = true;
          map.setView([lat, lon], 13);
+         window.programmaticZoom = false;
+         
          addMarker(lat, lon, title, description);
+         
          debug("Moved to location: " + title);
        }
        
@@ -376,20 +438,22 @@ const LahoreMap = () => {
          debug("Cleared CSV markers");
        }
 
-       // Function to add CSV data points as invisible markers
+       // Function to add CSV data points as markers
        function addCSVMarkers(points) {
-         debug("Adding " + points.length + " invisible CSV markers");
+         debug("Adding " + points.length + " CSV markers");
          
          points.forEach(point => {
+           // Create circular markers - initially visible
            const circleMarker = L.circleMarker([point.lat, point.lon], {
-             radius: 15,
+             radius: 8, 
              fillColor: getValueColor(point.value),
              color: '#fff',
-             weight: 0,
-             opacity: 0,
-             fillOpacity: 0
+             weight: 1,
+             opacity: visibleCsvMarkers ? 0.8 : 0,
+             fillOpacity: visibleCsvMarkers ? 0.6 : 0
            }).addTo(map);
            
+           // Add popup with value information
            circleMarker.bindPopup(
              '<div class="marker-info">' +
              '<div class="marker-title">' + point.type + '</div>' +
@@ -398,6 +462,7 @@ const LahoreMap = () => {
              '</div>'
            );
            
+           // Add click handler to notify React Native
            circleMarker.on('click', function(e) {
              window.ReactNativeWebView.postMessage(JSON.stringify({
                type: 'csvMarkerClick',
@@ -413,19 +478,19 @@ const LahoreMap = () => {
            csvMarkers.push(circleMarker);
          });
          
-         debug("Added " + points.length + " invisible CSV markers");
+         debug("Added " + points.length + " CSV markers");
        }
 
        // Helper function to get color based on value
        function getValueColor(value) {
-         if (value < 0.2) return '#00FF00';
-         else if (value < 0.4) return '#FFFF00';
-         else if (value < 0.6) return '#FFA500';
-         else if (value < 0.8) return '#FF0000';
-         else return '#800080';
+         if (value < 0.2) return '#00FF00';      // green (low)
+         else if (value < 0.4) return '#FFFF00'; // yellow (medium-low)
+         else if (value < 0.6) return '#FFA500'; // orange (medium)
+         else if (value < 0.8) return '#FF0000'; // red (medium-high)
+         else return '#800080';                  // purple (high)
        }
        
-       // Simplified function to display information about current view
+       // Function to display information about current view
        function showCurrentLocation() {
          const center = map.getCenter();
          const zoom = map.getZoom();
@@ -463,15 +528,6 @@ const LahoreMap = () => {
        map.on('zoomend', function() {
          debug("Map zoomed to level: " + map.getZoom());
        });
-       
-       // Let React Native know the map is ready
-       debug("Map initialized");
-       
-       // Final initialization to ensure dragging works
-       setTimeout(function() {
-         forceEnableDragging();
-         map.invalidateSize();
-       }, 1000);
      </script>
    </body>
    </html>
@@ -547,6 +603,17 @@ const LahoreMap = () => {
    else return 'rgba(128, 0, 128, 0.7)';                  // purple (high)
  `;
 
+  // Toggle CSV marker visibility
+  const toggleCsvMarkerVisibility = visible => {
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        toggleCsvMarkers(${visible});
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  };
+
   // Function to load and parse CSV data
   const loadCSVData = async layer => {
     if (!layer) return;
@@ -599,14 +666,14 @@ const LahoreMap = () => {
           console.log(`Parsed ${parsedMarkers.length} CSV data points`);
           setCsvMarkers(parsedMarkers);
 
-          // Add markers to the map through WebView - now as invisible markers
+          // Add markers to the map through WebView
           if (webViewRef.current && webViewLoaded) {
             const markersScript = `
               try {
                 // Clear existing CSV markers
                 clearCSVMarkers();
                 
-                // Add new markers from CSV data - these will be invisible
+                // Add new markers from CSV data
                 const csvPoints = ${JSON.stringify(parsedMarkers)};
                 addCSVMarkers(csvPoints);
                 true;
@@ -635,7 +702,7 @@ const LahoreMap = () => {
     }
   };
 
-  // Function to load and display a TIFF file - FIXED to properly show entire layer
+  // Function to load and display a TIFF file
   const loadTiffFile = async layer => {
     const filename = layer.filename;
     try {
@@ -701,7 +768,7 @@ const LahoreMap = () => {
       // Use unified color scale for all layers
       const colorScaleCode = getUnifiedColorScale();
 
-      // FIXED: Improved script to load the base64 data with better zoom behavior
+      // Inject script to load the base64 data
       const script = `
        try {
          console.log("WebView: Loading GeoTIFF from base64 data");
@@ -744,6 +811,7 @@ const LahoreMap = () => {
              tiffLayer = new GeoRasterLayer({
                georaster: georaster,
                opacity: 0.7,
+               resolution: 256,
                pixelValuesToColorFn: function(values) {
                  const value = values[0];
                  if (value === null || isNaN(value)) return null;
@@ -758,23 +826,37 @@ const LahoreMap = () => {
              tiffLayer.addTo(map);
              debug("TIFF layer added to map");
              
-             // FIXED: Improved fit bounds functionality to ensure entire TIFF layer is visible
+             // Fit bounds to show entire TIFF
              try {
                const bounds = tiffLayer.getBounds();
-               if (bounds && bounds.isValid()) {
-                 // Force a fairly low zoom level to ensure we see the whole TIFF
-                 map.setView(bounds.getCenter(), 11);
-                 debug("Map view set to center of TIFF at zoom level 11");
-               } else {
-                 throw new Error("Invalid TIFF bounds");
-               }
+               const restrictedBounds = bounds.intersects(lahoreBounds) ? 
+                 bounds.intersection(lahoreBounds) : lahoreBounds;
+               
+               window.programmaticZoom = true;
+               map.fitBounds(restrictedBounds);
+               
+               // Zoom out to show the entire layer
+               setTimeout(() => {
+                 const currentZoom = map.getZoom();
+                 if (currentZoom > 10) {
+                   map.setZoom(9);
+                 }
+                 window.programmaticZoom = false;
+                 
+                 // Re-enable dragging after
+                 // Re-enable dragging after TIFF loads
+                 map.dragging.enable();
+                 debug("Map fitted to TIFF bounds with proper zoom level");
+               }, 300);
              } catch(e) {
                debug("Could not fit to bounds: " + e.message);
-               map.setView([31.5204, 74.3587], 11);
+               // Default zoom out in case of error
+               window.programmaticZoom = true;
+               map.setView([31.5204, 74.3587], 9);
+               window.programmaticZoom = false;
+               map.dragging.enable();
              }
              
-             // Re-enable dragging after loading TIFF
-             forceEnableDragging();
              debug("TIFF loaded successfully");
            } catch(error) {
              debug("Error loading TIFF: " + error.message);
@@ -813,7 +895,7 @@ const LahoreMap = () => {
     }
   };
 
-  // Functions to handle zoom - FIXED to respect min/max zoom levels
+  // Functions to handle zoom
   const handleZoomIn = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
@@ -851,7 +933,7 @@ const LahoreMap = () => {
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-      goToLocation(
+       goToLocation(
          ${location.lat}, 
          ${location.lon}, 
          "${location.name.replace(/"/g, '\\"')}", 
@@ -947,20 +1029,20 @@ const LahoreMap = () => {
     setShowPollutantDropdown(!showPollutantDropdown);
   };
 
-  // Function to periodically force enable map dragging
+  // Add additional useEffect to ensure map panning works after initial load
   useEffect(() => {
     if (webViewLoaded && webViewRef.current) {
-      const interval = setInterval(() => {
-        webViewRef.current.injectJavaScript(`
+      // Force re-enable dragging after a delay
+      setTimeout(() => {
+        const forceEnableDragging = `
           if (map) {
             map.dragging.enable();
-            map.touchZoom.enable();
+            debug("Dragging forcefully re-enabled");
           }
           true;
-        `);
-      }, 3000);
-
-      return () => clearInterval(interval);
+        `;
+        webViewRef.current.injectJavaScript(forceEnableDragging);
+      }, 2000);
     }
   }, [webViewLoaded]);
 
@@ -968,7 +1050,8 @@ const LahoreMap = () => {
     <View style={styles.container}>
       {/* Map View - Full Screen */}
       <View style={styles.mapCardContainer}>
-        <View style={styles.mapTouchable} pointerEvents="box-none">
+        {/* IMPORTANT: Using a plain View instead of TouchableOpacity for map container */}
+        <View style={styles.mapTouchable}>
           <WebView
             ref={webViewRef}
             originWhitelist={['*']}
@@ -977,21 +1060,7 @@ const LahoreMap = () => {
             onLoad={() => {
               setWebViewLoaded(true);
               setStatus('Map loaded');
-
-              // Force enable map interaction on load
-              setTimeout(() => {
-                if (webViewRef.current) {
-                  webViewRef.current.injectJavaScript(`
-                    if (map) {
-                      map.dragging.enable();
-                      map.touchZoom.enable();
-                      map.invalidateSize();
-                      debug("Map interaction explicitly enabled on load");
-                    }
-                    true;
-                  `);
-                }
-              }, 500);
+              showCurrentLocation();
             }}
             onError={syntheticEvent => {
               const {nativeEvent} = syntheticEvent;
@@ -1007,13 +1076,14 @@ const LahoreMap = () => {
               </View>
             )}
             containerStyle={{flex: 1}}
-            nestedScrollEnabled={false}
+            nestedScrollEnabled={true}
             scalesPageToFit={false}
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
             directionalLockEnabled={false}
             androidLayerType="hardware"
-            scrollEnabled={false}
+            scrollEnabled={true}
+            onTouchStart={() => {}} // Empty touch handler to pass events through
             bounces={false}
             allowFileAccess={true}
             useWebKit={true}
@@ -1025,18 +1095,12 @@ const LahoreMap = () => {
             allowsInlineMediaPlayback={true}
             allowsBackForwardNavigationGestures={false}
             injectedJavaScript={`
-              // Force touch detection
-              L.Browser.touch = true;
-              L.Browser.mobile = true;
-              
-              // Make sure map is ready for interaction
-              setTimeout(function() {
-                if (map) {
-                  map.dragging.enable();
-                  map.touchZoom.enable();
-                  map.invalidateSize();
-                }
-              }, 1000);
+              if (map) {
+                map.invalidateSize();
+                // Make absolutely sure dragging is enabled
+                map.dragging.enable();
+                debug("Map size invalidated and dragging re-enabled");
+              }
               true;
             `}
           />
@@ -1056,7 +1120,7 @@ const LahoreMap = () => {
           />
         </View>
 
-        {/* Zoom Controls - Moved to bottom right */}
+        {/* Zoom Controls */}
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
             <Text style={styles.zoomButtonText}>+</Text>
@@ -1066,7 +1130,16 @@ const LahoreMap = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Static marker yellow circles with touch functionality - Now only shown if no CSV data */}
+        {/* Toggle CSV Markers Button */}
+        {csvMarkers.length > 0 && (
+          <TouchableOpacity
+            style={styles.toggleMarkersButton}
+            onPress={() => toggleCsvMarkerVisibility(true)}>
+            <Text style={styles.toggleMarkersText}>Show Points</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Static marker circles with touch functionality - Only shown if no CSV data */}
         {webViewLoaded && csvMarkers.length === 0 && (
           <>
             <TouchableOpacity
@@ -1100,7 +1173,7 @@ const LahoreMap = () => {
           </>
         )}
 
-        {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
+        {/* AQI Indicator */}
         <TouchableOpacity
           style={styles.aqiIndicator}
           onPress={handlePollutantSelect}>
@@ -1110,22 +1183,23 @@ const LahoreMap = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Second: Location Button - Positioned directly below AQI indicator */}
+        {/* Location Button */}
         <TouchableOpacity
           style={styles.locationButton}
           onPress={() => {
             if (webViewRef.current && webViewLoaded) {
               const script = `
-                map.setView([31.5204, 74.3587], 12);
+                window.programmaticZoom = true;
+                map.setView([31.5204, 74.3587], 10);
+                window.programmaticZoom = false;
                 true;
               `;
               webViewRef.current.injectJavaScript(script);
             }
           }}>
-          {/* Replace the Text component with an Image or Icon component */}
           <Image
             source={require('../../assets/icons/current-location.png')}
-            style={{width: 24, height: 24}}
+            style={{width: 30, height: 30}}
           />
         </TouchableOpacity>
 
@@ -1169,7 +1243,7 @@ const LahoreMap = () => {
           </View>
         )}
 
-        {/* Add this after the Pollutant Selection Button */}
+        {/* Remove Layer Button */}
         {currentLayer && (
           <TouchableOpacity
             style={styles.removeLayerButton}
@@ -1194,7 +1268,7 @@ const LahoreMap = () => {
           </TouchableOpacity>
         )}
 
-        {/* Pollution Info Card - Show when a marker is clicked */}
+        {/* Pollution Info Card */}
         {showPollutionCard && selectedMarkerData && (
           <View style={styles.pollutionInfoCardContainer}>
             <View style={styles.pollutionInfoCard}>
@@ -1234,45 +1308,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
-  // FIXED: Improved mapTouchable style for better touch handling
+  mapCardContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   mapTouchable: {
     flex: 1,
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-  },
-  // MODIFIED: Location button now positioned further below AQI indicator
-  locationButton: {
-    position: 'absolute',
-    left: 20,
-    bottom: 20, // Bottom position = AQI bottom (20) + AQI height (~70)
-    backgroundColor: '#222',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#fff',
-    zIndex: 10,
-  },
-  locationIcon: {
-    fontSize: 24,
-    color: 'white',
-  },
-  removeLayerButton: {
-    position: 'absolute',
-    top: 120,
-    right: 15,
-    backgroundColor: 'rgba(255, 0, 0, 0.7)',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    zIndex: 8,
-  },
-  removeLayerButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+    // Important - no pointerEvents restriction
   },
   header: {
     position: 'absolute',
@@ -1280,10 +1322,6 @@ const styles = StyleSheet.create({
     left: 10,
     right: 10,
     zIndex: 10,
-  },
-  mapCardContainer: {
-    flex: 1,
-    position: 'relative',
   },
   zoomControls: {
     position: 'absolute',
@@ -1326,80 +1364,107 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
   },
-  pollutionInfoCardContainer: {
+  toggleMarkersButton: {
     position: 'absolute',
-    top: '35%', // Center vertically
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 20,
+    bottom: 140,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    zIndex: 8,
   },
-  pollutionInfoCard: {
-    width: 250,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 10,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 10,
-  },
-  pollutionInfoSource: {
-    color: 'rgba(255, 0, 0, 0.8)',
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  pollutionInfoType: {
+  toggleMarkersText: {
     color: 'white',
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  pollutionInfoValue: {
-    color: '#FFD700', // Gold color for the value
-    fontSize: 36,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  pollutionInfoStatus: {
-    alignSelf: 'center',
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 20,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  pollutionInfoStatusText: {
-    color: 'black',
+    fontSize: 14,
     fontWeight: 'bold',
   },
-  // MODIFIED: Added styling to make AQI indicator look clickable
   aqiIndicator: {
     position: 'absolute',
     left: 20,
-    bottom: 80, // Higher position from bottom
-    backgroundColor: '#4CAF50', // Green for good AQI
+    bottom: 80,
+    backgroundColor: '#4CAF50',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  // MODIFIED: Added underline to indicate text is clickable
   aqiText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 12,
     textDecorationLine: 'underline',
   },
-  // MODIFIED: Added underline to indicate text is clickable
   aqiValue: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
     textDecorationLine: 'underline',
+  },
+  locationButton: {
+    position: 'absolute',
+    left: 20,
+    bottom: 20,
+    backgroundColor: '#222',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    zIndex: 10,
+  },
+  pollutantButton: {
+    position: 'absolute',
+    top: 80,
+    right: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    zIndex: 8,
+  },
+  pollutantButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  pollutantDropdown: {
+    position: 'absolute',
+    top: 120,
+    right: 15,
+    width: 200,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 10,
+    padding: 5,
+    maxHeight: 250,
+    zIndex: 10,
+  },
+  pollutantDropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  pollutantDropdownText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  removeLayerButton: {
+    position: 'absolute',
+    top: 120,
+    right: 15,
+    backgroundColor: 'rgba(255, 0, 0, 0.7)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    zIndex: 8,
+  },
+  removeLayerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   loadingContainer: {
     position: 'absolute',
@@ -1434,41 +1499,55 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 5,
   },
-  pollutantButton: {
+  pollutionInfoCardContainer: {
     position: 'absolute',
-    top: 80,
-    right: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    zIndex: 8, // Lowered from 10 to be below the search dropdown
+    top: '35%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
   },
-  pollutantButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  pollutantDropdown: {
-    position: 'absolute',
-    top: 120,
-    right: 15,
-    width: 200,
+  pollutionInfoCard: {
+    width: 250,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 10,
-    padding: 5,
-    maxHeight: 250,
-    zIndex: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 10,
   },
-  pollutantDropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  pollutionInfoSource: {
+    color: 'rgba(255, 0, 0, 0.8)',
+    fontSize: 12,
+    marginBottom: 5,
   },
-  pollutantDropdownText: {
+  pollutionInfoType: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  pollutionInfoValue: {
+    color: '#FFD700',
+    fontSize: 36,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  pollutionInfoStatus: {
+    alignSelf: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  pollutionInfoStatusText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
 });
 
-export default LahoreMap;
+export default DummyMap;

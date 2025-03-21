@@ -8,6 +8,7 @@ import {
   ImageBackground,
   StyleSheet,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
@@ -19,7 +20,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Background image as a container */}
       <ImageBackground
         source={require('../assets/images/Building.png')}
@@ -91,7 +92,7 @@ const LoginScreen = () => {
           </View>
         </View>
       </ImageBackground>
-    </View>
+    </SafeAreaView>
   );
 };
 

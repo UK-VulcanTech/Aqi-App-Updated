@@ -8,11 +8,12 @@ import {
   ImageBackground,
   StyleSheet,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
 
 const Login = () => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Background image as a container */}
       <ImageBackground
         source={require('../../assets/images/Building.png')}
@@ -80,7 +81,7 @@ const Login = () => {
           </View>
         </View>
       </ImageBackground>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -83,7 +83,7 @@ const LahoreMap = () => {
     }
   };
 
-  // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging
+  // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging and removed zoom controls
   const htmlContent = `
    <!DOCTYPE html>
    <html>
@@ -125,12 +125,14 @@ const LahoreMap = () => {
          pointer-events: auto !important;
        }
        .custom-popup .leaflet-popup-content-wrapper {
-         background: rgba(255, 255, 255, 0.9);
+         background: rgba(0, 0, 0, 0.8);
          border-radius: 5px;
+         color: white;
        }
        .marker-info {
          padding: 5px;
          font-family: Arial, sans-serif;
+         color: white;
        }
        .marker-title {
          font-weight: bold;
@@ -142,15 +144,16 @@ const LahoreMap = () => {
        .marker-value {
          font-weight: bold;
          font-size: 1.1em;
-         color: #d32f2f;
+         color: #FFD700;
        }
        .marker-coordinates {
          font-size: 0.8em;
-         color: #666;
+         color: #999;
        }
        .info-box {
          padding: 8px;
-         background: white;
+         background: rgba(0, 0, 0, 0.8);
+         color: white;
          border-radius: 5px;
          box-shadow: 0 0 15px rgba(0,0,0,0.2);
          position: absolute;
@@ -160,41 +163,10 @@ const LahoreMap = () => {
          max-width: 300px;
          font-family: Arial, sans-serif;
        }
-       .zoom-controls {
-         position: absolute;
-         top: 20px;
-         right: 20px;
-         z-index: 1000;
-         display: flex;
-         flex-direction: column;
-       }
-       .zoom-btn {
-         width: 40px;
-         height: 40px;
-         background: white;
-         border-radius: 4px;
-         margin-bottom: 8px;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-         font-size: 24px;
-         font-weight: bold;
-         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-         cursor: pointer;
-         user-select: none;
-         -webkit-user-select: none;
-       }
-       .zoom-btn:active {
-         background: #f0f0f0;
-       }
      </style>
    </head>
    <body>
      <div id="map"></div>
-     <div class="zoom-controls">
-       <div class="zoom-btn" id="zoom-in">+</div>
-       <div class="zoom-btn" id="zoom-out">-</div>
-     </div>
      <script>
        // Force touch detection
        L.Browser.touch = true;
@@ -203,7 +175,7 @@ const LahoreMap = () => {
        
        // Very simple map initialization to avoid conflicts
        var map = L.map('map', {
-         zoomControl: true,
+         zoomControl: false,
          dragging: true,
          tap: true,
          touchZoom: true,
@@ -258,15 +230,6 @@ const LahoreMap = () => {
            map._enforcingBounds = false;
          }
        }, {passive: true});
-       
-       // Connect zoom button events - improved to respect min/max zoom
-       document.getElementById('zoom-in').addEventListener('click', function() {
-         zoomMap('in');
-       });
-       
-       document.getElementById('zoom-out').addEventListener('click', function() {
-         zoomMap('out');
-       });
        
        // Improved function to zoom the map programmatically with proper limits
        function zoomMap(direction) {
@@ -645,7 +608,7 @@ const LahoreMap = () => {
     }
   };
 
-  // Function to load and display a TIFF file - FIXED to properly show entire layer
+  // Function to load and display a TIFF file
   const loadTiffFile = async layer => {
     const filename = layer.filename;
     try {
@@ -957,6 +920,18 @@ const LahoreMap = () => {
     setShowPollutantDropdown(!showPollutantDropdown);
   };
 
+  // Function to go to current location (centered on Lahore)
+  const goToCurrentLocation = () => {
+    if (webViewRef.current && webViewLoaded) {
+      const script = `
+        map.setView([31.5204, 74.3587], 12);
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+      setStatus('Returned to Lahore center');
+    }
+  };
+
   // Function to periodically force enable map dragging
   useEffect(() => {
     if (webViewLoaded && webViewRef.current) {
@@ -1066,7 +1041,7 @@ const LahoreMap = () => {
           />
         </View>
 
-        {/* Zoom Controls - Moved to bottom right */}
+        {/* Zoom Controls - Modified with transparent background */}
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
             <Text style={styles.zoomButtonText}>+</Text>
@@ -1120,22 +1095,13 @@ const LahoreMap = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Second: Location Button - Positioned directly below AQI indicator */}
+        {/* Modified: Location Button with functionality */}
         <TouchableOpacity
           style={styles.locationButton}
-          onPress={() => {
-            if (webViewRef.current && webViewLoaded) {
-              const script = `
-                map.setView([31.5204, 74.3587], 12);
-                true;
-              `;
-              webViewRef.current.injectJavaScript(script);
-            }
-          }}>
-          {/* Replace the Text component with an Image or Icon component */}
+          onPress={goToCurrentLocation}>
           <Image
             source={require('../../assets/icons/current-location.png')}
-            style={{width: 54, height: 54, marginLeft: 15}}
+            style={{width: 34, height: 34}}
           />
         </TouchableOpacity>
 
@@ -1204,7 +1170,7 @@ const LahoreMap = () => {
           </TouchableOpacity>
         )}
 
-        {/* Pollution Info Card - Show when a marker is clicked */}
+        {/* Modified: Pollution Info Card - Black background */}
         {showPollutionCard && selectedMarkerData && (
           <View style={styles.pollutionInfoCardContainer}>
             <View style={styles.pollutionInfoCard}>
@@ -1250,24 +1216,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
   },
-  // MODIFIED: Location button now positioned further below AQI indicator
+  // MODIFIED: Location button with transparent background
   locationButton: {
     position: 'absolute',
     left: 20,
-    bottom: 20, // Bottom position = AQI bottom (20) + AQI height (~70)
-    backgroundColor: '#222',
+    bottom: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#fff',
     zIndex: 10,
-  },
-  locationIcon: {
-    fontSize: 24,
-    color: 'white',
   },
   removeLayerButton: {
     position: 'absolute',
@@ -1301,6 +1261,7 @@ const styles = StyleSheet.create({
     bottom: 80,
     zIndex: 10,
   },
+  // Modified: Transparent background for zoom buttons
   zoomButton: {
     width: 40,
     height: 40,
@@ -1344,9 +1305,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 20,
   },
+  // Modified: Black background for pollution info card
   pollutionInfoCard: {
     width: 250,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     borderRadius: 10,
     padding: 15,
     borderWidth: 1,
@@ -1390,26 +1352,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     bottom: 80, // Higher position from bottom
-    backgroundColor: '#4CAF50', // Green for good AQI
+    backgroundColor: 'rgba(76, 175, 80, 0.8)', // Semi-transparent green
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  // MODIFIED: Added underline to indicate text is clickable
   aqiText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 12,
-    textDecorationLine: 'underline',
   },
-  // MODIFIED: Added underline to indicate text is clickable
   aqiValue: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
-    textDecorationLine: 'underline',
   },
   loadingContainer: {
     position: 'absolute',
@@ -1464,7 +1422,7 @@ const styles = StyleSheet.create({
     top: 120,
     right: 15,
     width: 200,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     borderRadius: 10,
     padding: 5,
     maxHeight: 250,

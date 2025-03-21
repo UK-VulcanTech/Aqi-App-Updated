@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 
 const HomeScreen = () => {
@@ -23,7 +24,7 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.scrollContainer}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.headerText}>Dashboard</Text>
         <View style={styles.headerLine} />
 
@@ -95,7 +96,7 @@ const HomeScreen = () => {
             <Text style={styles.submitButtonText}>Submit</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </ScrollView>
   );
 };

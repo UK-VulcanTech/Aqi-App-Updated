@@ -14,7 +14,7 @@ const screenWidth = Dimensions.get('window').width;
 
 const Pagination = ({currentPage, totalPages, onPageChange}) => {
   return (
-    <View style={styles.paginationContainer}>
+    <SafeAreaView style={styles.paginationContainer}>
       <TouchableOpacity
         style={[
           styles.paginationButton,
@@ -42,7 +42,7 @@ const Pagination = ({currentPage, totalPages, onPageChange}) => {
         disabled={currentPage === totalPages}>
         <Text style={styles.paginationButtonText}>Next</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -9,13 +9,20 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
-const Login = () => {
+const LoginScreen = () => {
+  const navigation = useNavigation();
+
+  const goToAdmin = () => {
+    navigation.navigate('AdminDashboard');
+  };
+
   return (
     <View style={styles.container}>
       {/* Background image as a container */}
       <ImageBackground
-        source={require('../../assets/images/Building.png')}
+        source={require('../assets/images/Building.png')}
         style={styles.backgroundImage}>
         {/* Login form */}
         <View style={styles.formContainer}>
@@ -23,7 +30,7 @@ const Login = () => {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require('../../assets/images/Logo.png')}
+                source={require('../assets/images/Logo.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -42,7 +49,7 @@ const Login = () => {
               <View style={styles.inputWrapper}>
                 <View style={styles.input}>
                   <Image
-                    source={require('../../assets/icons/mail.png')}
+                    source={require('../assets/icons/mail.png')}
                     style={styles.inputIcon}
                     resizeMode="contain"
                   />
@@ -58,7 +65,7 @@ const Login = () => {
               <View style={styles.inputWrapper}>
                 <View style={styles.input}>
                   <Image
-                    source={require('../../assets/icons/password.png')}
+                    source={require('../assets/icons/password.png')}
                     style={styles.inputIcon}
                     resizeMode="contain"
                   />
@@ -73,7 +80,11 @@ const Login = () => {
               </View>
 
               {/* Login Button */}
-              <TouchableOpacity style={styles.loginButton}>
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={goToAdmin}
+                activeOpacity={0.7} // Add this for better touch feedback
+              >
                 <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -205,6 +216,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Login;
+export default LoginScreen;
 
 // rgba(255, 255, 255, 0.5)

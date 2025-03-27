@@ -12,9 +12,13 @@ import ReankingScreen from './src/screens/RankingScreen';
 import AdminDashboard from './src/components/admin/AdminDashboard';
 import CreateUser from './src/components/admin/CreateUser';
 import Profile from './src/components/admin/Profile';
+import AboutUsScreen from './src/screens/AboutUsScreen';
+import ContactUsScreen from './src/screens/ContactUsScreen';
+import PollutedTehsilsTable from './src/screens/PollutedTehsilsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const RootStack = createStackNavigator();
 
 // Icon renderers
 const homeIconRender = ({focused}) => (
@@ -42,7 +46,7 @@ const profileIconRender = ({focused}) => (
   />
 );
 
-// Create a stack for the Login flow
+// Create a stack for the Login flow - remove AboutUsScreen from here
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
@@ -50,52 +54,63 @@ function AuthStack() {
       <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
       <Stack.Screen name="CreateUser" component={CreateUser} />
       <Stack.Screen name="Profile" component={Profile} />
-      {/* <Stack.Screen name="CreateUser" component={CreateUser} /> */}
     </Stack.Navigator>
   );
 }
 
+// Create main tab navigator
+function MainTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#2A2F34',
+        },
+      }}>
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: homeIconRender,
+        }}
+      />
+      <Tab.Screen
+        name="Map"
+        component={LahoreMap}
+        options={{
+          tabBarIcon: mapIconRender,
+        }}
+      />
+      <Tab.Screen
+        name="Login"
+        component={AuthStack}
+        options={{
+          tabBarIcon: loginIconRender,
+        }}
+      />
+      <Tab.Screen
+        name="Ranking"
+        component={PollutedTehsilsTable}
+        options={{
+          tabBarIcon: profileIconRender,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+// Root stack that contains MainTabNavigator and standalone screens
 function App() {
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#fff',
-          tabBarInactiveTintColor: 'gray',
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: '#2A2F34',
-          },
-        }}>
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarIcon: homeIconRender,
-          }}
-        />
-        <Tab.Screen
-          name="Map"
-          component={LahoreMap}
-          options={{
-            tabBarIcon: mapIconRender,
-          }}
-        />
-        <Tab.Screen
-          name="Login"
-          component={AuthStack}
-          options={{
-            tabBarIcon: loginIconRender,
-          }}
-        />
-        <Tab.Screen
-          name="Ranking"
-          component={ReankingScreen}
-          options={{
-            tabBarIcon: profileIconRender,
-          }}
-        />
-      </Tab.Navigator>
+      <RootStack.Navigator screenOptions={{headerShown: false}}>
+        <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+        <RootStack.Screen name="about" component={AboutUsScreen} />
+        <RootStack.Screen name="contact" component={ContactUsScreen} />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }

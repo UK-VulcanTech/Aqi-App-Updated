@@ -16,7 +16,9 @@ const HomeScreen = () => {
         <View style={styles.advisoryWrapper}>
           <HealthAdvisory />
         </View>
-        <View style={styles.advisoryWrapper}>{/* <AirQualityChart /> */}</View>
+        <View style={styles.advisoryWrapper}>
+          <AirQualityChart />
+        </View>
       </ScrollView>
     </View>
   );
@@ -31,7 +33,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   dashboardWrapper: {
-    height: 620, // Adjust this height based on the actual size needed for AQIDashboard
+    height: 620,
   },
   advisoryWrapper: {
     // No specific height needed, will take its natural height

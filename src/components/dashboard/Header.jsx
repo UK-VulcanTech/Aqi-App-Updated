@@ -9,8 +9,10 @@ import {
   TouchableWithoutFeedback,
   PanResponder,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const Header = () => {
+  const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
@@ -37,18 +39,27 @@ const Header = () => {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 300,
-          duration: 200, // Reduced from 300ms to 200ms
+          duration: 200,
           useNativeDriver: true,
         }),
         Animated.timing(overlayAnim, {
           toValue: 0,
-          duration: 200, // Reduced from 300ms to 200ms
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start(() => {
         setMenuOpen(false);
       });
     }
+  };
+
+  // Handle menu item navigation
+  const handleNavigation = routeName => {
+    toggleMenu(false);
+    // Allow menu to start closing before navigating
+    setTimeout(() => {
+      navigation.navigate(routeName);
+    }, 100);
   };
 
   // Pan responder for swipe gestures
@@ -90,13 +101,33 @@ const Header = () => {
     }),
   ).current;
 
-  // Menu items definition
+  // Menu items definition with route names matching your Stack.Screen names
   const menuItems = [
-    {icon: require('../../assets/icons/phone.png'), label: 'Dashboard'},
-    {icon: require('../../assets/icons/clock.png'), label: 'History'},
-    {icon: require('../../assets/icons/file.png'), label: 'Policy'},
-    {icon: require('../../assets/icons/persons.png'), label: 'About Us'},
-    {icon: require('../../assets/icons/contact.png'), label: 'Contact Us'},
+    {
+      icon: require('../../assets/icons/phone.png'),
+      label: 'Dashboard',
+      route: 'dashboard',
+    },
+    {
+      icon: require('../../assets/icons/clock.png'),
+      label: 'History',
+      route: 'history',
+    },
+    {
+      icon: require('../../assets/icons/file.png'),
+      label: 'Policy',
+      route: 'policy',
+    },
+    {
+      icon: require('../../assets/icons/persons.png'),
+      label: 'About Us',
+      route: 'about',
+    },
+    {
+      icon: require('../../assets/icons/contact.png'),
+      label: 'Contact Us',
+      route: 'contact',
+    },
   ];
 
   return (
@@ -133,7 +164,6 @@ const Header = () => {
             <View style={styles.profileSection}>
               <View style={styles.profileImageContainer}>
                 <Image
-                  // You'll need to replace this with your actual profile image
                   source={require('../../assets/icons/hamburger.png')}
                   style={styles.profileImage}
                 />
@@ -144,7 +174,10 @@ const Header = () => {
             {/* Menu items */}
             <View style={styles.menuItems}>
               {menuItems.map((item, index) => (
-                <TouchableOpacity key={index} style={styles.menuItem}>
+                <TouchableOpacity
+                  key={index}
+                  style={styles.menuItem}
+                  onPress={() => handleNavigation(item.route)}>
                   <View style={styles.menuIconContainer}>
                     <Image
                       source={item.icon}
@@ -169,6 +202,7 @@ const Header = () => {
 };
 
 const styles = StyleSheet.create({
+  // Your existing styles
   header: {
     backgroundColor: '#262626',
     flexDirection: 'row',
@@ -202,7 +236,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
-    width: 250, // Reduced from 300 to match the image
+    width: 250,
     height: '100%',
     backgroundColor: '#f5f5f5',
     zIndex: 3,

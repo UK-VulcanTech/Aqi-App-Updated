@@ -7,6 +7,7 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
+import Header from '../components/dashboard/Header';
 
 // H1 function component
 const H1 = ({children, style}) => {
@@ -65,6 +66,7 @@ const PollutedTehsilsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Header />
       <ScrollView>
         <View style={styles.content}>
           {/* Heading Section */}
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#2A2F34',
     marginBottom: 8, // Fixed the syntax error here
     borderRadius: 6,
     paddingVertical: 12,
@@ -219,11 +221,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankText: {
-    color: '#374151',
+    color: '#FFFFFF',
     fontSize: 14,
   },
   nameText: {
-    color: '#111827',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aqiText: {
-    color: '#374151',
+    color: '#FFFFFF',
     fontSize: 12,
     marginRight: 8,
   },

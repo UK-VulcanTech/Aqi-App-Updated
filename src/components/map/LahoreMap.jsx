@@ -124,44 +124,27 @@ const LahoreMap = () => {
        .leaflet-pane > svg path {
          pointer-events: auto !important;
        }
-       .custom-popup .leaflet-popup-content-wrapper {
-         background: rgba(0, 0, 0, 0.8);
-         border-radius: 5px;
-         color: white;
+       /* Hide all popups completely */
+       .leaflet-popup {
+         display: none !important;
        }
-       .marker-info {
-         padding: 5px;
-         font-family: Arial, sans-serif;
-         color: white;
+       /* Override Leaflet control styles to remove white backgrounds */
+       .leaflet-control {
+         background: transparent !important;
        }
-       .marker-title {
-         font-weight: bold;
-         margin-bottom: 5px;
+       .leaflet-bar {
+         background: transparent !important;
+         box-shadow: none !important;
+         border: none !important;
        }
-       .marker-description {
-         font-size: 0.9em;
+       .leaflet-bar a {
+         background: rgba(0, 0, 0, 0.7) !important;
+         color: white !important;
+         border: none !important;
        }
-       .marker-value {
-         font-weight: bold;
-         font-size: 1.1em;
-         color: #FFD700;
-       }
-       .marker-coordinates {
-         font-size: 0.8em;
-         color: #999;
-       }
-       .info-box {
-         padding: 8px;
-         background: rgba(0, 0, 0, 0.8);
-         color: white;
-         border-radius: 5px;
-         box-shadow: 0 0 15px rgba(0,0,0,0.2);
-         position: absolute;
-         bottom: 20px;
-         right: 20px;
-         z-index: 1000;
-         max-width: 300px;
-         font-family: Arial, sans-serif;
+       .leaflet-control-attribution {
+         background: rgba(0, 0, 0, 0.5) !important;
+         color: #aaa !important;
        }
      </style>
    </head>
@@ -312,19 +295,25 @@ const LahoreMap = () => {
          debug("Moved to location: " + title);
        }
        
-       // Function to add a marker to the map
+       // Function to add a marker to the map - modified to NOT show popup
        function addMarker(lat, lon, title, description) {
          clearMarkers();
          
          const marker = L.marker([lat, lon]).addTo(map);
          
-         const popupContent = '<div class="marker-info">' +
-                             '<div class="marker-title">' + title + '</div>' +
-                             '<div class="marker-description">' + description + '</div>' +
-                             '</div>';
-         
-         marker.bindPopup(popupContent, { className: 'custom-popup' });
-         marker.openPopup();
+         // Instead of using bindPopup, we directly handle the click
+         marker.on('click', function() {
+           // Send data to React Native to show custom card
+           window.ReactNativeWebView.postMessage(JSON.stringify({
+             type: 'markerClick',
+             data: {
+               lat: lat,
+               lon: lon,
+               title: title,
+               description: description
+             }
+           }));
+         });
          
          markers.push(marker);
          return marker;
@@ -347,7 +336,7 @@ const LahoreMap = () => {
          debug("Cleared CSV markers");
        }
 
-       // Function to add CSV data points as invisible markers
+       // Function to add CSV data points as invisible markers - modified to NOT show popup
        function addCSVMarkers(points) {
          debug("Adding " + points.length + " invisible CSV markers");
          
@@ -361,14 +350,7 @@ const LahoreMap = () => {
              fillOpacity: 0
            }).addTo(map);
            
-           circleMarker.bindPopup(
-             '<div class="marker-info">' +
-             '<div class="marker-title">' + point.type + '</div>' +
-             '<div class="marker-value">Value: ' + point.value.toFixed(2) + '</div>' +
-             '<div class="marker-coordinates">Lat: ' + point.lat.toFixed(5) + ', Lon: ' + point.lon.toFixed(5) + '</div>' +
-             '</div>'
-           );
-           
+           // Handle click without showing popup
            circleMarker.on('click', function(e) {
              window.ReactNativeWebView.postMessage(JSON.stringify({
                type: 'csvMarkerClick',
@@ -855,8 +837,21 @@ const LahoreMap = () => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
+      // Handle marker clicks from search
+      if (data.type === 'markerClick') {
+        const markerData = data.data;
+        setSelectedMarkerData({
+          id: `${markerData.lat}-${markerData.lon}`,
+          value: 'N/A',
+          source: 'Search Result',
+          location: markerData.title,
+          type: markerData.description,
+          status: 'Location Info',
+        });
+        setShowPollutionCard(true);
+      }
       // Handle CSV marker clicks
-      if (data.type === 'csvMarkerClick') {
+      else if (data.type === 'csvMarkerClick') {
         const markerData = data.data;
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
@@ -1027,7 +1022,7 @@ const LahoreMap = () => {
           />
         </View>
 
-        {/* Search Component */}
+        {/* Search Component with transparent background */}
         <View style={styles.header}>
           <SearchBox
             webViewRef={webViewRef}
@@ -1041,7 +1036,7 @@ const LahoreMap = () => {
           />
         </View>
 
-        {/* Zoom Controls - Modified with transparent background */}
+        {/* Zoom Controls - Modified with fully transparent background */}
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
             <Text style={styles.zoomButtonText}>+</Text>
@@ -1250,6 +1245,7 @@ const styles = StyleSheet.create({
     left: 10,
     right: 10,
     zIndex: 10,
+    backgroundColor: 'transparent',
   },
   mapCardContainer: {
     flex: 1,
@@ -1260,8 +1256,9 @@ const styles = StyleSheet.create({
     right: 15,
     bottom: 80,
     zIndex: 10,
+    backgroundColor: 'transparent',
   },
-  // Modified: Transparent background for zoom buttons
+  // Modified: Fully transparent background for zoom buttons
   zoomButton: {
     width: 40,
     height: 40,
@@ -1270,11 +1267,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 5,
   },
   zoomButtonText: {
     fontSize: 24,
@@ -1313,11 +1305,6 @@ const styles = StyleSheet.create({
     padding: 15,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 10,
   },
   pollutionInfoSource: {
     color: 'rgba(255, 0, 0, 0.8)',

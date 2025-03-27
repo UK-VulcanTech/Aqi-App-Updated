@@ -15,6 +15,8 @@ import Profile from './src/components/admin/Profile';
 import AboutUsScreen from './src/screens/AboutUsScreen';
 import ContactUsScreen from './src/screens/ContactUsScreen';
 import PollutedTehsilsTable from './src/screens/PollutedTehsilsScreen';
+import UserDashboard from './src/components/user/UserDashboard';
+import SensorRecords from './src/components/user/SensorRecords';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -52,8 +54,10 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{headerShown: false}}>
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+      <Stack.Screen name="UserDashboard" component={UserDashboard} />
       <Stack.Screen name="CreateUser" component={CreateUser} />
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="sensor" component={SensorRecords} />
     </Stack.Navigator>
   );
 }

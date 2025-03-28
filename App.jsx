@@ -11,12 +11,14 @@ import LoginScreen from './src/screens/LoginScreen';
 import ReankingScreen from './src/screens/RankingScreen';
 import AdminDashboard from './src/components/admin/AdminDashboard';
 import CreateUser from './src/components/admin/CreateUser';
-import Profile from './src/components/admin/Profile';
+import Profile from './src/components/admin/AdminProfile';
 import AboutUsScreen from './src/screens/AboutUsScreen';
 import ContactUsScreen from './src/screens/ContactUsScreen';
 import PollutedTehsilsTable from './src/screens/PollutedTehsilsScreen';
 import UserDashboard from './src/components/user/UserDashboard';
 import SensorRecords from './src/components/user/SensorRecords';
+import AdminProfile from './src/components/admin/AdminProfile';
+import EditAdminProfile from './src/components/admin/EditAdminProfile';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -56,7 +58,8 @@ function AuthStack() {
       <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
       <Stack.Screen name="UserDashboard" component={UserDashboard} />
       <Stack.Screen name="CreateUser" component={CreateUser} />
-      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="Profile" component={AdminProfile} />
+      <Stack.Screen name="EditAdminProfile" component={EditAdminProfile} />
       <Stack.Screen name="sensor" component={SensorRecords} />
     </Stack.Navigator>
   );

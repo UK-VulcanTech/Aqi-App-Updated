@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 
-const CreateUser = () => {
+const EditAdminProfile = () => {
   const navigation = useNavigation();
 
   const [formData, setFormData] = useState({
@@ -50,7 +50,7 @@ const CreateUser = () => {
               onPress={() => navigation.goBack()}>
               <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Add User</Text>
+            <Text style={styles.headerTitle}>Edit User</Text>
           </View>
           <Image
             source={require('../../assets/icons/profile.png')}
@@ -142,7 +142,7 @@ const CreateUser = () => {
           </View>
 
           <TouchableOpacity style={styles.createButton} onPress={handleSubmit}>
-            <Text style={styles.createButtonText}>Create</Text>
+            <Text style={styles.createButtonText}>Submit</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -285,4 +285,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateUser;
+export default EditAdminProfile;

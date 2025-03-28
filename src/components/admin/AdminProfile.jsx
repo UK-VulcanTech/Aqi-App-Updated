@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,84 +7,95 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Alert,
 } from 'react-native';
 
-const Profile = ({navigation, route}) => {
-  // Example user data - would typically come from props or API
-  const [userData, setUserData] = useState({
+const AdminProfile = ({navigation}) => {
+  // Example user data
+  const userData = {
     fullName: 'Ahmad Ali',
     email: 'ahmad.ali123@gmail.com',
-    password: '••••••••••', // Masked for display purposes
+    password: '•••••••••',
     cnic: '3520103420488',
     assignedSensors: 'MQ135, GAIA A12',
-  });
+  };
 
   const handleEdit = () => {
-    // Navigate to edit screen or show edit modal
-    Alert.alert('Edit Profile', 'Navigate to edit profile screen');
+    // Navigate to edit screen
+    navigation.navigate('EditAdminProfile');
   };
 
   const handleRemove = () => {
-    Alert.alert('Remove User', 'Are you sure you want to remove this user?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Remove',
-        onPress: () => console.log('User removed'),
-        style: 'destructive',
-      },
-    ]);
+    // Handle user removal
+    console.log('User removed');
   };
 
-  const currentDate = '05,March,2025';
+  const handleImageUpload = () => {
+    // Image upload logic would go here
+  };
+
+  const currentDate = '06- 03 March, 2025';
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.card}>
-          <Text style={styles.headerText}>Profile</Text>
-          <View style={styles.headerLine} />
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}>
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Profile</Text>
+          </View>
+          <Image
+            source={require('../../assets/icons/profile.png')}
+            style={styles.headerProfileImage}
+          />
+        </View>
 
+        <View style={styles.divider} />
+
+        <View style={styles.dateContainer}>
           <Text style={styles.dateText}>{currentDate}</Text>
+        </View>
 
+        <View style={styles.card}>
           <View style={styles.profileImageContainer}>
             <View style={styles.profileImagePlaceholder}>
-              {/* Profile image would go here */}
+              <Image
+                source={require('../../assets/icons/profile.png')}
+                style={styles.profileImage}
+              />
               <TouchableOpacity
                 style={styles.addImageButton}
-                onPress={() =>
-                  Alert.alert('Upload Image', 'Upload a profile picture')
-                }>
+                onPress={handleImageUpload}>
                 <Text style={styles.addImageButtonText}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Full Name</Text>
               <Text style={styles.infoValue}>{userData.fullName}</Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Email Address</Text>
               <Text style={styles.infoValue}>{userData.email}</Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Password</Text>
               <Text style={styles.infoValue}>{userData.password}</Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>CNIC Number</Text>
               <Text style={styles.infoValue}>{userData.cnic}</Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Assign Sensor</Text>
               <Text style={styles.infoValue}>{userData.assignedSensors}</Text>
             </View>
@@ -114,47 +125,70 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 16,
   },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f0f0f0',
   },
-  headerText: {
-    textAlign: 'center',
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  backButtonText: {
+    fontSize: 18,
     fontWeight: 'bold',
-    fontSize: 24,
-    color: '#333',
-    paddingVertical: 8,
   },
-  headerLine: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerProfileImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#ccc',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#ddd',
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    marginBottom: 16,
+  },
+  dateContainer: {
+    alignItems: 'center',
+    paddingVertical: 10,
   },
   dateText: {
     fontSize: 14,
-    color: '#4B5563',
-    textAlign: 'right',
-    marginBottom: 16,
+    color: '#000',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    margin: 16,
+    padding: 20,
+    alignItems: 'center',
   },
   profileImageContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   profileImagePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#ddd',
+    position: 'relative',
   },
   profileImage: {
     width: 80,
@@ -163,8 +197,8 @@ const styles = StyleSheet.create({
   },
   addImageButton: {
     position: 'absolute',
-    right: -5,
-    top: -5,
+    top: 0,
+    right: 0,
     backgroundColor: '#333',
     width: 24,
     height: 24,
@@ -179,56 +213,55 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     width: '100%',
-    marginBottom: 24,
   },
-  infoRow: {
+  infoItem: {
     marginBottom: 16,
   },
   infoLabel: {
     fontSize: 14,
-    color: '#4B5563',
+    color: '#888',
     marginBottom: 6,
   },
   infoValue: {
-    backgroundColor: '#F3F4F6',
+    fontSize: 16,
+    color: '#000',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
     padding: 12,
-    borderRadius: 6,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    fontSize: 14,
+    fontWeight: '500',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 10,
   },
   editButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#00c853',
+    borderRadius: 5,
     paddingVertical: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 8,
+    paddingHorizontal: 20,
+    width: '48%',
     alignItems: 'center',
   },
   editButtonText: {
     color: 'white',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: 'bold',
   },
   removeButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#d50000',
+    borderRadius: 5,
     paddingVertical: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 8,
+    paddingHorizontal: 20,
+    width: '48%',
     alignItems: 'center',
   },
   removeButtonText: {
     color: 'white',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
-export default Profile;
+export default AdminProfile;

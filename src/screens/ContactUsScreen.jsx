@@ -30,10 +30,10 @@ const ContactUsScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Image
-            source={null} // Leave empty for later import
+            source={require('../assets/icons/back.png')} // Leave empty for later import
             style={styles.backIcon}
           />
-          <Text style={styles.headerTitle}>contact us</Text>
+          <Text style={styles.headerTitle}>Contact us</Text>
         </TouchableOpacity>
       </View>
 
@@ -71,7 +71,7 @@ const ContactUsScreen = () => {
               style={styles.iconButton}
               onPress={() => openURL('https://facebook.com')}>
               <Image
-                source={null} // Leave empty for later import
+                source={require('../assets/icons/facebook.png')}
                 style={styles.socialIcon}
               />
             </TouchableOpacity>
@@ -79,7 +79,7 @@ const ContactUsScreen = () => {
               style={styles.iconButton}
               onPress={() => openURL('https://twitter.com')}>
               <Image
-                source={null} // Leave empty for later import
+                source={require('../assets/icons/twitter.png')}
                 style={styles.socialIcon}
               />
             </TouchableOpacity>

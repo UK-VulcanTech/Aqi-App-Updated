@@ -1,11 +1,5 @@
 import React, {useState} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import {View, Text, TouchableOpacity, Dimensions} from 'react-native';
 import {BarChart} from 'react-native-chart-kit';
 
 const AirQualityChart = () => {
@@ -96,68 +90,82 @@ const AirQualityChart = () => {
               <Text style={styles.locationText}>Lahore, Punjab, PK</Text>
             </TouchableOpacity>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chartContainer}>
-                {/* Using an approach better suited for React Native */}
-                <View
-                  style={{height: 300, width: Math.max(screenWidth - 40, 600)}}>
-                  <BarChart
-                    data={{
-                      labels: airQualityData.map(item => ''), // Empty labels as we'll render custom ones
-                      datasets: [
-                        {
-                          data: airQualityData.map(item => item.value),
-                        },
-                      ],
-                    }}
-                    width={Math.max(screenWidth - 40, 600)}
-                    height={230} // Reduced height to make room for diagonal labels
-                    yAxisSuffix=""
-                    chartConfig={{
-                      backgroundColor: '#ffffff',
-                      backgroundGradientFrom: '#ffffff',
-                      backgroundGradientTo: '#ffffff',
-                      decimalPlaces: 0,
-                      color: (opacity = 1, index) => {
-                        if (index === undefined || index >= chartData.length) {
-                          return `rgba(249, 115, 22, ${opacity})`;
-                        }
-                        const value = airQualityData[index].value;
-                        return value >= 150
-                          ? `rgba(249, 115, 22, ${opacity})` // orange
-                          : `rgba(250, 204, 21, ${opacity})`; // yellow
+            <View style={styles.chartContainer}>
+              <View style={{height: 300, width: screenWidth - 50}}>
+                <BarChart
+                  data={{
+                    labels: airQualityData.map(item => ''), // Empty labels as we'll render custom ones
+                    datasets: [
+                      {
+                        data: airQualityData.map(item => item.value),
                       },
-                      labelColor: (opacity = 1) =>
-                        `rgba(107, 114, 128, ${opacity})`,
-                      barPercentage: 0.8,
-                    }}
-                    style={styles.chart}
-                    fromZero
-                    withInnerLines={false}
-                    segments={6}
-                    hidePointsAtIndex={[]}
-                    getDotProps={(value, index) => {
-                      return {
-                        r: '0',
-                        strokeWidth: '0',
-                        stroke: 'transparent',
-                      };
-                    }}
-                  />
+                    ],
+                  }}
+                  width={screenWidth - 50}
+                  height={230}
+                  yAxisSuffix=""
+                  chartConfig={{
+                    backgroundColor: '#ffffff',
+                    backgroundGradientFrom: '#ffffff',
+                    backgroundGradientTo: '#ffffff',
+                    decimalPlaces: 0,
+                    color: (opacity = 1, index) => {
+                      if (index === undefined || index >= chartData.length) {
+                        return `rgba(249, 115, 22, ${opacity})`;
+                      }
+                      const value = airQualityData[index].value;
+                      return value >= 150
+                        ? `rgba(249, 115, 22, ${opacity})` // orange
+                        : `rgba(250, 204, 21, ${opacity})`; // yellow
+                    },
+                    labelColor: (opacity = 1) =>
+                      `rgba(107, 114, 128, ${opacity})`,
+                    barPercentage: 0.5,
+                    min: 0,
+                    max: 300,
+                  }}
+                  style={styles.chart}
+                  fromZero
+                  withInnerLines={false}
+                  segments={6}
+                  showValuesOnTopOfBars={false}
+                />
 
-                  {/* Adding custom date labels with diagonal orientation */}
-                  <View style={styles.customLabelsContainer}>
-                    {airQualityData.map((item, index) => (
-                      <View key={index} style={styles.customLabel}>
-                        <Text style={styles.dateLabel}>
-                          {item.date}/{item.day}
-                        </Text>
+                {/* Custom date labels aligned under each bar */}
+                <View style={styles.customLabelsContainer}>
+                  {airQualityData.map((item, index) => {
+                    // Calculate position based on bar index
+                    const barWidth =
+                      ((screenWidth - 50) * 0.5) / airQualityData.length;
+                    const leftPadding = (screenWidth - 50) * 0.1;
+                    const barSpacing =
+                      (screenWidth -
+                        50 -
+                        barWidth * airQualityData.length -
+                        leftPadding * 2) /
+                      (airQualityData.length - 1);
+                    const barPosition =
+                      leftPadding +
+                      index * (barWidth + barSpacing) +
+                      barWidth / 2;
+
+                    return (
+                      <View
+                        key={index}
+                        style={[
+                          styles.customLabel,
+                          {
+                            position: 'absolute',
+                            left: barPosition - 20, // Center the label under the bar
+                          },
+                        ]}>
+                        <Text style={styles.dateLabel}>{item.date}</Text>
                       </View>
-                    ))}
-                  </View>
+                    );
+                  })}
                 </View>
               </View>
-            </ScrollView>
+            </View>
           </View>
         </View>
       </View>
@@ -291,7 +299,9 @@ const styles = {
     color: '#3B82F6', // blue-500
   },
   chartContainer: {
-    minHeight: 300,
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   chart: {
@@ -299,18 +309,15 @@ const styles = {
     borderRadius: 16,
   },
   customLabelsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     width: '100%',
     position: 'absolute',
-    bottom: 0,
-    paddingHorizontal: 30,
-    height: 60, // Added height to accommodate rotated labels
+    bottom: 10,
+    height: 60,
   },
   customLabel: {
     alignItems: 'center',
     transform: [{rotate: '-45deg'}],
-    marginTop: -10, // Adjust to position labels in the right spot
+    width: 80,
   },
   dateLabel: {
     fontSize: 12,

@@ -7,10 +7,18 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const AQIDashboard = () => {
   return (
     <SafeAreaView style={styles.container}>
+      {/* Gradient Background */}
+      <LinearGradient
+        colors={['#E4E4E4', '#F0C09D', '#F0C09D']}
+        style={styles.gradientBackground}
+        locations={[0, 0.6, 1]}
+      />
+
       <StatusBar backgroundColor="#E4E4E4" barStyle="dark-content" />
 
       {/* Header */}
@@ -48,11 +56,6 @@ const AQIDashboard = () => {
 
         {/* PM2.5 and AQI Scale Section */}
         <View style={styles.scaleSection}>
-          <Text style={styles.pmText}>
-            PM2.5: <Text style={styles.pmValue}>68</Text>{' '}
-            <Text style={styles.pmUnit}>μg/m³</Text>
-          </Text>
-
           <View style={styles.aqiScaleContainer}>
             <View style={styles.scaleContainer}>
               <View style={styles.pointerContainer}>
@@ -61,45 +64,56 @@ const AQIDashboard = () => {
 
               <View style={styles.levelsContainer}>
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.goodColor]} />
-                  <Text style={styles.scaleNumber}>50</Text>
+                  <View style={[styles.colorBar, styles.goodColor]}>
+                    <Text style={styles.colorBarNumber}>50</Text>
+                  </View>
                   <Text style={styles.scaleText}>Good</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.moderateColor]} />
-                  <Text style={styles.scaleNumber}>100</Text>
+                  <View style={[styles.colorBar, styles.moderateColor]}>
+                    <Text style={styles.colorBarNumber}>100</Text>
+                  </View>
                   <Text style={styles.scaleText}>Moderate</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.poorColor]} />
-                  <Text style={styles.scaleNumber}>150</Text>
+                  <View style={[styles.colorBar, styles.poorColor]}>
+                    <Text style={styles.colorBarNumber}>150</Text>
+                  </View>
                   <Text style={styles.scaleText}>Poor</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.unhealthyColor]} />
-                  <Text style={styles.scaleNumber}>200</Text>
+                  <View style={[styles.colorBar, styles.unhealthyColor]}>
+                    <Text style={styles.colorBarNumber}>200</Text>
+                  </View>
                   <Text style={styles.scaleText}>Unhealthy</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.veryUnhealthyColor]} />
-                  <Text style={styles.scaleNumber}>250</Text>
+                  <View style={[styles.colorBar, styles.veryUnhealthyColor]}>
+                    <Text style={styles.colorBarNumber}>250</Text>
+                  </View>
                   <Text style={styles.scaleText}>Very Unhealthy</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.hazardousColor]} />
-                  <Text style={styles.scaleNumber}>300+</Text>
+                  <View style={[styles.colorBar, styles.hazardousColor]}>
+                    <Text style={styles.colorBarNumber}>300+</Text>
+                  </View>
                   <Text style={styles.scaleText}>Hazardous</Text>
                 </View>
               </View>
             </View>
 
-            {/* Person with mask */}
+            {/* PM2.5 text and Person with mask - right side */}
             <View style={styles.personContainer}>
+              {/* PM2.5 text above the person image - in one line */}
+              <Text style={styles.pmText}>
+                PM2.5: <Text style={styles.pmValue}>68</Text> μg/m³
+              </Text>
+
               <Image
                 source={require('../../assets/images/face.png')}
                 style={styles.personImage}
@@ -123,14 +137,27 @@ const AQIDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E4E4E4',
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  gradientLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    backgroundColor: '#E4E4E4',
+    backgroundColor: 'transparent',
   },
   homeIcon: {
     width: 20,
@@ -202,16 +229,21 @@ const styles = StyleSheet.create({
   scaleSection: {
     marginTop: 10,
   },
+  pmTextContainer: {
+    marginRight: 20,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
   pmText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#444',
-    marginBottom: 5,
+    marginBottom: 20, // Keep some margin below the text
   },
   pmValue: {
     fontWeight: 'bold',
   },
   pmUnit: {
-    fontSize: 12,
+    fontSize: 14,
   },
   aqiScaleContainer: {
     flexDirection: 'row',
@@ -224,7 +256,7 @@ const styles = StyleSheet.create({
   pointerContainer: {
     width: 20,
     justifyContent: 'center',
-    marginTop: 123, // Position at "Unhealthy" level (200)
+    marginTop: 123,
   },
   pointer: {
     width: 0,
@@ -248,9 +280,16 @@ const styles = StyleSheet.create({
     height: 30,
   },
   colorBar: {
-    width: 20,
+    width: 50,
     height: 30,
     marginRight: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorBarNumber: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#333',
   },
   goodColor: {
     backgroundColor: '#A5D46A',
@@ -270,12 +309,6 @@ const styles = StyleSheet.create({
   hazardousColor: {
     backgroundColor: '#CF3030',
   },
-  scaleNumber: {
-    width: 30,
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   scaleText: {
     fontSize: 14,
     fontWeight: '500',
@@ -283,12 +316,15 @@ const styles = StyleSheet.create({
   },
   personContainer: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingLeft: 10,
+    flexDirection: 'column',
+    marginRight: 20,
   },
   personImage: {
     width: 120,
     height: 120,
+    alignSelf: 'flex-start',
   },
   cityBackground: {
     width: '100%',

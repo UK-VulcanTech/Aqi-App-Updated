@@ -7,7 +7,6 @@ import AirQualityChart from '../components/dashboard/AirQualityChart';
 const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      s{' '}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.dashboardWrapper}>
           <AQIDashboard />

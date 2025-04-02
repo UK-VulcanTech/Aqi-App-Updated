@@ -66,7 +66,7 @@ const PollutedTehsilsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header />
+      {/* <Header /> */}
       <ScrollView>
         <View style={styles.content}>
           {/* Heading Section */}

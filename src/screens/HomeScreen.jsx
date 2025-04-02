@@ -1,6 +1,5 @@
 import React from 'react';
 import {StyleSheet, ScrollView, View} from 'react-native';
-import Header from '../components/dashboard/Header';
 import AQIDashboard from '../components/dashboard/AQIDashboard';
 import HealthAdvisory from '../components/dashboard/HealthAdvisory';
 import AirQualityChart from '../components/dashboard/AirQualityChart';
@@ -8,7 +7,7 @@ import AirQualityChart from '../components/dashboard/AirQualityChart';
 const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      <Header />
+      s{' '}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.dashboardWrapper}>
           <AQIDashboard />

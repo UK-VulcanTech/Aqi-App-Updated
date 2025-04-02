@@ -58,7 +58,12 @@ const Header = () => {
     toggleMenu(false);
     // Allow menu to start closing before navigating
     setTimeout(() => {
-      navigation.navigate(routeName);
+      if (routeName === 'Home') {
+        // Navigate to the Home tab, then to HomeScreen
+        navigation.navigate('Home', {screen: 'HomeScreen'});
+      } else {
+        navigation.navigate(routeName);
+      }
     }, 100);
   };
 
@@ -104,9 +109,9 @@ const Header = () => {
   // Menu items definition with route names matching your Stack.Screen names
   const menuItems = [
     {
-      icon: require('../../assets/icons/phone.png'),
+      icon: require('../../assets/icons/mobile.png'),
       label: 'Dashboard',
-      route: 'dashboard',
+      route: 'Home', // This will now correctly navigate to HomeScreen
     },
     {
       icon: require('../../assets/icons/clock.png'),
@@ -121,14 +126,21 @@ const Header = () => {
     {
       icon: require('../../assets/icons/persons.png'),
       label: 'About Us',
-      route: 'about',
+      route: 'About',
     },
     {
       icon: require('../../assets/icons/contact.png'),
       label: 'Contact Us',
-      route: 'contact',
+      route: 'Contact',
     },
   ];
+
+  const goToProfile = () => {
+    toggleMenu(false);
+    setTimeout(() => {
+      navigation.navigate('Profile');
+    }, 100);
+  };
 
   return (
     <>
@@ -168,7 +180,9 @@ const Header = () => {
                   style={styles.profileImage}
                 />
               </View>
-              <Text style={styles.profileName}>Ahmad ali</Text>
+              <Text style={styles.profileName} onPress={goToProfile}>
+                Ahmad ali
+              </Text>
             </View>
 
             {/* Menu items */}
@@ -202,7 +216,6 @@ const Header = () => {
 };
 
 const styles = StyleSheet.create({
-  // Your existing styles
   header: {
     backgroundColor: '#262626',
     flexDirection: 'row',
@@ -290,13 +303,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
   },
   menuIconContainer: {
-    width: 24,
-    height: 24,
-    marginRight: 15,
-    opacity: 0.6,
+    width: 20,
+    height: 20,
+    marginRight: 10,
   },
   menuIcon: {
     width: '100%',

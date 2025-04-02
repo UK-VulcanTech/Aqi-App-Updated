@@ -116,7 +116,10 @@ const SensorRecords = () => {
       <View style={styles.header}>
         <View style={styles.headerLeftSection}>
           <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+            <Image
+              source={require('../../assets/icons/back.png')}
+              style={styles.backIcon}
+            />
           </TouchableOpacity>
           <Text style={styles.headerText}>History</Text>
         </View>
@@ -142,7 +145,7 @@ const SensorRecords = () => {
             <View style={styles.tableContainer}>
               {/* Table Header */}
               <View style={styles.tableHeader}>
-                <Text style={styles.headerCellTime}></Text>
+                <Text style={styles.headerCellTime} />
                 <Text style={styles.headerCellName}>Sensor Name</Text>
                 <Text style={styles.headerCellReading}>Sensor Reading</Text>
                 <Text style={styles.headerCellDate}>Date</Text>

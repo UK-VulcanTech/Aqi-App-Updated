@@ -29,7 +29,7 @@ const EditAdminProfile = () => {
     // Validate form if needed
 
     // Navigate to Profile page on submit
-    navigation.navigate('Profile');
+    navigation.navigate('AdminProfile');
 
     console.log(formData);
   };

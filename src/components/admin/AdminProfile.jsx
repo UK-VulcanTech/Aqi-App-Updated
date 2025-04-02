@@ -43,7 +43,10 @@ const AdminProfile = ({navigation}) => {
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}>
-              <Text style={styles.backButtonText}>←</Text>
+              <Image
+                source={require('../../assets/icons/back.png')}
+                style={styles.backIcon}
+              />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Profile</Text>
           </View>

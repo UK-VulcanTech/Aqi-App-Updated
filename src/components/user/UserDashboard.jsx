@@ -24,7 +24,7 @@ const UserDashboard = () => {
   };
 
   const goToSensorRecords = () => {
-    navigation.navigate('sensor');
+    navigation.navigate('SensorRecords');
   };
 
   return (
@@ -33,13 +33,16 @@ const UserDashboard = () => {
       <View style={styles.header}>
         <View style={styles.headerLeftSection}>
           <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+            <Image
+              source={require('../../assets/icons/back.png')}
+              style={styles.backIcon}
+            />
           </TouchableOpacity>
           <Text style={styles.headerText}>Dashboard</Text>
         </View>
         <View style={styles.profileImageContainer}>
           <Image
-            source={require('../../assets/icons/profile.png')} // You'll need to add your profile image
+            source={require('../../assets/icons/profile.png')}
             style={styles.profileImage}
           />
         </View>

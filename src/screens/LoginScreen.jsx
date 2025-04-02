@@ -50,7 +50,6 @@ const LoginScreen = () => {
 
             <View style={styles.inputContainer}>
               {/* Email Field */}
-              {/* Email Field */}
               <View style={styles.inputWrapper}>
                 <View style={styles.input}>
                   <Image
@@ -89,7 +88,7 @@ const LoginScreen = () => {
                 activeOpacity={0.7} // Add this for better touch feedback
               >
                 <Text style={styles.buttonText}>Login</Text>
-              </TouchableOpacity>{' '}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={goToAdmin}
@@ -120,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Darker overlay to match screenshot
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   innerContainer: {
     width: '100%',

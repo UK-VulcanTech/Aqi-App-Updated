@@ -29,7 +29,7 @@ const CreateUser = () => {
     // Validate form if needed
 
     // Navigate to Profile page on submit
-    navigation.navigate('Profile');
+    navigation.navigate('AdminProfile');
 
     console.log(formData);
   };
@@ -48,7 +48,10 @@ const CreateUser = () => {
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}>
-              <Text style={styles.backButtonText}>←</Text>
+              <Image
+                source={require('../../assets/icons/profile.png')}
+                style={styles.backButtonTexts}
+              />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Add User</Text>
           </View>

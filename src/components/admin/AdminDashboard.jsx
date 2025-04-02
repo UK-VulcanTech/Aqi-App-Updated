@@ -48,7 +48,11 @@ const AdminDashboard = () => {
       <View style={styles.header}>
         <View style={styles.headerLeftSection}>
           <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+            <Image
+              source={require('../../assets/icons/back.png')}
+              style={styles.backIcon}
+            />
+            s
           </TouchableOpacity>
           <View>
             <Text style={styles.headerText}>Dashboard</Text>

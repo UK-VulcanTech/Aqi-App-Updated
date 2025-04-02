@@ -10,14 +10,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import Header from '../components/dashboard/Header';
+// import Header from '../components/dashboard/Header';
 
 const AboutUsScreen = () => {
   const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header />
+      {/* <Header /> */}
       <StatusBar backgroundColor="#F1F1F1" barStyle="dark-content" />
 
       {/* Header */}

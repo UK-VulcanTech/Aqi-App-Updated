@@ -31,6 +31,7 @@ const HealthAdvisory = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.heading}>Health Advisory</Text>
       <View style={styles.border}>
         <View style={styles.gradientContainer}>
           <ImageBackground
@@ -88,6 +89,12 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingHorizontal: 16,
+  },
+  heading: {
+    fontSize: 25,
+    fontWeight: 600,
+    color: '#495159',
+    padding: 20,
   },
   border: {
     borderTopWidth: 1,

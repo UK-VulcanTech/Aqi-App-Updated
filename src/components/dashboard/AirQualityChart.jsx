@@ -6,6 +6,7 @@ import {
   Dimensions,
   ScrollView,
   StyleSheet,
+  Image,
 } from 'react-native';
 import {BarChart} from 'react-native-chart-kit';
 
@@ -66,10 +67,10 @@ const AirQualityChart = () => {
     <View style={styles.container}>
       <View style={styles.innerContainer}>
         <View style={styles.borderTop}>
-          <View style={styles.headerContainer}>
+          {/* <View style={styles.headerContainer}>
             <Text style={styles.title}>Historical Air Quality Data</Text>
             <Text style={styles.subtitle}>Air Quality Index in Lahore</Text>
-          </View>
+          </View> */}
 
           <View style={styles.controlsContainer}>
             <View style={styles.buttonGroup}>
@@ -81,8 +82,15 @@ const AirQualityChart = () => {
                 <TouchableOpacity
                   style={styles.button}
                   onPress={() => setDropdownOpen(!dropdownOpen)}>
-                  <Text style={styles.buttonText}>{selectedPollutant}</Text>
-                  <View style={styles.iconPlaceholder} />
+                  <View style={styles.pollutantButton}>
+                    <Text style={styles.buttonText}>{selectedPollutant}</Text>
+                    <Image
+                      source={require('../../assets/icons/chevron-down.png')}
+                      style={styles.downIcon}
+                    />
+                  </View>
+
+                  {/* <View style={styles.iconPlaceholder} /> */}
                 </TouchableOpacity>
 
                 {dropdownOpen && (
@@ -197,7 +205,7 @@ const AirQualityChart = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E4E4E4',
   },
   innerContainer: {
     flex: 1,
@@ -205,7 +213,7 @@ const styles = StyleSheet.create({
   },
   borderTop: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#000000',
     paddingVertical: 32,
   },
   headerContainer: {
@@ -244,6 +252,11 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  pollutantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   iconPlaceholder: {
     width: 16,

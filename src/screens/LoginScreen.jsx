@@ -15,6 +15,10 @@ import {useNavigation} from '@react-navigation/native';
 const LoginScreen = () => {
   const navigation = useNavigation();
 
+  const goToUser = () => {
+    navigation.navigate('UserDashboard');
+  };
+
   const goToAdmin = () => {
     navigation.navigate('AdminDashboard');
   };
@@ -46,7 +50,6 @@ const LoginScreen = () => {
 
             <View style={styles.inputContainer}>
               {/* Email Field */}
-              {/* Email Field */}
               <View style={styles.inputWrapper}>
                 <View style={styles.input}>
                   <Image
@@ -61,7 +64,6 @@ const LoginScreen = () => {
                   />
                 </View>
               </View>
-
               {/* Password Field */}
               <View style={styles.inputWrapper}>
                 <View style={styles.input}>
@@ -79,14 +81,20 @@ const LoginScreen = () => {
                 </View>
                 <Text style={styles.forgotPassword}>Forgot Password?</Text>
               </View>
-
               {/* Login Button */}
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={goToUser}
+                activeOpacity={0.7} // Add this for better touch feedback
+              >
+                <Text style={styles.buttonText}>Login</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={goToAdmin}
                 activeOpacity={0.7} // Add this for better touch feedback
               >
-                <Text style={styles.buttonText}>Login</Text>
+                <Text style={styles.buttonText}>Admin</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -111,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Darker overlay to match screenshot
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   innerContainer: {
     width: '100%',

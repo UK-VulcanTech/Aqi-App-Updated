@@ -146,6 +146,11 @@ const LahoreMap = () => {
          background: rgba(0, 0, 0, 0.5) !important;
          color: #aaa !important;
        }
+       /* Custom marker styles */
+       .custom-div-icon {
+         background: transparent;
+         border: none;
+       }
      </style>
    </head>
    <body>
@@ -297,7 +302,7 @@ const LahoreMap = () => {
        
        // Function to add a marker to the map - modified to NOT show popup
        function addMarker(lat, lon, title, description) {
-         clearMarkers();
+         clearSearchMarkers();
          
          const marker = L.marker([lat, lon]).addTo(map);
          
@@ -319,8 +324,18 @@ const LahoreMap = () => {
          return marker;
        }
        
-       // Function to clear all markers
-       function clearMarkers() {
+       // Function to clear only search markers but keep fixed markers
+       function clearSearchMarkers() {
+         markers.forEach(marker => {
+           if (!marker.isFixedMarker) {
+             map.removeLayer(marker);
+           }
+         });
+         markers = markers.filter(marker => marker.isFixedMarker);
+       }
+       
+       // Function to clear all markers including fixed ones
+       function clearAllMarkers() {
          markers.forEach(marker => {
            map.removeLayer(marker);
          });
@@ -407,6 +422,69 @@ const LahoreMap = () => {
          debug("Map info updated");
        }
        
+       // Function to add fixed markers for Model Town and Gulberg
+       function addFixedLocationMarkers() {
+         // Create custom Model Town marker
+         const modelTownMarker = L.marker([31.4794, 74.3118], {
+           icon: L.divIcon({
+             className: 'custom-div-icon',
+             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>105</div>",
+             iconSize: [40, 40],
+             iconAnchor: [20, 20]
+           })
+         }).addTo(map);
+         
+         // Create custom Gulberg marker
+         const gulbergMarker = L.marker([31.5204, 74.3587], {
+           icon: L.divIcon({
+             className: 'custom-div-icon',
+             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>125</div>",
+             iconSize: [40, 40],
+             iconAnchor: [20, 20]
+           })
+         }).addTo(map);
+         
+         // Add click handlers
+         modelTownMarker.on('click', function() {
+           window.ReactNativeWebView.postMessage(JSON.stringify({
+             type: 'markerClick',
+             data: {
+               lat: 31.4794,
+               lon: 74.3118,
+               title: 'Model Town',
+               description: 'Particulate Matter (PM2.5)',
+               value: '105',
+               status: 'Moderate',
+               source: 'WWF-Pakistan'
+             }
+           }));
+         });
+         
+         gulbergMarker.on('click', function() {
+           window.ReactNativeWebView.postMessage(JSON.stringify({
+             type: 'markerClick',
+             data: {
+               lat: 31.5204,
+               lon: 74.3587,
+               title: 'Gulberg',
+               description: 'Particulate Matter (PM2.5)',
+               value: '125',
+               status: 'Moderate',
+               source: 'WWF-Pakistan'
+             }
+           }));
+         });
+         
+         // Mark these as fixed markers so they don't get removed by normal clearMarkers
+         modelTownMarker.isFixedMarker = true;
+         gulbergMarker.isFixedMarker = true;
+         
+         // Add markers to the global markers array
+         markers.push(modelTownMarker, gulbergMarker);
+         
+         debug("Added fixed markers for Model Town and Gulberg");
+       }
+       
        // Listen for map move events
        map.on('moveend', function() {
          debug("Map moved");
@@ -416,6 +494,11 @@ const LahoreMap = () => {
        map.on('zoomend', function() {
          debug("Map zoomed to level: " + map.getZoom());
        });
+       
+       // Add the fixed markers after initialization
+       setTimeout(function() {
+         addFixedLocationMarkers();
+       }, 500);
        
        // Let React Native know the map is ready
        debug("Map initialized");
@@ -731,6 +814,11 @@ const LahoreMap = () => {
              // Re-enable dragging after loading TIFF
              forceEnableDragging();
              debug("TIFF loaded successfully");
+             
+             // Make sure fixed markers are on top
+             setTimeout(function() {
+               addFixedLocationMarkers();
+             }, 100);
            } catch(error) {
              debug("Error loading TIFF: " + error.message);
            }
@@ -761,7 +849,7 @@ const LahoreMap = () => {
   const showCurrentLocation = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
-       showCurrentLocation();
+showCurrentLocation();
        true;
      `;
       webViewRef.current.injectJavaScript(script);
@@ -842,11 +930,11 @@ const LahoreMap = () => {
         const markerData = data.data;
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
-          value: 'N/A',
-          source: 'Search Result',
+          value: markerData.value || 'N/A',
+          source: markerData.source || 'Search Result',
           location: markerData.title,
           type: markerData.description,
-          status: 'Location Info',
+          status: markerData.status || 'Location Info',
         });
         setShowPollutionCard(true);
       }
@@ -920,6 +1008,11 @@ const LahoreMap = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
         map.setView([31.5204, 74.3587], 12);
+        
+        // Make sure fixed markers are visible
+        setTimeout(function() {
+          addFixedLocationMarkers();
+        }, 100);
         true;
       `;
       webViewRef.current.injectJavaScript(script);
@@ -1046,40 +1139,6 @@ const LahoreMap = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Static marker yellow circles with touch functionality - Now only shown if no CSV data */}
-        {webViewLoaded && csvMarkers.length === 0 && (
-          <>
-            <TouchableOpacity
-              style={[styles.pollutantMarker, {top: '45%', left: '50%'}]}
-              onPress={() =>
-                handleMarkerClick({
-                  id: 1,
-                  value: 105,
-                  source: 'WWF-Pakistan',
-                  location: 'Lahore',
-                  type: 'Particulate Matter (PM2.5)',
-                  status: 'Moderate',
-                })
-              }>
-              <Text style={styles.pollutantMarkerText}>105</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.pollutantMarker, {top: '25%', left: '30%'}]}
-              onPress={() =>
-                handleMarkerClick({
-                  id: 2,
-                  value: 125,
-                  source: 'WWF-Pakistan',
-                  location: 'Lahore',
-                  type: 'Particulate Matter (PM2.5)',
-                  status: 'Moderate',
-                })
-              }>
-              <Text style={styles.pollutantMarkerText}>125</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
         {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
         <TouchableOpacity
           style={styles.aqiIndicator}
@@ -1153,6 +1212,10 @@ const LahoreMap = () => {
                     debug("Removed TIFF layer");
                   }
                   clearCSVMarkers();
+                  // Make sure fixed markers remain visible
+                  setTimeout(function() {
+                    addFixedLocationMarkers();
+                  }, 100);
                   true;
                 `;
                 webViewRef.current.injectJavaScript(script);
@@ -1272,22 +1335,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-  },
-  pollutantMarker: {
-    position: 'absolute',
-    backgroundColor: '#FFD700',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-    zIndex: 5,
-  },
-  pollutantMarkerText: {
-    color: 'black',
-    fontWeight: 'bold',
   },
   pollutionInfoCardContainer: {
     position: 'absolute',

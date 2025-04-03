@@ -67,11 +67,6 @@ const AirQualityChart = () => {
     <View style={styles.container}>
       <View style={styles.innerContainer}>
         <View style={styles.borderTop}>
-          {/* <View style={styles.headerContainer}>
-            <Text style={styles.title}>Historical Air Quality Data</Text>
-            <Text style={styles.subtitle}>Air Quality Index in Lahore</Text>
-          </View> */}
-
           <View style={styles.controlsContainer}>
             <View style={styles.buttonGroup}>
               <TouchableOpacity style={styles.button}>

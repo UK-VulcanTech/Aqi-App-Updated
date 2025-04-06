@@ -40,7 +40,7 @@ const HealthAdvisory = () => {
             imageStyle={styles.backgroundImageStyle}>
             <View style={styles.contentContainer}>
               <Animated.Text style={[styles.titleText, {opacity: fadeAnim}]}>
-                Wellness Tips for Everyday Living in{' '}
+                Wellness Tips for Everyday Living in <Text>{''}</Text>
                 <Text style={styles.redText}>Lahore</Text>
               </Animated.Text>
 

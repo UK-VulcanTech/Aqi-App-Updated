@@ -21,64 +21,64 @@ const SensorRecords = () => {
   const sensorData = [
     {
       id: 1,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '30:00 min',
     },
     {
       id: 2,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '30:00 min',
     },
     {
       id: 3,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '27:48 min',
     },
     {
       id: 4,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '25:00 min',
     },
     {
       id: 5,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '16:47 min',
     },
     {
       id: 6,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '12:20 min',
     },
     {
       id: 7,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '10:15 min',
     },
     {
       id: 8,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '08:30 min',
     },
     {
       id: 9,
-      sensorName: 'GAIA A12, MQ-135',
-      reading: '55μg/m³,65μg/m³',
+      sensorName: 'GAIA A12,\nMQ-135',
+      reading: '55μg/m³, 65μg/m³',
       date: '10-03-2025',
       time: '05:10 min',
     },
@@ -134,14 +134,14 @@ const SensorRecords = () => {
       <View style={styles.headerBorder} />
 
       <View style={styles.dateContainer}>
-        <Text style={styles.dateText}>06- 03 March, 2025</Text>
+        <Text style={styles.dateText}>03 March, 2025</Text>
       </View>
 
       <View style={styles.cardContainer}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sensor Readings Records</Text>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView>
             <View style={styles.tableContainer}>
               {/* Table Header */}
               <View style={styles.tableHeader}>
@@ -174,7 +174,7 @@ const SensorRecords = () => {
           {/* Pagination - moved up right below the table */}
           <View style={styles.paginationContainer}>
             <Text style={styles.paginationText}>
-              {(currentPage - 1) * itemsPerPage + 1} -{' '}
+              {(currentPage - 1) * itemsPerPage + 1} -
               {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
             </Text>
             <View style={styles.paginationButtons}>
@@ -295,31 +295,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   headerCellTime: {
-    width: 80,
+    width: '18%',
     color: '#10B981',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   headerCellName: {
-    width: 120,
+    width: '25%',
     color: '#10B981',
     fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 11, // Slightly reduce font size
+    textAlign: 'left',
+    paddingLeft: 5,
   },
   headerCellReading: {
-    width: 120,
+    width: '33%',
     color: '#10B981',
     fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 11, // Slightly reduce font size
+    textAlign: 'left',
+    paddingLeft: 15,
   },
   headerCellDate: {
-    width: 100,
+    width: '24%',
     color: '#10B981',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
+    // Ensure text stays on one line
+    numberOfLines: 1,
+    ellipsizeMode: 'tail',
   },
   tableRow: {
     flexDirection: 'row',
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   timeCell: {
-    width: 80,
+    width: '18%',
     flexDirection: 'column',
     justifyContent: 'center',
   },
@@ -348,22 +353,25 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   nameCell: {
-    width: 120,
-    fontSize: 14,
+    width: '25%',
+    fontSize: 12,
     color: '#333',
-    textAlign: 'center',
+    textAlign: 'left',
     alignSelf: 'center',
+    paddingLeft: 5,
   },
   readingCell: {
-    width: 120,
-    fontSize: 14,
+    width: '33%',
+    fontSize: 12,
     color: '#333',
-    textAlign: 'center',
+    textAlign: 'left',
     alignSelf: 'center',
+    paddingLeft: 15,
+    marginLeft: 5,
   },
   dateCell: {
-    width: 100,
-    fontSize: 14,
+    width: '24%',
+    fontSize: 12,
     color: '#333',
     textAlign: 'center',
     alignSelf: 'center',
@@ -373,7 +381,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 12,
-    marginTop: 20, // Add space between table and pagination
+    marginTop: 20,
   },
   paginationText: {
     fontSize: 14,

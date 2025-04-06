@@ -21,47 +21,57 @@ const PollutedTehsilsScreen = () => {
       name: 'Shalimar',
       aqi: 178,
       status: 'Unhealthy',
-      standardValue: '12x above Standard',
     },
     {
       id: '02',
       name: 'Lahore City',
       aqi: 165,
       status: 'Unhealthy',
-      standardValue: '11x above Standard',
     },
     {
       id: '03',
       name: 'Model Town',
       aqi: 163,
       status: 'Unhealthy',
-      standardValue: '11x above Standard',
     },
     {
       id: '04',
       name: 'Raiwind',
       aqi: 144,
       status: 'Poor',
-      standardValue: '10x above Standard',
     },
     {
       id: '05',
       name: 'Lahore Cantt',
       aqi: 138,
       status: 'Poor',
-      standardValue: '9x above Standard',
     },
   ];
 
-  const getStatusColor = status => {
-    return status === 'Unhealthy' ? '#EF4444' : '#F59E0B'; // red-500 : amber-500
+  const getAqiColor = aqi => {
+    if (aqi <= 50) {
+      return '#10B981'; // Green for good
+    } else if (aqi <= 150) {
+      return '#F59E0B'; // Yellow/amber for moderate
+    } else {
+      return '#EF4444'; // Red for unhealthy
+    }
   };
 
-  // Calculate the width for progress bar in pixels instead of percentage
-  const calculateWidth = aqi => {
-    // The base width is 96, as defined in progressBackground
-    const maxWidth = 96;
-    return (aqi / 200) * maxWidth;
+  const getAqiStatus = aqi => {
+    if (aqi <= 50) {
+      return 'Good';
+    } else if (aqi <= 100) {
+      return 'Moderate';
+    } else if (aqi <= 150) {
+      return 'Poor';
+    } else if (aqi <= 200) {
+      return 'Unhealthy';
+    } else if (aqi <= 300) {
+      return 'VeryUnhealthy';
+    } else {
+      return 'Hazardous';
+    }
   };
 
   return (
@@ -78,76 +88,67 @@ const PollutedTehsilsScreen = () => {
           </View>
 
           {/* Table Container */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.tableContainer}>
-              {/* Table Header */}
-              <View style={styles.tableHeader}>
-                <View style={[styles.headerCell, {width: 80}]}>
-                  <Text style={styles.headerText}>Rank</Text>
-                </View>
-                <View style={[styles.headerCell, {width: 120}]}>
-                  <Text style={styles.headerText}>Tehsil</Text>
-                </View>
-                <View style={[styles.headerCell, {width: 130}]}>
-                  <Text style={styles.headerText}>AQI</Text>
-                </View>
-                <View style={[styles.headerCell, {width: 120}]}>
-                  <Text style={styles.headerText}>AQI Status</Text>
-                </View>
-                <View style={[styles.headerCell, {width: 160}]}>
-                  <Text style={styles.headerText}>Standard Value</Text>
-                </View>
-              </View>
-
-              {/* Table Rows */}
-              <View style={styles.tableRows}>
-                {tehsilData.map(tehsil => (
-                  <View key={tehsil.id} style={styles.tableRow}>
-                    <View style={[styles.cell, {width: 80}]}>
-                      <Text style={styles.rankText}>{tehsil.id}.</Text>
-                    </View>
-                    <View style={[styles.cell, {width: 120}]}>
-                      <Text style={styles.nameText}>{tehsil.name}</Text>
-                    </View>
-                    <View style={[styles.cell, {width: 130}]}>
-                      <View style={styles.aqiContainer}>
-                        <Text style={styles.aqiText}>{tehsil.aqi}</Text>
-                        <View style={styles.progressBackground}>
-                          <View
-                            style={[
-                              styles.progressBar,
-                              {
-                                width: calculateWidth(tehsil.aqi),
-                                backgroundColor: getStatusColor(tehsil.status),
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                    <View style={[styles.cell, {width: 120}]}>
-                      <Text
-                        style={[
-                          styles.statusText,
-                          {color: getStatusColor(tehsil.status)},
-                        ]}>
-                        {tehsil.status}
-                      </Text>
-                    </View>
-                    <View style={[styles.cell, {width: 160}]}>
-                      <Text
-                        style={[
-                          styles.standardText,
-                          {color: getStatusColor(tehsil.status)},
-                        ]}>
-                        {tehsil.standardValue}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
+          <View style={styles.tableContainer}>
+            {/* Table Header */}
+            <View style={styles.tableHeader}>
+              <Text
+                style={[styles.headerText, styles.rankColumn]}
+                numberOfLines={1}>
+                Rank
+              </Text>
+              <Text
+                style={[styles.headerText, styles.tehsilColumn]}
+                numberOfLines={1}>
+                Tehsil
+              </Text>
+              <Text
+                style={[styles.headerText, styles.aqiColumn]}
+                numberOfLines={1}>
+                AQI
+              </Text>
+              <Text
+                style={[styles.headerText, styles.statusColumn]}
+                numberOfLines={1}>
+                Status
+              </Text>
             </View>
-          </ScrollView>
+
+            {/* Table Rows */}
+            <View style={styles.tableRows}>
+              {tehsilData.map(tehsil => (
+                <View key={tehsil.id} style={styles.tableRow}>
+                  <Text
+                    style={[styles.rankText, styles.rankColumn]}
+                    numberOfLines={1}>
+                    {tehsil.id}.
+                  </Text>
+                  <Text
+                    style={[styles.nameText, styles.tehsilColumn]}
+                    numberOfLines={1}>
+                    {tehsil.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.aqiValueText,
+                      styles.aqiColumn,
+                      {color: getAqiColor(tehsil.aqi)},
+                    ]}
+                    numberOfLines={1}>
+                    {tehsil.aqi}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      styles.statusColumn,
+                      {color: getAqiColor(tehsil.aqi)},
+                    ]}
+                    numberOfLines={1}>
+                    {tehsil.status || getAqiStatus(tehsil.aqi)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -181,7 +182,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tableContainer: {
-    minWidth: screenWidth - 32,
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
@@ -195,15 +195,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingVertical: 8,
     borderRadius: 6,
-  },
-  headerCell: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerText: {
     color: '#374151',
     fontWeight: 'bold',
     fontSize: 14,
+    ellipsizeMode: 'tail',
   },
   tableRows: {
     marginTop: 8,
@@ -211,48 +210,56 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     backgroundColor: '#2A2F34',
-    marginBottom: 8, // Fixed the syntax error here
+    marginBottom: 8,
     borderRadius: 6,
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  cell: {
-    paddingHorizontal: 8,
-    justifyContent: 'center',
+  rankColumn: {
+    width: '18%',
+    paddingLeft: 12,
+    paddingRight: 4,
+    textAlign: 'left',
+  },
+  tehsilColumn: {
+    width: '32%',
+    paddingHorizontal: 4,
+    textAlign: 'left',
+    ellipsizeMode: 'tail',
+  },
+  aqiColumn: {
+    width: '15%',
+    paddingHorizontal: 4,
+    textAlign: 'center',
+  },
+  statusColumn: {
+    width: '25%',
+    paddingHorizontal: 4,
+    textAlign: 'left',
+    ellipsizeMode: 'tail',
   },
   rankText: {
     color: '#FFFFFF',
     fontSize: 14,
+    textAlign: 'left',
   },
   nameText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'left',
   },
-  aqiContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aqiText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    marginRight: 8,
-  },
-  progressBackground: {
-    width: 96,
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
+  aqiValueText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   statusText: {
-    fontSize: 14,
-  },
-  standardText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'left',
   },
 });
 

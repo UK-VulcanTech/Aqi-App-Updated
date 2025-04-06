@@ -14,20 +14,19 @@ const AQIDashboard = () => {
     <SafeAreaView style={styles.container}>
       {/* Gradient Background */}
       <LinearGradient
-        colors={['#E4E4E4', '#F0C09D', '#F0C09D']}
+        colors={['#FFFFFF', '#F0C09D', '#F8D7BE']}
         style={styles.gradientBackground}
-        locations={[0, 0.6, 1]}
+        locations={[0.0, 0.5, 0.8]}
       />
-
       <StatusBar backgroundColor="#E4E4E4" barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
-        <Image
+        {/* <Image
           source={require('../../assets/icons/home.png')}
           style={styles.homeIcon}
         />
-        <Text style={styles.headerText}>Dashboard</Text>
+        <Text style={styles.headerText}>Dashboard</Text> */}
       </View>
 
       {/* Main Content */}
@@ -128,7 +127,7 @@ const AQIDashboard = () => {
       <Image
         source={require('../../assets/images/Lahore.png')}
         style={styles.cityBackground}
-        resizeMode="stretch"
+        // resizeMode="stretch"
       />
     </SafeAreaView>
   );
@@ -172,7 +171,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 15,
+    paddingTop: 25,
     backgroundColor: 'transparent',
   },
   titleContainer: {
@@ -331,7 +330,6 @@ const styles = StyleSheet.create({
     height: 180,
     position: 'absolute',
     bottom: 0,
-    opacity: 0.3,
   },
 });
 

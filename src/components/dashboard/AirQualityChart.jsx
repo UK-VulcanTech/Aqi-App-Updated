@@ -1,10 +1,9 @@
-import React, {useState, useRef} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Dimensions,
-  ScrollView,
   StyleSheet,
   Image,
 } from 'react-native';
@@ -14,32 +13,26 @@ const AirQualityChart = () => {
   const [selectedPollutant, setSelectedPollutant] = useState('PM 10');
   const [timeRange] = useState('7 Days');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const scrollViewRef = useRef(null);
 
-  // Sample data for the chart
+  // Sample data for the chart with only day
   const airQualityData = [
-    {date: '03/04/2025', day: 'Mon', value: 145},
-    {date: '04/04/2025', day: 'Tue', value: 190},
-    {date: '05/04/2025', day: 'Wed', value: 203},
-    {date: '06/04/2025', day: 'Thu', value: 245},
-    {date: '07/04/2025', day: 'Fri', value: 165},
-    {date: '08/04/2025', day: 'Sat', value: 210},
-    {date: '09/04/2025', day: 'Sun', value: 200},
+    {day: 'Mon', value: 145},
+    {day: 'Tue', value: 190},
+    {day: 'Wed', value: 203},
+    {day: 'Thu', value: 245},
+    {day: 'Fri', value: 165},
+    {day: 'Sat', value: 210},
+    {day: 'Sun', value: 200},
   ];
 
   const pollutants = ['AQI', 'PM 2.5', 'PM 10', 'CO', 'SO2', 'NO2', 'O3'];
   const screenWidth = Dimensions.get('window').width;
 
-  // Calculate chart width based on number of bars with spacing
-  const barWidth = 40;
-  const barSpacing = 40;
-  const chartWidth = Math.max(
-    screenWidth - 40,
-    airQualityData.length * (barWidth + barSpacing),
-  );
+  // Explicitly calculate bar width to fit in screen
+  const barWidth = 20; // Reduced bar width to shrink space
+  const chartWidth = screenWidth - 120; // Accounting for margins and paddings
 
   // Chart config for bar chart
-  // Modify the barChartConfig object by adding a barPercentage and barRadius property
   const barChartConfig = {
     backgroundColor: '#ffffff',
     backgroundGradientFrom: '#ffffff',
@@ -55,8 +48,8 @@ const AirQualityChart = () => {
         : `rgba(250, 204, 21, ${opacity})`; // yellow
     },
     labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-    barPercentage: 0.7, // Reduce from 0.6 to create more space
-    barRadius: 4, // Optional: add rounded corners to bars
+    barPercentage: 0.6, // Reduced to create more compact bars
+    barRadius: 4,
     propsForLabels: {
       fontSize: 0, // Hide default labels
     },
@@ -84,8 +77,6 @@ const AirQualityChart = () => {
                       style={styles.downIcon}
                     />
                   </View>
-
-                  {/* <View style={styles.iconPlaceholder} /> */}
                 </TouchableOpacity>
 
                 {dropdownOpen && (
@@ -137,58 +128,48 @@ const AirQualityChart = () => {
                 </View>
               </View>
 
-              {/* Scrollable chart area */}
-              <ScrollView
-                horizontal={true}
-                ref={scrollViewRef}
-                showsHorizontalScrollIndicator={true}
-                contentContainerStyle={styles.scrollViewContent}>
-                <View style={styles.chartWrapper}>
-                  <BarChart
-                    data={{
-                      labels: airQualityData.map(() => ''),
-                      datasets: [
-                        {
-                          data: airQualityData.map(item => item.value),
-                        },
-                      ],
-                    }}
-                    width={chartWidth}
-                    height={230}
-                    yAxisSuffix=""
-                    chartConfig={barChartConfig}
-                    style={styles.chart}
-                    fromZero={true}
-                    withInnerLines={false}
-                    segments={6}
-                    showValuesOnTopOfBars={true}
-                    withHorizontalLabels={false}
-                    yAxisLabel=""
-                    withVerticalLines={false}
-                  />
+              {/* Chart area - no ScrollView */}
+              <View style={styles.chartWrapper}>
+                <BarChart
+                  data={{
+                    labels: airQualityData.map(() => ''),
+                    datasets: [
+                      {
+                        data: airQualityData.map(item => item.value),
+                      },
+                    ],
+                  }}
+                  width={chartWidth}
+                  height={230}
+                  yAxisSuffix=""
+                  chartConfig={barChartConfig}
+                  style={styles.chart}
+                  fromZero={true}
+                  withInnerLines={false}
+                  segments={6}
+                  showValuesOnTopOfBars={true}
+                  withHorizontalLabels={false}
+                  yAxisLabel=""
+                  withVerticalLines={false}
+                />
 
-                  {/* Date labels container */}
-                  <View style={styles.dateLabelsContainer}>
-                    {airQualityData.map((item, index) => {
-                      const totalBarWidth = barWidth + barSpacing;
-                      const xPos = totalBarWidth * index + barWidth / 2;
+                {/* Date labels container */}
+                <View style={styles.dateLabelsContainer}>
+                  {airQualityData.map((item, index) => {
+                    // Calculate position based on chart width divided by number of items
+                    const sectionWidth = chartWidth / airQualityData.length;
+                    const xPos = sectionWidth * index + sectionWidth / 2;
 
-                      return (
-                        <View
-                          key={index}
-                          style={[
-                            styles.dateLabelContainer,
-                            {left: xPos - 35}, // Widened to fit combined date and day
-                          ]}>
-                          <Text style={styles.dateLabel}>
-                            {item.date}, {item.day}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
+                    return (
+                      <View
+                        key={index}
+                        style={[styles.dateLabelContainer, {left: xPos - 15}]}>
+                        <Text style={styles.dateLabel}>{item.day}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
-              </ScrollView>
+              </View>
             </View>
           </View>
         </View>
@@ -209,27 +190,13 @@ const styles = StyleSheet.create({
   borderTop: {
     borderTopWidth: 1,
     borderTopColor: '#000000',
-    paddingVertical: 32,
-  },
-  headerContainer: {
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#7D7D7D',
-    fontWeight: '500',
+    paddingVertical: 16, // Reduced from 32 to remove extra height from top
   },
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 8, // Reduced from 16
     marginBottom: 8,
   },
   buttonGroup: {
@@ -303,7 +270,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    marginTop: 24,
+    marginTop: 16, // Reduced from 24
     width: '100%',
   },
   locationButton: {
@@ -315,7 +282,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignSelf: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced from 16
   },
   locationIconPlaceholder: {
     width: 18,
@@ -328,7 +295,7 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
   },
   chartContainer: {
-    height: 300,
+    height: 280, // Reduced from 300
     flexDirection: 'row',
     position: 'relative',
   },
@@ -384,36 +351,34 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   chart: {
-    marginVertical: 12,
+    marginVertical: 8, // Reduced from 12
     borderRadius: 16,
-    paddingRight: 20,
-    marginLeft: 20, // Added left margin to the bars
-  },
-  scrollViewContent: {
-    paddingRight: 20,
+    paddingRight: 0,
+    marginLeft: 0,
   },
   chartWrapper: {
-    height: 300,
+    height: 280, // Reduced from 300
     position: 'relative',
+    flex: 1,
   },
   dateLabelsContainer: {
     position: 'absolute',
     bottom: 20,
-    left: 15, // Adjusted to match the chart margin
+    left: 0,
     right: 0,
-    height: 40,
+    height: 50, // Reduced from 40
   },
   dateLabelContainer: {
     position: 'absolute',
     alignItems: 'center',
-    width: 70, // Widened to accommodate date and day
+    width: 30, // Reduced from 70 since we only show day now
   },
   dateLabel: {
     fontSize: 10,
     color: '#6B7280',
-    transform: [{rotate: '-60deg'}],
+    transform: [{rotate: '0deg'}], // Changed from -60deg to 0deg since we only have short day names
     textAlign: 'center',
-    width: 100, // Give enough width for the combined date and day
+    width: 30, // Reduced from 100
   },
 });
 

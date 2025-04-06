@@ -17,6 +17,7 @@ import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
+import {useGetAllSensors} from '../../services/sensor.hooks';
 // import {SafeAreaView} from 'react-native-safe-area-context';
 
 const LahoreMap = () => {
@@ -33,6 +34,13 @@ const LahoreMap = () => {
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
   const [csvMarkers, setCsvMarkers] = useState([]);
   // const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
+  const {
+    data: sensorData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+    refetch, // Add this to get the refetch function
+  } = useGetAllSensors();
+  console.log('🚀 ~ LahoreMap ~ sensorData:', sensorData);
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -173,7 +181,7 @@ const LahoreMap = () => {
          zoomSnap: 1,
          minZoom: 6,
          maxZoom: 18
-       }).setView([31.5204, 74.3587], 12);
+       }).setView([31.5204, 74.3587], 10); // Starting with a more zoomed out view of Lahore
        
        // Define Lahore bounds
        const lahoreBounds = L.latLngBounds(
@@ -327,11 +335,9 @@ const LahoreMap = () => {
        // Function to clear only search markers but keep fixed markers
        function clearSearchMarkers() {
          markers.forEach(marker => {
-           if (!marker.isFixedMarker) {
-             map.removeLayer(marker);
-           }
+           map.removeLayer(marker);
          });
-         markers = markers.filter(marker => marker.isFixedMarker);
+         markers = [];
        }
        
        // Function to clear all markers including fixed ones
@@ -422,69 +428,6 @@ const LahoreMap = () => {
          debug("Map info updated");
        }
        
-       // Function to add fixed markers for Model Town and Gulberg
-       function addFixedLocationMarkers() {
-         // Create custom Model Town marker
-         const modelTownMarker = L.marker([31.4794, 74.3118], {
-           icon: L.divIcon({
-             className: 'custom-div-icon',
-             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>105</div>",
-             iconSize: [40, 40],
-             iconAnchor: [20, 20]
-           })
-         }).addTo(map);
-         
-         // Create custom Gulberg marker
-         const gulbergMarker = L.marker([31.5204, 74.3587], {
-           icon: L.divIcon({
-             className: 'custom-div-icon',
-             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>125</div>",
-             iconSize: [40, 40],
-             iconAnchor: [20, 20]
-           })
-         }).addTo(map);
-         
-         // Add click handlers
-         modelTownMarker.on('click', function() {
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: 31.4794,
-               lon: 74.3118,
-               title: 'Model Town',
-               description: 'Particulate Matter (PM2.5)',
-               value: '105',
-               status: 'Moderate',
-               source: 'WWF-Pakistan'
-             }
-           }));
-         });
-         
-         gulbergMarker.on('click', function() {
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: 31.5204,
-               lon: 74.3587,
-               title: 'Gulberg',
-               description: 'Particulate Matter (PM2.5)',
-               value: '125',
-               status: 'Moderate',
-               source: 'WWF-Pakistan'
-             }
-           }));
-         });
-         
-         // Mark these as fixed markers so they don't get removed by normal clearMarkers
-         modelTownMarker.isFixedMarker = true;
-         gulbergMarker.isFixedMarker = true;
-         
-         // Add markers to the global markers array
-         markers.push(modelTownMarker, gulbergMarker);
-         
-         debug("Added fixed markers for Model Town and Gulberg");
-       }
-       
        // Listen for map move events
        map.on('moveend', function() {
          debug("Map moved");
@@ -494,11 +437,6 @@ const LahoreMap = () => {
        map.on('zoomend', function() {
          debug("Map zoomed to level: " + map.getZoom());
        });
-       
-       // Add the fixed markers after initialization
-       setTimeout(function() {
-         addFixedLocationMarkers();
-       }, 500);
        
        // Let React Native know the map is ready
        debug("Map initialized");
@@ -814,11 +752,6 @@ const LahoreMap = () => {
              // Re-enable dragging after loading TIFF
              forceEnableDragging();
              debug("TIFF loaded successfully");
-             
-             // Make sure fixed markers are on top
-             setTimeout(function() {
-               addFixedLocationMarkers();
-             }, 100);
            } catch(error) {
              debug("Error loading TIFF: " + error.message);
            }
@@ -1007,12 +940,7 @@ showCurrentLocation();
   const goToCurrentLocation = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
-        map.setView([31.5204, 74.3587], 12);
-        
-        // Make sure fixed markers are visible
-        setTimeout(function() {
-          addFixedLocationMarkers();
-        }, 100);
+        map.setView([31.5204, 74.3587], 10); // Zoomed out to show all of Lahore
         true;
       `;
       webViewRef.current.injectJavaScript(script);
@@ -1036,6 +964,141 @@ showCurrentLocation();
       return () => clearInterval(interval);
     }
   }, [webViewLoaded]);
+
+  // Use an effect to process sensor data when it loads
+  useEffect(() => {
+    if (sensorData && webViewLoaded && webViewRef.current) {
+      console.log('Processing sensor data:', sensorData.length);
+      processSensorData(sensorData);
+    }
+  }, [sensorData, webViewLoaded]);
+
+  // Add this function to process and display sensor data on the map
+  const processSensorData = sensors => {
+    if (!sensors || !webViewRef.current) {
+      return;
+    }
+
+    try {
+      // Format sensor data for the map
+      const formattedSensors = sensors
+        .filter(sensor => sensor.latitude && sensor.longitude)
+        .map(sensor => ({
+          lat: sensor.latitude,
+          lon: sensor.longitude,
+          value: sensor.sensor_value || 0,
+          type: 'PM2.5',
+          name:
+            sensor.location ||
+            `Sensor at ${sensor.latitude.toFixed(
+              4,
+            )}, ${sensor.longitude.toFixed(4)}`,
+          timestamp: sensor.timestamp,
+        }));
+
+      console.log(
+        `Processing ${formattedSensors.length} sensor readings from Barki`,
+      );
+
+      if (formattedSensors.length === 0) {
+        console.log('No valid sensor data found');
+        return;
+      }
+
+      // Inject JavaScript to add colored circles for sensors based on value
+      const script = `
+      try {
+        // Create array for sensor markers if it doesn't exist
+        if (!window.sensorMarkers) {
+          window.sensorMarkers = [];
+        }
+        
+        // Clear previous sensor markers
+        if (window.sensorMarkers && window.sensorMarkers.length) {
+          window.sensorMarkers.forEach(marker => {
+            map.removeLayer(marker);
+          });
+          window.sensorMarkers = [];
+          debug("Cleared existing sensor markers");
+        }
+        
+        // Add sensor markers with colored circles based on value
+        const sensorData = ${JSON.stringify(formattedSensors)};
+        debug("Adding " + sensorData.length + " sensor markers");
+        
+        sensorData.forEach((sensor, index) => {
+          // Format the value - round to nearest integer
+          const valueDisplay = Math.round(parseFloat(sensor.value)).toString();
+          const value = parseFloat(sensor.value);
+          
+          // Determine background color based on value ranges
+          let bgColor = '#00FF00'; // Green for 0-50
+          if (value > 250) {
+            bgColor = '#FF0000'; // Red for > 250
+          } else if (value > 150) {
+            bgColor = '#800080'; // Purple for 150-250
+          } else if (value > 50) {
+            bgColor = '#FFD700'; // Yellow for 50-150
+          }
+          
+          // Create a custom icon with the value inside
+          const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:" + bgColor + ";color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>" + valueDisplay + "</div>",
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          });
+          
+          // Create marker with the custom icon
+          const marker = L.marker([sensor.lat, sensor.lon], {
+            icon: customIcon
+          }).addTo(map);
+          
+          // Add a click handler
+          marker.on('click', function(e) {
+            debug("Sensor marker clicked: " + index);
+            
+            // Determine status text based on value
+            let statusText = "Good";
+            if (value > 250) statusText = "Hazardous";
+            else if (value > 150) statusText = "Unhealthy";
+            else if (value > 100) statusText = "Unhealthy for Sensitive Groups";
+            else if (value > 50) statusText = "Moderate";
+            
+            // Send data to React Native
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'markerClick',
+              data: {
+                lat: sensor.lat,
+                lon: sensor.lon,
+                title: sensor.name,
+                description: 'Particulate Matter (PM2.5)',
+                value: valueDisplay,
+                status: statusText,
+                source: 'Barki Sensor Network'
+              }
+            }));
+          });
+          
+          // Store in our sensor markers array
+          window.sensorMarkers.push(marker);
+        });
+        
+        debug("Successfully added " + sensorData.length + " sensor markers with values");
+        true;
+      } catch(e) {
+        debug("Error adding sensor markers: " + e.message);
+        true;
+      }
+      `;
+
+      webViewRef.current.injectJavaScript(script);
+      setStatus(`Added ${formattedSensors.length} Barki sensor readings`);
+    } catch (error) {
+      console.error('Error processing sensor data:', error);
+      setStatus('Error processing sensor data');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1212,10 +1275,6 @@ showCurrentLocation();
                     debug("Removed TIFF layer");
                   }
                   clearCSVMarkers();
-                  // Make sure fixed markers remain visible
-                  setTimeout(function() {
-                    addFixedLocationMarkers();
-                  }, 100);
                   true;
                 `;
                 webViewRef.current.injectJavaScript(script);

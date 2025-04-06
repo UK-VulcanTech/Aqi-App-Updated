@@ -110,7 +110,7 @@ const Header = () => {
   const menuItems = [
     {
       icon: require('../../assets/icons/mobile.png'),
-      label: 'Dashboard',
+      label: 'Home',
       route: 'Home', // This will now correctly navigate to HomeScreen
     },
     {

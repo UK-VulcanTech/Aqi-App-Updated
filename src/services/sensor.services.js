@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Use exactly this URL since you confirmed data is coming from here
-const BASE_URL = 'https://6073-182-185-183-76.ngrok-free.app';
+const BASE_URL = 'https://feb8-182-185-183-76.ngrok-free.app';
 
 const sensorServices = {
     getAllSensors: () => {

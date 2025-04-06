@@ -179,14 +179,14 @@ const LahoreMap = () => {
          scrollWheelZoom: false,
          zoomDelta: 1,
          zoomSnap: 1,
-         minZoom: 6,
+         minZoom: 10,  // Increased minimum zoom to prevent showing too much
          maxZoom: 18
-       }).setView([31.5204, 74.3587], 10); // Starting with a more zoomed out view of Lahore
+       }).setView([31.5204, 74.3587], 11); // Starting with a more zoomed view of Lahore
        
-       // Define Lahore bounds
+       // Define Lahore bounds - TIGHTER FOCUS ON LAHORE ONLY
        const lahoreBounds = L.latLngBounds(
-         L.latLng(31.3, 74.1),  // Southwest corner
-         L.latLng(31.7, 74.6)   // Northeast corner
+         L.latLng(31.40, 74.15),  // Southwest corner - tighter
+         L.latLng(31.65, 74.45)   // Northeast corner - tighter
        );
 
        map.setMaxBounds(lahoreBounds);
@@ -240,6 +240,10 @@ const LahoreMap = () => {
            if (currentZoom > 11) {
              map.setZoom(currentZoom - 1);
              debug("Zoomed out to level: " + map.getZoom());
+           } else {
+             // FIXED: When zooming out beyond level 11, fit to Lahore bounds
+             map.fitBounds(lahoreBounds);
+             debug("Zoomed out to Lahore city bounds");
            }
          }
        }
@@ -260,7 +264,8 @@ const LahoreMap = () => {
                  .filter(item => {
                    const lat = parseFloat(item.lat);
                    const lon = parseFloat(item.lon);
-                   return lat >= 31.3 && lat <= 31.7 && lon >= 74.1 && lon <= 74.6;
+                   // FIXED: Adjusted filters to match our new lahoreBounds
+                   return lat >= 31.40 && lat <= 31.65 && lon >= 74.15 && lon <= 74.45;
                  })
                  .slice(0, 5)
                  .map(item => ({
@@ -428,23 +433,35 @@ const LahoreMap = () => {
          debug("Map info updated");
        }
        
-       // Listen for map move events
+       // Add new event listeners to enforce Lahore bounds
        map.on('moveend', function() {
+         // If the current view goes outside Lahore bounds, reset to Lahore
+         if (!lahoreBounds.contains(map.getBounds())) {
+           map.fitBounds(lahoreBounds);
+           debug("Map view reset to Lahore bounds");
+         }
          debug("Map moved");
        });
        
-       // Listen for zoom events
+       // Enhanced zoom end listener to enforce boundaries
        map.on('zoomend', function() {
-         debug("Map zoomed to level: " + map.getZoom());
+         // If zoom level is too low, ensure we're looking at Lahore
+         if (map.getZoom() < 10) {
+           map.fitBounds(lahoreBounds);
+           debug("Map zoomed to level: " + map.getZoom() + " - enforcing Lahore bounds");
+         } else {
+           debug("Map zoomed to level: " + map.getZoom());
+         }
        });
        
        // Let React Native know the map is ready
        debug("Map initialized");
        
-       // Final initialization to ensure dragging works
+       // Final initialization to ensure dragging works and bounds are respected
        setTimeout(function() {
          forceEnableDragging();
          map.invalidateSize();
+         map.fitBounds(lahoreBounds);
        }, 1000);
      </script>
    </body>
@@ -737,16 +754,30 @@ const LahoreMap = () => {
              // FIXED: Improved fit bounds functionality to ensure entire TIFF layer is visible
              try {
                const bounds = tiffLayer.getBounds();
-               if (bounds && bounds.isValid()) {
-                 // Force a fairly low zoom level to ensure we see the whole TIFF
-                 map.setView(bounds.getCenter(), 11);
-                 debug("Map view set to center of TIFF at zoom level 11");
+               // Check if bounds are within Lahore bounds
+               const layerBounds = bounds && bounds.isValid() ? bounds : lahoreBounds;
+               
+               // Ensure we don't go outside Lahore bounds
+               const fitBounds = L.latLngBounds(
+                 [
+                   Math.max(layerBounds.getSouth(), lahoreBounds.getSouth()),
+                   Math.max(layerBounds.getWest(), lahoreBounds.getWest())
+                 ],
+                 [
+                   Math.min(layerBounds.getNorth(), lahoreBounds.getNorth()),
+                   Math.min(layerBounds.getEast(), lahoreBounds.getEast())
+                 ]
+               );
+               
+               if (fitBounds.isValid()) {
+                 map.fitBounds(fitBounds);
+                 debug("Map view set to fit TIFF within Lahore bounds");
                } else {
-                 throw new Error("Invalid TIFF bounds");
+                 throw new Error("Invalid fit bounds");
                }
              } catch(e) {
                debug("Could not fit to bounds: " + e.message);
-               map.setView([31.5204, 74.3587], 11);
+               map.fitBounds(lahoreBounds);
              }
              
              // Re-enable dragging after loading TIFF
@@ -827,18 +858,18 @@ showCurrentLocation();
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-      goToLocation(
-         ${location.lat}, 
-         ${location.lon}, 
-         "${location.name.replace(/"/g, '\\"')}", 
-         "${
-           location.description
-             ? location.description.replace(/"/g, '\\"')
-             : 'Selected location'
-         }"
-       );
-       true;
-     `;
+    goToLocation(
+       ${location.lat}, 
+       ${location.lon}, 
+       "${location.name.replace(/"/g, '\\"')}", 
+       "${
+         location.description
+           ? location.description.replace(/"/g, '\\"')
+           : 'Selected location'
+       }"
+     );
+     true;
+   `;
       webViewRef.current.injectJavaScript(script);
       setStatus(`Navigated to ${location.name}`);
     }
@@ -861,28 +892,60 @@ showCurrentLocation();
       // Handle marker clicks from search
       if (data.type === 'markerClick') {
         const markerData = data.data;
+
+        // FIXED: Set card data with proper location info and color information
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
           value: markerData.value || 'N/A',
           source: markerData.source || 'Search Result',
-          location: markerData.title,
+          location:
+            markerData.title ||
+            `Location at ${markerData.lat.toFixed(4)}, ${markerData.lon.toFixed(
+              4,
+            )}`,
           type: markerData.description,
           status: markerData.status || 'Location Info',
+          color: markerData.color || null, // Store color for styling the card
         });
         setShowPollutionCard(true);
       }
       // Handle CSV marker clicks
       else if (data.type === 'csvMarkerClick') {
         const markerData = data.data;
+
+        // Determine appropriate color based on value
+        let color = '#00FF00'; // Default green
+        let status = 'Good';
+        const value = markerData.value;
+
+        if (value < 0.2) {
+          color = '#00FF00'; // Green
+          status = 'Good';
+        } else if (value < 0.4) {
+          color = '#FFFF00'; // Yellow
+          status = 'Moderate';
+        } else if (value < 0.6) {
+          color = '#FFA500'; // Orange
+          status = 'Unhealthy for Sensitive Groups';
+        } else if (value < 0.8) {
+          color = '#FF0000'; // Red
+          status = 'Unhealthy';
+        } else {
+          color = '#800080'; // Purple
+          status = 'Hazardous';
+        }
+
+        // FIXED: Include exact location and color in marker data
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
           value: markerData.value.toFixed(2),
           source: 'CSV Data',
-          location: `Lat: ${markerData.lat.toFixed(
+          location: `Location at ${markerData.lat.toFixed(
             5,
-          )}, Lon: ${markerData.lon.toFixed(5)}`,
+          )}, ${markerData.lon.toFixed(5)}`,
           type: markerData.markerType,
-          status: getStatusFromValue(markerData.value),
+          status: status,
+          color: color,
         });
         setShowPollutionCard(true);
       }
@@ -936,29 +999,38 @@ showCurrentLocation();
     setShowPollutantDropdown(!showPollutantDropdown);
   };
 
-  // Function to go to current location (centered on Lahore)
+  // Function to go to current location (centered on Lahore) - IMPROVED
   const goToCurrentLocation = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
-        map.setView([31.5204, 74.3587], 10); // Zoomed out to show all of Lahore
-        true;
-      `;
+      // Always reset to Lahore bounds
+      map.fitBounds(lahoreBounds);
+      map.setMaxBounds(lahoreBounds);
+      debug("Reset to Lahore boundaries");
+      true;
+    `;
       webViewRef.current.injectJavaScript(script);
       setStatus('Returned to Lahore center');
     }
   };
 
-  // Function to periodically force enable map dragging
+  // Function to periodically force enable map dragging and enforce Lahore boundaries
   useEffect(() => {
     if (webViewLoaded && webViewRef.current) {
       const interval = setInterval(() => {
         webViewRef.current.injectJavaScript(`
-          if (map) {
-            map.dragging.enable();
-            map.touchZoom.enable();
+        if (map) {
+          map.dragging.enable();
+          map.touchZoom.enable();
+          
+          // ADDED: Periodic check to ensure we stay within Lahore bounds
+          if (!lahoreBounds.contains(map.getBounds())) {
+            map.fitBounds(lahoreBounds);
+            debug("Enforcing Lahore bounds");
           }
-          true;
-        `);
+        }
+        true;
+      `);
       }, 3000);
 
       return () => clearInterval(interval);
@@ -973,7 +1045,7 @@ showCurrentLocation();
     }
   }, [sensorData, webViewLoaded]);
 
-  // Add this function to process and display sensor data on the map
+  // FIXED: Enhanced function to process and display sensor data on the map
   const processSensorData = sensors => {
     if (!sensors || !webViewRef.current) {
       return;
@@ -990,7 +1062,7 @@ showCurrentLocation();
           type: 'PM2.5',
           name:
             sensor.location ||
-            `Sensor at ${sensor.latitude.toFixed(
+            `Location at ${sensor.latitude.toFixed(
               4,
             )}, ${sensor.longitude.toFixed(4)}`,
           timestamp: sensor.timestamp,
@@ -1007,93 +1079,95 @@ showCurrentLocation();
 
       // Inject JavaScript to add colored circles for sensors based on value
       const script = `
-      try {
-        // Create array for sensor markers if it doesn't exist
-        if (!window.sensorMarkers) {
-          window.sensorMarkers = [];
+    try {
+      // Create array for sensor markers if it doesn't exist
+      if (!window.sensorMarkers) {
+        window.sensorMarkers = [];
+      }
+      
+      // Clear previous sensor markers
+      if (window.sensorMarkers && window.sensorMarkers.length) {
+        window.sensorMarkers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        window.sensorMarkers = [];
+        debug("Cleared existing sensor markers");
+      }
+      
+      // Add sensor markers with colored circles based on value
+      const sensorData = ${JSON.stringify(formattedSensors)};
+      debug("Adding " + sensorData.length + " sensor markers");
+      
+      sensorData.forEach((sensor, index) => {
+        // Format the value - round to nearest integer
+        const valueDisplay = Math.round(parseFloat(sensor.value)).toString();
+        const value = parseFloat(sensor.value);
+        
+        // Determine background color and status based on value ranges
+        let bgColor = '#00FF00'; // Green for 0-50
+        let statusText = "Good";
+        
+        if (value > 250) {
+          bgColor = '#FF0000'; // Red for > 250
+          statusText = "Hazardous";
+        } else if (value > 150) {
+          bgColor = '#800080'; // Purple for 150-250
+          statusText = "Unhealthy";
+        } else if (value > 100) {
+          bgColor = '#FFA500'; // Orange for 100-150
+          statusText = "Unhealthy for Sensitive Groups";
+        } else if (value > 50) {
+          bgColor = '#FFD700'; // Yellow for 50-150
+          statusText = "Moderate";
         }
         
-        // Clear previous sensor markers
-        if (window.sensorMarkers && window.sensorMarkers.length) {
-          window.sensorMarkers.forEach(marker => {
-            map.removeLayer(marker);
-          });
-          window.sensorMarkers = [];
-          debug("Cleared existing sensor markers");
-        }
-        
-        // Add sensor markers with colored circles based on value
-        const sensorData = ${JSON.stringify(formattedSensors)};
-        debug("Adding " + sensorData.length + " sensor markers");
-        
-        sensorData.forEach((sensor, index) => {
-          // Format the value - round to nearest integer
-          const valueDisplay = Math.round(parseFloat(sensor.value)).toString();
-          const value = parseFloat(sensor.value);
-          
-          // Determine background color based on value ranges
-          let bgColor = '#00FF00'; // Green for 0-50
-          if (value > 250) {
-            bgColor = '#FF0000'; // Red for > 250
-          } else if (value > 150) {
-            bgColor = '#800080'; // Purple for 150-250
-          } else if (value > 50) {
-            bgColor = '#FFD700'; // Yellow for 50-150
-          }
-          
-          // Create a custom icon with the value inside
-          const customIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div style='background-color:" + bgColor + ";color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>" + valueDisplay + "</div>",
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-          });
-          
-          // Create marker with the custom icon
-          const marker = L.marker([sensor.lat, sensor.lon], {
-            icon: customIcon
-          }).addTo(map);
-          
-          // Add a click handler
-          marker.on('click', function(e) {
-            debug("Sensor marker clicked: " + index);
-            
-            // Determine status text based on value
-            let statusText = "Good";
-            if (value > 250) statusText = "Hazardous";
-            else if (value > 150) statusText = "Unhealthy";
-            else if (value > 100) statusText = "Unhealthy for Sensitive Groups";
-            else if (value > 50) statusText = "Moderate";
-            
-            // Send data to React Native
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'markerClick',
-              data: {
-                lat: sensor.lat,
-                lon: sensor.lon,
-                title: sensor.name,
-                description: 'Particulate Matter (PM2.5)',
-                value: valueDisplay,
-                status: statusText,
-                source: 'Barki Sensor Network'
-              }
-            }));
-          });
-          
-          // Store in our sensor markers array
-          window.sensorMarkers.push(marker);
+        // Create a custom icon with the value inside
+        const customIcon = L.divIcon({
+          className: 'custom-div-icon',
+          html: "<div style='background-color:" + bgColor + ";color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>" + valueDisplay + "</div>",
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
         });
         
-        debug("Successfully added " + sensorData.length + " sensor markers with values");
-        true;
-      } catch(e) {
-        debug("Error adding sensor markers: " + e.message);
-        true;
-      }
-      `;
+        // Create marker with the custom icon
+        const marker = L.marker([sensor.lat, sensor.lon], {
+          icon: customIcon
+        }).addTo(map);
+        
+        // Add a click handler that sends comprehensive data
+        marker.on('click', function(e) {
+          debug("Sensor marker clicked: " + index);
+          
+          // FIXED: Send comprehensive data including location and color
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'markerClick',
+            data: {
+              lat: sensor.lat,
+              lon: sensor.lon,
+              title: sensor.name || "Sensor Location",
+              description: 'Particulate Matter (PM2.5)',
+              value: valueDisplay,
+              status: statusText,
+              source: 'Sensor Data',
+              color: bgColor
+            }
+          }));
+        });
+        
+        // Store in our sensor markers array
+        window.sensorMarkers.push(marker);
+      });
+      
+      debug("Successfully added " + sensorData.length + " sensor markers with values");
+      true;
+    } catch(e) {
+      debug("Error adding sensor markers: " + e.message);
+      true;
+    }
+    `;
 
       webViewRef.current.injectJavaScript(script);
-      setStatus(`Added ${formattedSensors.length} Barki sensor readings`);
+      setStatus(`Added ${formattedSensors.length} sensor readings`);
     } catch (error) {
       console.error('Error processing sensor data:', error);
       setStatus('Error processing sensor data');
@@ -1118,14 +1192,15 @@ showCurrentLocation();
               setTimeout(() => {
                 if (webViewRef.current) {
                   webViewRef.current.injectJavaScript(`
-                    if (map) {
-                      map.dragging.enable();
-                      map.touchZoom.enable();
-                      map.invalidateSize();
-                      debug("Map interaction explicitly enabled on load");
-                    }
-                    true;
-                  `);
+                  if (map) {
+                    map.dragging.enable();
+                    map.touchZoom.enable();
+                    map.invalidateSize();
+                    map.fitBounds(lahoreBounds);
+                    debug("Map interaction explicitly enabled on load and set to Lahore bounds");
+                  }
+                  true;
+                `);
                 }
               }, 500);
             }}
@@ -1161,20 +1236,21 @@ showCurrentLocation();
             allowsInlineMediaPlayback={true}
             allowsBackForwardNavigationGestures={false}
             injectedJavaScript={`
-              // Force touch detection
-              L.Browser.touch = true;
-              L.Browser.mobile = true;
-              
-              // Make sure map is ready for interaction
-              setTimeout(function() {
-                if (map) {
-                  map.dragging.enable();
-                  map.touchZoom.enable();
-                  map.invalidateSize();
-                }
-              }, 1000);
-              true;
-            `}
+            // Force touch detection
+            L.Browser.touch = true;
+            L.Browser.mobile = true;
+            
+            // Make sure map is ready for interaction
+            setTimeout(function() {
+              if (map) {
+                map.dragging.enable();
+                map.touchZoom.enable();
+                map.invalidateSize();
+                map.fitBounds(lahoreBounds);
+              }
+            }, 1000);
+            true;
+          `}
           />
         </View>
 
@@ -1269,14 +1345,14 @@ showCurrentLocation();
             onPress={() => {
               if (webViewRef.current && webViewLoaded) {
                 const script = `
-                  if (tiffLayer) {
-                    map.removeLayer(tiffLayer);
-                    tiffLayer = null;
-                    debug("Removed TIFF layer");
-                  }
-                  clearCSVMarkers();
-                  true;
-                `;
+                if (tiffLayer) {
+                  map.removeLayer(tiffLayer);
+                  tiffLayer = null;
+                  debug("Removed TIFF layer");
+                }
+                clearCSVMarkers();
+                true;
+              `;
                 webViewRef.current.injectJavaScript(script);
                 setCurrentLayer(null);
                 setCsvMarkers([]);
@@ -1287,12 +1363,15 @@ showCurrentLocation();
           </TouchableOpacity>
         )}
 
-        {/* Modified: Pollution Info Card - Black background */}
+        {/* FIXED: Pollution Info Card - Now uses marker color for styling */}
         {showPollutionCard && selectedMarkerData && (
           <View style={styles.pollutionInfoCardContainer}>
             <View style={styles.pollutionInfoCard}>
               <Text style={styles.pollutionInfoSource}>
                 Source: {selectedMarkerData.source}
+              </Text>
+              <Text style={styles.pollutionInfoLocation}>
+                {selectedMarkerData.location}
               </Text>
               <Text style={styles.pollutionInfoType}>
                 {selectedMarkerData.type}
@@ -1300,8 +1379,22 @@ showCurrentLocation();
               <Text style={styles.pollutionInfoValue}>
                 {selectedMarkerData.value}
               </Text>
-              <View style={styles.pollutionInfoStatus}>
-                <Text style={styles.pollutionInfoStatusText}>
+              <View
+                style={[
+                  styles.pollutionInfoStatus,
+                  {backgroundColor: selectedMarkerData.color || '#FFD700'},
+                ]}>
+                <Text
+                  style={[
+                    styles.pollutionInfoStatusText,
+                    {
+                      color:
+                        selectedMarkerData.color === '#FFFF00' ||
+                        selectedMarkerData.color === '#00FF00'
+                          ? 'black'
+                          : 'white',
+                    },
+                  ]}>
                   {selectedMarkerData.status}
                 </Text>
               </View>
@@ -1415,6 +1508,13 @@ const styles = StyleSheet.create({
   pollutionInfoSource: {
     color: 'rgba(255, 0, 0, 0.8)',
     fontSize: 12,
+    marginBottom: 5,
+  },
+  // ADDED: New style for location text
+  pollutionInfoLocation: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
     marginBottom: 5,
   },
   pollutionInfoType: {

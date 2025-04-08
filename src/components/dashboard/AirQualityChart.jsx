@@ -112,7 +112,7 @@ const AirQualityChart = () => {
 
           <View style={styles.chartCard}>
             <TouchableOpacity style={styles.locationButton}>
-              <View style={styles.locationIconPlaceholder} />
+              {/* <View style={styles.locationIconPlaceholder} /> */}
               <Text style={styles.locationText}>Lahore, Punjab, PK</Text>
             </TouchableOpacity>
 

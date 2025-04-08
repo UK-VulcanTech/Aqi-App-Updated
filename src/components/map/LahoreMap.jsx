@@ -1123,11 +1123,15 @@ showCurrentLocation();
         
         // Create a custom icon with the value inside
         const customIcon = L.divIcon({
-          className: 'custom-div-icon',
-          html: "<div style='background-color:" + bgColor + ";color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>" + valueDisplay + "</div>",
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
-        });
+      className: 'custom-div-icon',
+      html: "<div style='position:relative;'>" +
+        "<div style='background-color:" + bgColor + ";color:white;border-radius:8px;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
+        "<div style='position:absolute;bottom:-6px;left:16px;width:8px;height:8px;background-color:" + bgColor + ";transform:rotate(45deg);'></div>" +
+        "</div>",
+      iconSize: [40, 50],
+      iconAnchor: [20, 48]
+      });
+
         
         // Create marker with the custom icon
         const marker = L.marker([sensor.lat, sensor.lon], {
@@ -1282,7 +1286,7 @@ showCurrentLocation();
         <TouchableOpacity
           style={styles.aqiIndicator}
           onPress={handlePollutantSelect}>
-          <Text style={styles.aqiText}>AQI</Text>
+          {/* <Text style={styles.aqiText}>AQI</Text> */}
           <Text style={styles.aqiValue}>
             {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
           </Text>
@@ -1498,12 +1502,17 @@ const styles = StyleSheet.create({
   },
   // Modified: Black background for pollution info card
   pollutionInfoCard: {
-    width: 250,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderRadius: 10,
-    padding: 15,
+    width: 300,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.2,
+    shadowRadius: 32,
+    elevation: 5,
   },
   pollutionInfoSource: {
     color: 'rgba(255, 0, 0, 0.8)',

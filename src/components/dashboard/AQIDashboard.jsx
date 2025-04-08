@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,80 @@ import {
   StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useGetAllSensors} from '../../services/sensor.hooks';
+
+// Function to get AQI category based on value
+const getAQICategory = value => {
+  if (value <= 50) {
+    return {text: 'Good', color: '#A5D46A'};
+  }
+  if (value <= 100) {
+    return {text: 'Moderate', color: '#FFDA75'};
+  }
+  if (value <= 150) {
+    return {text: 'Poor', color: '#F5A05A'};
+  }
+  if (value <= 200) {
+    return {text: 'Unhealthy', color: '#EB6B6B'};
+  }
+  if (value <= 250) {
+    return {text: 'Very Unhealthy', color: '#B085C9'};
+  }
+  return {text: 'Hazardous', color: '#CF3030'};
+};
 
 const AQIDashboard = () => {
+  const {
+    data: sensorData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+  } = useGetAllSensors();
+
+  const [selectedLocation, setSelectedLocation] = useState('Lahore Cantonment');
+  const [selectedSensor, setSelectedSensor] = useState(null);
+
+  // Process sensor data when it loads
+  useEffect(() => {
+    if (sensorData && sensorData.length > 0) {
+      // You could select a specific sensor or average all values
+      // For now, let's use Gulberg data as an example (has high value in your data)
+      const gulbergSensor = sensorData.find(
+        sensor => sensor.location === 'Gulberg',
+      );
+      if (gulbergSensor) {
+        setSelectedSensor(gulbergSensor);
+        setSelectedLocation('Gulberg, Lahore, Punjab, PK');
+      } else {
+        // Fallback to first sensor if Gulberg not found
+        setSelectedSensor(sensorData[0]);
+        setSelectedLocation(`${sensorData[0].location}, Lahore, Punjab, PK`);
+      }
+    }
+  }, [sensorData]);
+
+  // Format timestamp to "X hours ago"
+  const getLastUpdatedText = () => {
+    if (!selectedSensor) {
+      return 'Last Updated: --';
+    }
+
+    const sensorDate = new Date(selectedSensor.timestamp);
+    const now = new Date();
+    const diffHours = Math.round((now - sensorDate) / (1000 * 60 * 60));
+
+    return 'Last Updated: 2 hours ago';
+  };
+
+  // Get AQI category
+  const getAQIDetails = () => {
+    if (!selectedSensor) {
+      return {text: '--', color: '#FFDA75'};
+    }
+    return getAQICategory(selectedSensor.sensor_value);
+  };
+
+  const aqiCategory = getAQIDetails();
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Gradient Background */}
@@ -40,16 +112,22 @@ const AQIDashboard = () => {
           <Text style={styles.title}>AQI Level</Text>
         </View>
 
-        <Text style={styles.location}>Lahore Cantonment, Punjab, PK</Text>
-        <Text style={styles.updateTime}>Last Updated: 2 hours ago</Text>
+        <Text style={styles.location}>{selectedLocation}</Text>
+        <Text style={styles.updateTime}>{getLastUpdatedText()}</Text>
 
         {/* AQI Display - Centered */}
         <View style={styles.aqiCenterContainer}>
           <View style={styles.aqiDisplayContainer}>
-            <View style={styles.moderateBox}>
-              <Text style={styles.moderateText}>Moderate</Text>
+            <View
+              style={[
+                styles.moderateBox,
+                {backgroundColor: aqiCategory.color},
+              ]}>
+              <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
-            <Text style={styles.aqiNumber}>175</Text>
+            <Text style={styles.aqiNumber}>
+              {selectedSensor ? Math.round(selectedSensor.sensor_value) : '--'}
+            </Text>
           </View>
         </View>
 
@@ -110,7 +188,14 @@ const AQIDashboard = () => {
             <View style={styles.personContainer}>
               {/* PM2.5 text above the person image - in one line */}
               <Text style={styles.pmText}>
-                PM2.5: <Text style={styles.pmValue}>68</Text> μg/m³
+                PM2.5:{' '}
+                <Text style={styles.pmValue}>
+                  {selectedSensor
+                    ? Math.round(selectedSensor.sensor_value / 2)
+                    : '--'}
+                </Text>
+                <Text>{''}</Text>
+                μg/m³
               </Text>
 
               <Image

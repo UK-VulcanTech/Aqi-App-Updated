@@ -91,382 +91,314 @@ const LahoreMap = () => {
     }
   };
 
-  // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging and removed zoom controls
+  // Initial HTML with Leaflet map - FIXED for dragging and zooming
   const htmlContent = `
-   <!DOCTYPE html>
-   <html>
-   <head>
-     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-     <script src="https://unpkg.com/geotiff"></script>
-     <script src="https://unpkg.com/georaster"></script>
-     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
-     <style>
-       html, body { 
-         margin: 0; 
-         padding: 0; 
-         height: 100%; 
-         width: 100%;
-         overflow: hidden;
-         touch-action: none;
-         -webkit-user-select: none;
-         user-select: none;
-       }
-       #map { 
-         position: absolute; 
-         top: 0; 
-         bottom: 0; 
-         width: 100%; 
-         height: 100%;
-         touch-action: none;
-         z-index: 1;
-       }
-       .leaflet-container {
-         touch-action: none;
-         -ms-touch-action: none;
-       }
-       .leaflet-marker-icon,
-       .leaflet-marker-shadow,
-       .leaflet-image-layer,
-       .leaflet-pane > svg path {
-         pointer-events: auto !important;
-       }
-       /* Hide all popups completely */
-       .leaflet-popup {
-         display: none !important;
-       }
-       /* Override Leaflet control styles to remove white backgrounds */
-       .leaflet-control {
-         background: transparent !important;
-       }
-       .leaflet-bar {
-         background: transparent !important;
-         box-shadow: none !important;
-         border: none !important;
-       }
-       .leaflet-bar a {
-         background: rgba(0, 0, 0, 0.7) !important;
-         color: white !important;
-         border: none !important;
-       }
-       .leaflet-control-attribution {
-         background: rgba(0, 0, 0, 0.5) !important;
-         color: #aaa !important;
-       }
-       /* Custom marker styles */
-       .custom-div-icon {
-         background: transparent;
-         border: none;
-       }
-     </style>
-   </head>
-   <body>
-     <div id="map"></div>
-     <script>
-       // Force touch detection
-       L.Browser.touch = true;
-       L.Browser.pointer = false;
-       L.Browser.mobile = true;
-       
-       // Very simple map initialization to avoid conflicts
-       var map = L.map('map', {
-         zoomControl: false,
-         dragging: true,
-         tap: true,
-         touchZoom: true,
-         keyboard: false,
-         scrollWheelZoom: false,
-         zoomDelta: 1,
-         zoomSnap: 1,
-         minZoom: 10,  // Increased minimum zoom to prevent showing too much
-         maxZoom: 18
-       }).setView([31.5204, 74.3587], 11); // Starting with a more zoomed view of Lahore
-       
-       // Define Lahore bounds - TIGHTER FOCUS ON LAHORE ONLY
-       const lahoreBounds = L.latLngBounds(
-         L.latLng(31.40, 74.15),  // Southwest corner - tighter
-         L.latLng(31.65, 74.45)   // Northeast corner - tighter
-       );
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/geotiff"></script>
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+    <style>
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        height: 100%; 
+        width: 100%;
+        overflow: hidden;
+      }
+      #map { 
+        position: absolute; 
+        top: 0; 
+        bottom: 0; 
+        width: 100%; 
+        height: 100%;
+      }
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-image-layer,
+      .leaflet-pane > svg path {
+        pointer-events: auto !important;
+      }
+      .leaflet-popup {
+        display: none !important;
+      }
+      .leaflet-control {
+        background: transparent !important;
+      }
+      .leaflet-bar {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .leaflet-bar a {
+        background: rgba(0, 0, 0, 0.7) !important;
+        color: white !important;
+        border: none !important;
+      }
+      .leaflet-control-attribution {
+        background: rgba(0, 0, 0, 0.5) !important;
+        color: #aaa !important;
+      }
+      .custom-div-icon {
+        background: transparent;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // VERY SIMPLIFIED APPROACH - minimizing layers of complexity
+      
+      // Force touch detection
+      L.Browser.touch = true;
+      L.Browser.mobile = true;
+      
+      // Simple map initialization with minimal options
+      var map = L.map('map', {
+        zoomControl: false,
+        attributionControl: true,
+        dragging: true,
+        touchZoom: true,
+        minZoom: 10,
+        maxZoom: 18
+      }).setView([31.5204, 74.3587], 11);
+      
+      // Define Lahore bounds
+      const lahoreBounds = L.latLngBounds(
+        L.latLng(31.40, 74.15),
+        L.latLng(31.65, 74.45)
+      );
+      
+      map.setMaxBounds(lahoreBounds);
+      
+      // Add base layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      
+      var tiffLayer = null;
+      var markers = [];
+      var csvMarkers = [];
+      var currentInfoBox = null;
+      
+      // Debug function
+      function debug(message) {
+        window.ReactNativeWebView.postMessage(message);
+      }
 
-       map.setMaxBounds(lahoreBounds);
-       
-       // Add OpenStreetMap base layer
-       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-         attribution: '&copy; OpenStreetMap contributors'
-       }).addTo(map);
-       
-       var tiffLayer = null;
-       var markers = [];
-       var csvMarkers = [];
-       var currentInfoBox = null;
-       
-       // Debug function to send messages back to React Native
-       function debug(message) {
-         window.ReactNativeWebView.postMessage(message);
-       }
-       
-       // Critical fix: ensure dragging is enabled
-       function forceEnableDragging() {
-         if (map) {
-           map.dragging.enable();
-           map.touchZoom.enable();
-           debug("Map dragging explicitly enabled");
-         }
-       }
-       
-       // Call this immediately and periodically
-       forceEnableDragging();
-       setInterval(forceEnableDragging, 2000);
-       
-       // Specific handler for touch events
-       document.addEventListener('touchstart', function(e) {
-         forceEnableDragging();
-         if (e.touches.length > 1) {
-           map._enforcingBounds = false;
-         }
-       }, {passive: true});
-       
-       // Improved function to zoom the map programmatically with proper limits
-       function zoomMap(direction) {
-         const currentZoom = map.getZoom();
-         
-         if (direction === 'in') {
-           if (currentZoom < 18) {
-             map.setZoom(currentZoom + 1);
-             debug("Zoomed in to level: " + map.getZoom());
-           }
-         } else if (direction === 'out') {
-           if (currentZoom > 11) {
-             map.setZoom(currentZoom - 1);
-             debug("Zoomed out to level: " + map.getZoom());
-           } else {
-             // FIXED: When zooming out beyond level 11, fit to Lahore bounds
-             map.fitBounds(lahoreBounds);
-             debug("Zoomed out to Lahore city bounds");
-           }
-         }
-       }
-       
-       // Function to search for a location
-       function searchLocation(query) {
-         debug("Searching for: " + query);
-         
-         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
-           headers: {
-             'User-Agent': 'LahoreMapApp/1.0'
-           }
-         })
-           .then(response => response.json())
-           .then(data => {
-             if (data && data.length > 0) {
-               const results = data
-                 .filter(item => {
-                   const lat = parseFloat(item.lat);
-                   const lon = parseFloat(item.lon);
-                   // FIXED: Adjusted filters to match our new lahoreBounds
-                   return lat >= 31.40 && lat <= 31.65 && lon >= 74.15 && lon <= 74.45;
-                 })
-                 .slice(0, 5)
-                 .map(item => ({
-                   name: item.display_name,
-                   lat: parseFloat(item.lat),
-                   lon: parseFloat(item.lon),
-                   description: item.type || 'Location in Lahore'
-                 }));
-               
-               window.ReactNativeWebView.postMessage(JSON.stringify({
-                 type: 'searchResults',
-                 results: results
-               }));
-               debug("Found " + results.length + " locations");
-             } else {
-               debug("No locations found");
-               window.ReactNativeWebView.postMessage(JSON.stringify({
-                 type: 'searchResults',
-                 results: []
-               }));
-             }
-           })
-           .catch(error => {
-             debug("Error searching: " + error.message);
-             window.ReactNativeWebView.postMessage(JSON.stringify({
-               type: 'searchError',
-               error: error.message
-             }));
-           });
-       }     
-       
-       // Function to go to a specific location and add a marker
-       function goToLocation(lat, lon, title, description) {
-         const latlng = L.latLng(lat, lon);
-         if (!lahoreBounds.contains(latlng)) {
-           debug("Location outside Lahore: " + title);
-           lat = 31.5204;
-           lon = 74.3587;
-           title = "Lahore";
-           description = "City in Pakistan";
-         }
-         
-         map.setView([lat, lon], 13);
-         addMarker(lat, lon, title, description);
-         debug("Moved to location: " + title);
-       }
-       
-       // Function to add a marker to the map - modified to NOT show popup
-       function addMarker(lat, lon, title, description) {
-         clearSearchMarkers();
-         
-         const marker = L.marker([lat, lon]).addTo(map);
-         
-         // Instead of using bindPopup, we directly handle the click
-         marker.on('click', function() {
-           // Send data to React Native to show custom card
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: lat,
-               lon: lon,
-               title: title,
-               description: description
-             }
-           }));
-         });
-         
-         markers.push(marker);
-         return marker;
-       }
-       
-       // Function to clear only search markers but keep fixed markers
-       function clearSearchMarkers() {
-         markers.forEach(marker => {
-           map.removeLayer(marker);
-         });
-         markers = [];
-       }
-       
-       // Function to clear all markers including fixed ones
-       function clearAllMarkers() {
-         markers.forEach(marker => {
-           map.removeLayer(marker);
-         });
-         markers = [];
-       }
+      // Zoom function with direct implementation
+      function zoomMap(direction) {
+        try {
+          let zoom = map.getZoom();
+          debug("Current zoom level: " + zoom);
+          
+          if (direction === 'in' && zoom < 18) {
+            map.setZoom(zoom + 1);
+            debug("Zoomed in to: " + map.getZoom());
+          } 
+          else if (direction === 'out' && zoom > 10) {
+            map.setZoom(zoom - 1);
+            debug("Zoomed out to: " + map.getZoom());
+          }
+          else if (direction === 'out') {
+            map.fitBounds(lahoreBounds);
+            debug("Reset to Lahore bounds");
+          }
+        } catch(e) {
+          debug("Zoom error: " + e.message);
+        }
+      }
+      
+      // Location search
+      function searchLocation(query) {
+        debug("Searching for: " + query);
+        
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
+          headers: {
+            'User-Agent': 'LahoreMapApp/1.0'
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              const results = data
+                .filter(item => {
+                  const lat = parseFloat(item.lat);
+                  const lon = parseFloat(item.lon);
+                  return lat >= 31.40 && lat <= 31.65 && lon >= 74.15 && lon <= 74.45;
+                })
+                .slice(0, 5)
+                .map(item => ({
+                  name: item.display_name,
+                  lat: parseFloat(item.lat),
+                  lon: parseFloat(item.lon),
+                  description: item.type || 'Location in Lahore'
+                }));
+              
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'searchResults',
+                results: results
+              }));
+              debug("Found " + results.length + " locations");
+            } else {
+              debug("No locations found");
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'searchResults',
+                results: []
+              }));
+            }
+          })
+          .catch(error => {
+            debug("Error searching: " + error.message);
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'searchError',
+              error: error.message
+            }));
+          });
+      }
+      
+      // Go to location
+      function goToLocation(lat, lon, title, description) {
+        const latlng = L.latLng(lat, lon);
+        if (!lahoreBounds.contains(latlng)) {
+          debug("Location outside Lahore: " + title);
+          lat = 31.5204;
+          lon = 74.3587;
+          title = "Lahore";
+          description = "City in Pakistan";
+        }
+        
+        map.setView([lat, lon], 13);
+        addMarker(lat, lon, title, description);
+        debug("Moved to location: " + title);
+      }
+      
+      // Rest of your functions (keeping them simple)
+      function addMarker(lat, lon, title, description) {
+        clearSearchMarkers();
+        
+        const marker = L.marker([lat, lon]).addTo(map);
+        
+        marker.on('click', function() {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'markerClick',
+            data: {
+              lat: lat,
+              lon: lon,
+              title: title,
+              description: description
+            }
+          }));
+        });
+        
+        markers.push(marker);
+        return marker;
+      }
+      
+      function clearSearchMarkers() {
+        markers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        markers = [];
+      }
+      
+      function clearAllMarkers() {
+        markers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        markers = [];
+      }
 
-       // Function to clear all CSV markers
-       function clearCSVMarkers() {
-         csvMarkers.forEach(marker => {
-           map.removeLayer(marker);
-         });
-         csvMarkers = [];
-         debug("Cleared CSV markers");
-       }
+      function clearCSVMarkers() {
+        csvMarkers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        csvMarkers = [];
+        debug("Cleared CSV markers");
+      }
 
-       // Function to add CSV data points as invisible markers - modified to NOT show popup
-       function addCSVMarkers(points) {
-         debug("Adding " + points.length + " invisible CSV markers");
-         
-         points.forEach(point => {
-           const circleMarker = L.circleMarker([point.lat, point.lon], {
-             radius: 15,
-             fillColor: getValueColor(point.value),
-             color: '#fff',
-             weight: 0,
-             opacity: 0,
-             fillOpacity: 0
-           }).addTo(map);
-           
-           // Handle click without showing popup
-           circleMarker.on('click', function(e) {
-             window.ReactNativeWebView.postMessage(JSON.stringify({
-               type: 'csvMarkerClick',
-               data: {
-                 lat: point.lat,
-                 lon: point.lon,
-                 value: point.value,
-                 markerType: point.type
-               }
-             }));
-           });
-           
-           csvMarkers.push(circleMarker);
-         });
-         
-         debug("Added " + points.length + " invisible CSV markers");
-       }
+      function addCSVMarkers(points) {
+        debug("Adding " + points.length + " invisible CSV markers");
+        
+        points.forEach(point => {
+          const circleMarker = L.circleMarker([point.lat, point.lon], {
+            radius: 15,
+            fillColor: getValueColor(point.value),
+            color: '#fff',
+            weight: 0,
+            opacity: 0,
+            fillOpacity: 0
+          }).addTo(map);
+          
+          circleMarker.on('click', function(e) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'csvMarkerClick',
+              data: {
+                lat: point.lat,
+                lon: point.lon,
+                value: point.value,
+                markerType: point.type
+              }
+            }));
+          });
+          
+          csvMarkers.push(circleMarker);
+        });
+        
+        debug("Added " + points.length + " invisible CSV markers");
+      }
 
-       // Helper function to get color based on value
-       function getValueColor(value) {
-         if (value < 0.2) return '#00FF00';
-         else if (value < 0.4) return '#FFFF00';
-         else if (value < 0.6) return '#FFA500';
-         else if (value < 0.8) return '#FF0000';
-         else return '#800080';
-       }
-       
-       // Simplified function to display information about current view
-       function showCurrentLocation() {
-         const center = map.getCenter();
-         const zoom = map.getZoom();
-         
-         if (currentInfoBox) {
-           map.removeControl(currentInfoBox);
-         }
-         
-         const infoBoxControl = L.Control.extend({
-           options: {
-             position: 'bottomright'
-           },
-           onAdd: function() {
-             const div = L.DomUtil.create('div', 'info-box');
-             div.innerHTML = '<strong>Current View:</strong><br>' +
-                            '<strong>Coordinates:</strong> ' + 
-                            center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
-                            '<strong>Zoom Level:</strong> ' + zoom;
-             return div;
-           }
-         });
-         
-         currentInfoBox = new infoBoxControl();
-         map.addControl(currentInfoBox);
-         
-         debug("Map info updated");
-       }
-       
-       // Add new event listeners to enforce Lahore bounds
-       map.on('moveend', function() {
-         // If the current view goes outside Lahore bounds, reset to Lahore
-         if (!lahoreBounds.contains(map.getBounds())) {
-           map.fitBounds(lahoreBounds);
-           debug("Map view reset to Lahore bounds");
-         }
-         debug("Map moved");
-       });
-       
-       // Enhanced zoom end listener to enforce boundaries
-       map.on('zoomend', function() {
-         // If zoom level is too low, ensure we're looking at Lahore
-         if (map.getZoom() < 10) {
-           map.fitBounds(lahoreBounds);
-           debug("Map zoomed to level: " + map.getZoom() + " - enforcing Lahore bounds");
-         } else {
-           debug("Map zoomed to level: " + map.getZoom());
-         }
-       });
-       
-       // Let React Native know the map is ready
-       debug("Map initialized");
-       
-       // Final initialization to ensure dragging works and bounds are respected
-       setTimeout(function() {
-         forceEnableDragging();
-         map.invalidateSize();
-         map.fitBounds(lahoreBounds);
-       }, 1000);
-     </script>
-   </body>
-   </html>
- `;
+      function getValueColor(value) {
+        if (value < 0.2) return '#00FF00';
+        else if (value < 0.4) return '#FFFF00';
+        else if (value < 0.6) return '#FFA500';
+        else if (value < 0.8) return '#FF0000';
+        else return '#800080';
+      }
+      
+      function showCurrentLocation() {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        
+        if (currentInfoBox) {
+          map.removeControl(currentInfoBox);
+        }
+        
+        const infoBoxControl = L.Control.extend({
+          options: {
+            position: 'bottomright'
+          },
+          onAdd: function() {
+            const div = L.DomUtil.create('div', 'info-box');
+            div.innerHTML = '<strong>Current View:</strong><br>' +
+                          '<strong>Coordinates:</strong> ' + 
+                          center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
+                          '<strong>Zoom Level:</strong> ' + zoom;
+            return div;
+          }
+        });
+        
+        currentInfoBox = new infoBoxControl();
+        map.addControl(currentInfoBox);
+        
+        debug("Map info updated");
+      }
+      
+      // Let WebView know the map is ready
+      map.on('load', function() {
+        debug("Map fully loaded");
+      });
+      
+      debug("Map initialized");
+    </script>
+  </body>
+  </html>
+`;
 
   // Function to show Lahore-only notification
   const showLahoreOnlyNotification = () => {
@@ -780,8 +712,8 @@ const LahoreMap = () => {
                map.fitBounds(lahoreBounds);
              }
              
-             // Re-enable dragging after loading TIFF
-             forceEnableDragging();
+             // Re-enable interactions after loading TIFF
+             enableMapInteractions();
              debug("TIFF loaded successfully");
            } catch(error) {
              debug("Error loading TIFF: " + error.message);
@@ -860,7 +792,7 @@ showCurrentLocation();
       const script = `
     goToLocation(
        ${location.lat}, 
-       ${location.lon}, 
+       ${location.lon},
        "${location.name.replace(/"/g, '\\"')}", 
        "${
          location.description
@@ -1006,6 +938,7 @@ showCurrentLocation();
       // Always reset to Lahore bounds
       map.fitBounds(lahoreBounds);
       map.setMaxBounds(lahoreBounds);
+      enableMapInteractions();
       debug("Reset to Lahore boundaries");
       true;
     `;
@@ -1020,8 +953,7 @@ showCurrentLocation();
       const interval = setInterval(() => {
         webViewRef.current.injectJavaScript(`
         if (map) {
-          map.dragging.enable();
-          map.touchZoom.enable();
+          enableMapInteractions();
           
           // ADDED: Periodic check to ensure we stay within Lahore bounds
           if (!lahoreBounds.contains(map.getBounds())) {
@@ -1191,22 +1123,6 @@ showCurrentLocation();
             onLoad={() => {
               setWebViewLoaded(true);
               setStatus('Map loaded');
-
-              // Force enable map interaction on load
-              setTimeout(() => {
-                if (webViewRef.current) {
-                  webViewRef.current.injectJavaScript(`
-                  if (map) {
-                    map.dragging.enable();
-                    map.touchZoom.enable();
-                    map.invalidateSize();
-                    map.fitBounds(lahoreBounds);
-                    debug("Map interaction explicitly enabled on load and set to Lahore bounds");
-                  }
-                  true;
-                `);
-                }
-              }, 500);
             }}
             onError={syntheticEvent => {
               const {nativeEvent} = syntheticEvent;
@@ -1223,7 +1139,7 @@ showCurrentLocation();
             )}
             containerStyle={{flex: 1}}
             nestedScrollEnabled={false}
-            scalesPageToFit={false}
+            scalesPageToFit={true}
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
             directionalLockEnabled={false}
@@ -1232,29 +1148,6 @@ showCurrentLocation();
             bounces={false}
             allowFileAccess={true}
             useWebKit={true}
-            cacheEnabled={true}
-            javaScriptEnabledAndroid={true}
-            geolocationEnabled={true}
-            mediaPlaybackRequiresUserAction={false}
-            mixedContentMode="always"
-            allowsInlineMediaPlayback={true}
-            allowsBackForwardNavigationGestures={false}
-            injectedJavaScript={`
-            // Force touch detection
-            L.Browser.touch = true;
-            L.Browser.mobile = true;
-            
-            // Make sure map is ready for interaction
-            setTimeout(function() {
-              if (map) {
-                map.dragging.enable();
-                map.touchZoom.enable();
-                map.invalidateSize();
-                map.fitBounds(lahoreBounds);
-              }
-            }, 1000);
-            true;
-          `}
           />
         </View>
 

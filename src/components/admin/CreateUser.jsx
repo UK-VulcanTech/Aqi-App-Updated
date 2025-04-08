@@ -49,7 +49,7 @@ const CreateUser = () => {
               style={styles.backButton}
               onPress={() => navigation.goBack()}>
               <Image
-                source={require('../../assets/icons/profile.png')}
+                source={require('../../assets/icons/back.png')}
                 style={styles.backButtonTexts}
               />
             </TouchableOpacity>
@@ -122,7 +122,7 @@ const CreateUser = () => {
               <Text style={styles.label}>CNIC Number</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter CNIC Num"
+                placeholder="Enter CNIC Number"
                 value={formData.cnicNumber}
                 onChangeText={text =>
                   setFormData({...formData, cnicNumber: text})

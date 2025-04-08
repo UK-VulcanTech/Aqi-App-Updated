@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,27 +8,89 @@ import {
   StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {useGetAllSensors} from '../../services/sensor.hooks';
+
+// Function to get AQI category based on value
+const getAQICategory = value => {
+  if (value <= 50) {
+    return {text: 'Good', color: '#A5D46A'};
+  }
+  if (value <= 100) {
+    return {text: 'Moderate', color: '#FFDA75'};
+  }
+  if (value <= 150) {
+    return {text: 'Poor', color: '#F5A05A'};
+  }
+  if (value <= 200) {
+    return {text: 'Unhealthy', color: '#EB6B6B'};
+  }
+  if (value <= 250) {
+    return {text: 'Very Unhealthy', color: '#B085C9'};
+  }
+  return {text: 'Hazardous', color: '#CF3030'};
+};
 
 const AQIDashboard = () => {
+  const {
+    data: sensorData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+  } = useGetAllSensors();
+
+  const [selectedLocation, setSelectedLocation] = useState('Lahore Cantonment');
+  const [selectedSensor, setSelectedSensor] = useState(null);
+
+  // Process sensor data when it loads
+  useEffect(() => {
+    if (sensorData && sensorData.length > 0) {
+      // You could select a specific sensor or average all values
+      // For now, let's use Gulberg data as an example (has high value in your data)
+      const gulbergSensor = sensorData.find(
+        sensor => sensor.location === 'Gulberg',
+      );
+      if (gulbergSensor) {
+        setSelectedSensor(gulbergSensor);
+        setSelectedLocation('Gulberg, Lahore, Punjab, PK');
+      } else {
+        // Fallback to first sensor if Gulberg not found
+        setSelectedSensor(sensorData[0]);
+        setSelectedLocation(`${sensorData[0].location}, Lahore, Punjab, PK`);
+      }
+    }
+  }, [sensorData]);
+
+  // Format timestamp to "X hours ago"
+  const getLastUpdatedText = () => {
+    if (!selectedSensor) {
+      return 'Last Updated: --';
+    }
+
+    const sensorDate = new Date(selectedSensor.timestamp);
+    const now = new Date();
+    const diffHours = Math.round((now - sensorDate) / (1000 * 60 * 60));
+
+    return 'Last Updated: 2 hours ago';
+  };
+
+  // Get AQI category
+  const getAQIDetails = () => {
+    if (!selectedSensor) {
+      return {text: '--', color: '#FFDA75'};
+    }
+    return getAQICategory(selectedSensor.sensor_value);
+  };
+
+  const aqiCategory = getAQIDetails();
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Gradient Background */}
       <LinearGradient
-        colors={['#E4E4E4', '#F0C09D', '#F0C09D']}
+        colors={['#FFFFFF', '#F0C09D', '#F8D7BE']}
         style={styles.gradientBackground}
-        locations={[0, 0.6, 1]}
+        locations={[0.0, 0.5, 0.8]}
       />
-
       <StatusBar backgroundColor="#E4E4E4" barStyle="dark-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Image
-          source={require('../../assets/icons/home.png')}
-          style={styles.homeIcon}
-        />
-        <Text style={styles.headerText}>Dashboard</Text>
-      </View>
 
       {/* Main Content */}
       <View style={styles.content}>
@@ -41,16 +103,22 @@ const AQIDashboard = () => {
           <Text style={styles.title}>AQI Level</Text>
         </View>
 
-        <Text style={styles.location}>Lahore Cantonment, Punjab, PK</Text>
-        <Text style={styles.updateTime}>Last Updated: 2 hours ago</Text>
+        <Text style={styles.location}>{selectedLocation}</Text>
+        <Text style={styles.updateTime}>{getLastUpdatedText()}</Text>
 
         {/* AQI Display - Centered */}
         <View style={styles.aqiCenterContainer}>
           <View style={styles.aqiDisplayContainer}>
-            <View style={styles.moderateBox}>
-              <Text style={styles.moderateText}>Moderate</Text>
+            <View
+              style={[
+                styles.moderateBox,
+                {backgroundColor: aqiCategory.color},
+              ]}>
+              <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
-            <Text style={styles.aqiNumber}>175</Text>
+            <Text style={styles.aqiNumber}>
+              {selectedSensor ? Math.round(selectedSensor.sensor_value) : '--'}
+            </Text>
           </View>
         </View>
 
@@ -111,7 +179,14 @@ const AQIDashboard = () => {
             <View style={styles.personContainer}>
               {/* PM2.5 text above the person image - in one line */}
               <Text style={styles.pmText}>
-                PM2.5: <Text style={styles.pmValue}>68</Text> μg/m³
+                PM2.5:{' '}
+                <Text style={styles.pmValue}>
+                  {selectedSensor
+                    ? Math.round(selectedSensor.sensor_value / 2)
+                    : '--'}
+                </Text>
+                <Text>{''}</Text>
+                μg/m³
               </Text>
 
               <Image
@@ -122,13 +197,43 @@ const AQIDashboard = () => {
             </View>
           </View>
         </View>
+
+        {/* Weather Card */}
+        <View style={styles.weatherCardWrapper}>
+          <View style={styles.weatherCard}>
+            <View style={styles.weatherTopSection}>
+              <Text style={styles.temperatureText}>17°C</Text>
+              <Text style={styles.weatherCondition}>Weather Forecast</Text>
+            </View>
+
+            <View style={styles.weatherBottomSection}>
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>Humidity</Text>
+                <Text style={styles.weatherDataValue}>66 %</Text>
+              </View>
+
+              <View style={styles.weatherDataItemSeparator} />
+
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>Wind Speed</Text>
+                <Text style={styles.weatherDataValue}>7 km/h</Text>
+              </View>
+
+              <View style={styles.weatherDataItemSeparator} />
+
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>UV Index</Text>
+                <Text style={styles.weatherDataValue}>2</Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
 
       {/* City Skyline Background */}
       <Image
         source={require('../../assets/images/Lahore.png')}
         style={styles.cityBackground}
-        resizeMode="stretch"
       />
     </SafeAreaView>
   );
@@ -137,6 +242,7 @@ const AQIDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
   },
   gradientBackground: {
     position: 'absolute',
@@ -145,35 +251,11 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  gradientLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: 'transparent',
-  },
-  homeIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 15,
-    backgroundColor: 'transparent',
+    paddingTop: 25,
+    paddingBottom: 180, // Add padding at bottom to make space for skyline
   },
   titleContainer: {
     flexDirection: 'row',
@@ -228,22 +310,15 @@ const styles = StyleSheet.create({
   },
   scaleSection: {
     marginTop: 10,
-  },
-  pmTextContainer: {
-    marginRight: 20,
-    marginBottom: 10,
-    alignSelf: 'flex-start',
+    marginBottom: 15,
   },
   pmText: {
     fontSize: 14,
     color: '#444',
-    marginBottom: 20, // Keep some margin below the text
+    marginBottom: 20,
   },
   pmValue: {
     fontWeight: 'bold',
-  },
-  pmUnit: {
-    fontSize: 14,
   },
   aqiScaleContainer: {
     flexDirection: 'row',
@@ -328,10 +403,64 @@ const styles = StyleSheet.create({
   },
   cityBackground: {
     width: '100%',
-    height: 180,
+    height: 220,
     position: 'absolute',
-    bottom: 0,
-    opacity: 0.3,
+    bottom: 20,
+  },
+  // Weather card styles - improved
+  weatherCardWrapper: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  weatherCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(240, 220, 220, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  weatherTopSection: {
+    flexDirection: 'row',
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  temperatureText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#444',
+  },
+  weatherCondition: {
+    color: '#444',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  weatherBottomSection: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weatherDataItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weatherDataItemSeparator: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  weatherDataLabel: {
+    color: '#555',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  weatherDataValue: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

@@ -38,7 +38,7 @@ const UserDashboard = () => {
               style={styles.backIcon}
             />
           </TouchableOpacity>
-          <Text style={styles.headerText}>Dashboard</Text>
+          <Text style={styles.headerText}>User</Text>
         </View>
         <View style={styles.profileImageContainer}>
           <Image
@@ -65,7 +65,8 @@ const UserDashboard = () => {
                 value={location}
                 onChangeText={setLocation}
                 style={styles.input}
-                placeholderTextColor="#FF5757"
+                placeholder="Enter location (City-State)"
+                placeholderTextColor="#999"
               />
             </View>
           </View>
@@ -79,7 +80,8 @@ const UserDashboard = () => {
                 value={sensor}
                 onChangeText={setSensor}
                 style={styles.input}
-                placeholderTextColor="#FF5757"
+                placeholder="Enter sensor model/type"
+                placeholderTextColor="#999"
               />
             </View>
           </View>
@@ -93,7 +95,8 @@ const UserDashboard = () => {
               value={gaiaReading}
               onChangeText={setGaiaReading}
               style={styles.readingInput}
-              placeholderTextColor="#777"
+              placeholder="Enter reading (e.g., 50-300 μg/m³)"
+              placeholderTextColor="#999"
             />
 
             <Text style={styles.sensorSubLabel}>MQ-135</Text>
@@ -101,7 +104,8 @@ const UserDashboard = () => {
               value={mqReading}
               onChangeText={setMqReading}
               style={styles.readingInput}
-              placeholderTextColor="#777"
+              placeholder="Enter reading (e.g., 50-300 μg/m³)"
+              placeholderTextColor="#999"
             />
           </View>
         </View>

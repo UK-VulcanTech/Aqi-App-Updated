@@ -38,7 +38,7 @@ const UserDashboard = () => {
               style={styles.backIcon}
             />
           </TouchableOpacity>
-          <Text style={styles.headerText}>Dashboard</Text>
+          <Text style={styles.headerText}>User</Text>
         </View>
         <View style={styles.profileImageContainer}>
           <Image

@@ -92,15 +92,6 @@ const AQIDashboard = () => {
       />
       <StatusBar backgroundColor="#E4E4E4" barStyle="dark-content" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        {/* <Image
-          source={require('../../assets/icons/home.png')}
-          style={styles.homeIcon}
-        />
-        <Text style={styles.headerText}>Dashboard</Text> */}
-      </View>
-
       {/* Main Content */}
       <View style={styles.content}>
         {/* AQI Title and Location */}
@@ -206,13 +197,43 @@ const AQIDashboard = () => {
             </View>
           </View>
         </View>
+
+        {/* Weather Card */}
+        <View style={styles.weatherCardWrapper}>
+          <View style={styles.weatherCard}>
+            <View style={styles.weatherTopSection}>
+              <Text style={styles.temperatureText}>17°C</Text>
+              <Text style={styles.weatherCondition}>Weather Forecast</Text>
+            </View>
+
+            <View style={styles.weatherBottomSection}>
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>Humidity</Text>
+                <Text style={styles.weatherDataValue}>66 %</Text>
+              </View>
+
+              <View style={styles.weatherDataItemSeparator} />
+
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>Wind Speed</Text>
+                <Text style={styles.weatherDataValue}>7 km/h</Text>
+              </View>
+
+              <View style={styles.weatherDataItemSeparator} />
+
+              <View style={styles.weatherDataItem}>
+                <Text style={styles.weatherDataLabel}>UV Index</Text>
+                <Text style={styles.weatherDataValue}>2</Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </View>
 
       {/* City Skyline Background */}
       <Image
         source={require('../../assets/images/Lahore.png')}
         style={styles.cityBackground}
-        // resizeMode="stretch"
       />
     </SafeAreaView>
   );
@@ -221,6 +242,7 @@ const AQIDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
   },
   gradientBackground: {
     position: 'absolute',
@@ -229,35 +251,11 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  gradientLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: 'transparent',
-  },
-  homeIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 25,
-    backgroundColor: 'transparent',
+    paddingBottom: 180, // Add padding at bottom to make space for skyline
   },
   titleContainer: {
     flexDirection: 'row',
@@ -312,22 +310,15 @@ const styles = StyleSheet.create({
   },
   scaleSection: {
     marginTop: 10,
-  },
-  pmTextContainer: {
-    marginRight: 20,
-    marginBottom: 10,
-    alignSelf: 'flex-start',
+    marginBottom: 15,
   },
   pmText: {
     fontSize: 14,
     color: '#444',
-    marginBottom: 20, // Keep some margin below the text
+    marginBottom: 20,
   },
   pmValue: {
     fontWeight: 'bold',
-  },
-  pmUnit: {
-    fontSize: 14,
   },
   aqiScaleContainer: {
     flexDirection: 'row',
@@ -412,9 +403,64 @@ const styles = StyleSheet.create({
   },
   cityBackground: {
     width: '100%',
-    height: 180,
+    height: 220,
     position: 'absolute',
-    bottom: 0,
+    bottom: 20,
+  },
+  // Weather card styles - improved
+  weatherCardWrapper: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  weatherCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(240, 220, 220, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  weatherTopSection: {
+    flexDirection: 'row',
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  temperatureText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#444',
+  },
+  weatherCondition: {
+    color: '#444',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  weatherBottomSection: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weatherDataItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  weatherDataItemSeparator: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  weatherDataLabel: {
+    color: '#555',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  weatherDataValue: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

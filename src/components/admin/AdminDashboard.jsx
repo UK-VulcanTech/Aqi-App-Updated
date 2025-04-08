@@ -63,8 +63,8 @@ const AdminDashboard = () => {
               />
             </TouchableOpacity>
             <View>
-              <Text style={styles.headerText}>Dashboard</Text>
-              <Text style={styles.headerSubText}>Admin</Text>
+              <Text style={styles.headerText}>Admin</Text>
+              {/* <Text style={styles.headerSubText}>Admin</Text> */}
             </View>
           </View>
           <View style={styles.profileImageContainer}>

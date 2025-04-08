@@ -19,6 +19,7 @@ import AdminDashboard from './src/components/admin/AdminDashboard';
 import CreateUser from './src/components/admin/CreateUser';
 import AdminProfile from './src/components/admin/AdminProfile';
 import EditAdminProfile from './src/components/admin/EditAdminProfile';
+import BlogsScreen from './src/screens/BlogsScreen';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ function HomeStack() {
       <Stack.Screen name="HomeScreen" component={withHeader(HomeScreen)} />
       <Stack.Screen name="About" component={withHeader(AboutUsScreen)} />
       <Stack.Screen name="Contact" component={withHeader(ContactUsScreen)} />
+      <Stack.Screen name="Blogs" component={withHeader(BlogsScreen)} />
     </Stack.Navigator>
   );
 }

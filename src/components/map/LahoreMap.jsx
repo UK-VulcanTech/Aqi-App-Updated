@@ -17,6 +17,7 @@ import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
+import {useGetAllSensors} from '../../services/sensor.hooks';
 // import {SafeAreaView} from 'react-native-safe-area-context';
 
 const LahoreMap = () => {
@@ -33,6 +34,13 @@ const LahoreMap = () => {
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
   const [csvMarkers, setCsvMarkers] = useState([]);
   // const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
+  const {
+    data: sensorData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+    refetch, // Add this to get the refetch function
+  } = useGetAllSensors();
+  console.log('🚀 ~ LahoreMap ~ sensorData:', sensorData);
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -83,435 +91,314 @@ const LahoreMap = () => {
     }
   };
 
-  // Initial HTML with Leaflet map - CRITICALLY FIXED for dragging and removed zoom controls
+  // Initial HTML with Leaflet map - FIXED for dragging and zooming
   const htmlContent = `
-   <!DOCTYPE html>
-   <html>
-   <head>
-     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-     <script src="https://unpkg.com/geotiff"></script>
-     <script src="https://unpkg.com/georaster"></script>
-     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
-     <style>
-       html, body { 
-         margin: 0; 
-         padding: 0; 
-         height: 100%; 
-         width: 100%;
-         overflow: hidden;
-         touch-action: none;
-         -webkit-user-select: none;
-         user-select: none;
-       }
-       #map { 
-         position: absolute; 
-         top: 0; 
-         bottom: 0; 
-         width: 100%; 
-         height: 100%;
-         touch-action: none;
-         z-index: 1;
-       }
-       .leaflet-container {
-         touch-action: none;
-         -ms-touch-action: none;
-       }
-       .leaflet-marker-icon,
-       .leaflet-marker-shadow,
-       .leaflet-image-layer,
-       .leaflet-pane > svg path {
-         pointer-events: auto !important;
-       }
-       /* Hide all popups completely */
-       .leaflet-popup {
-         display: none !important;
-       }
-       /* Override Leaflet control styles to remove white backgrounds */
-       .leaflet-control {
-         background: transparent !important;
-       }
-       .leaflet-bar {
-         background: transparent !important;
-         box-shadow: none !important;
-         border: none !important;
-       }
-       .leaflet-bar a {
-         background: rgba(0, 0, 0, 0.7) !important;
-         color: white !important;
-         border: none !important;
-       }
-       .leaflet-control-attribution {
-         background: rgba(0, 0, 0, 0.5) !important;
-         color: #aaa !important;
-       }
-       /* Custom marker styles */
-       .custom-div-icon {
-         background: transparent;
-         border: none;
-       }
-     </style>
-   </head>
-   <body>
-     <div id="map"></div>
-     <script>
-       // Force touch detection
-       L.Browser.touch = true;
-       L.Browser.pointer = false;
-       L.Browser.mobile = true;
-       
-       // Very simple map initialization to avoid conflicts
-       var map = L.map('map', {
-         zoomControl: false,
-         dragging: true,
-         tap: true,
-         touchZoom: true,
-         keyboard: false,
-         scrollWheelZoom: false,
-         zoomDelta: 1,
-         zoomSnap: 1,
-         minZoom: 6,
-         maxZoom: 18
-       }).setView([31.5204, 74.3587], 12);
-       
-       // Define Lahore bounds
-       const lahoreBounds = L.latLngBounds(
-         L.latLng(31.3, 74.1),  // Southwest corner
-         L.latLng(31.7, 74.6)   // Northeast corner
-       );
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/geotiff"></script>
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+    <style>
+      html, body { 
+        margin: 0; 
+        padding: 0; 
+        height: 100%; 
+        width: 100%;
+        overflow: hidden;
+      }
+      #map { 
+        position: absolute; 
+        top: 0; 
+        bottom: 0; 
+        width: 100%; 
+        height: 100%;
+      }
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-image-layer,
+      .leaflet-pane > svg path {
+        pointer-events: auto !important;
+      }
+      .leaflet-popup {
+        display: none !important;
+      }
+      .leaflet-control {
+        background: transparent !important;
+      }
+      .leaflet-bar {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .leaflet-bar a {
+        background: rgba(0, 0, 0, 0.7) !important;
+        color: white !important;
+        border: none !important;
+      }
+      .leaflet-control-attribution {
+        background: rgba(0, 0, 0, 0.5) !important;
+        color: #aaa !important;
+      }
+      .custom-div-icon {
+        background: transparent;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // VERY SIMPLIFIED APPROACH - minimizing layers of complexity
+      
+      // Force touch detection
+      L.Browser.touch = true;
+      L.Browser.mobile = true;
+      
+      // Simple map initialization with minimal options
+      var map = L.map('map', {
+        zoomControl: false,
+        attributionControl: true,
+        dragging: true,
+        touchZoom: true,
+        minZoom: 10,
+        maxZoom: 18
+      }).setView([31.5204, 74.3587], 11);
+      
+      // Define Lahore bounds
+      const lahoreBounds = L.latLngBounds(
+        L.latLng(31.40, 74.15),
+        L.latLng(31.65, 74.45)
+      );
+      
+      map.setMaxBounds(lahoreBounds);
+      
+      // Add base layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      
+      var tiffLayer = null;
+      var markers = [];
+      var csvMarkers = [];
+      var currentInfoBox = null;
+      
+      // Debug function
+      function debug(message) {
+        window.ReactNativeWebView.postMessage(message);
+      }
 
-       map.setMaxBounds(lahoreBounds);
-       
-       // Add OpenStreetMap base layer
-       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-         attribution: '&copy; OpenStreetMap contributors'
-       }).addTo(map);
-       
-       var tiffLayer = null;
-       var markers = [];
-       var csvMarkers = [];
-       var currentInfoBox = null;
-       
-       // Debug function to send messages back to React Native
-       function debug(message) {
-         window.ReactNativeWebView.postMessage(message);
-       }
-       
-       // Critical fix: ensure dragging is enabled
-       function forceEnableDragging() {
-         if (map) {
-           map.dragging.enable();
-           map.touchZoom.enable();
-           debug("Map dragging explicitly enabled");
-         }
-       }
-       
-       // Call this immediately and periodically
-       forceEnableDragging();
-       setInterval(forceEnableDragging, 2000);
-       
-       // Specific handler for touch events
-       document.addEventListener('touchstart', function(e) {
-         forceEnableDragging();
-         if (e.touches.length > 1) {
-           map._enforcingBounds = false;
-         }
-       }, {passive: true});
-       
-       // Improved function to zoom the map programmatically with proper limits
-       function zoomMap(direction) {
-         const currentZoom = map.getZoom();
-         
-         if (direction === 'in') {
-           if (currentZoom < 18) {
-             map.setZoom(currentZoom + 1);
-             debug("Zoomed in to level: " + map.getZoom());
-           }
-         } else if (direction === 'out') {
-           if (currentZoom > 11) {
-             map.setZoom(currentZoom - 1);
-             debug("Zoomed out to level: " + map.getZoom());
-           }
-         }
-       }
-       
-       // Function to search for a location
-       function searchLocation(query) {
-         debug("Searching for: " + query);
-         
-         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
-           headers: {
-             'User-Agent': 'LahoreMapApp/1.0'
-           }
-         })
-           .then(response => response.json())
-           .then(data => {
-             if (data && data.length > 0) {
-               const results = data
-                 .filter(item => {
-                   const lat = parseFloat(item.lat);
-                   const lon = parseFloat(item.lon);
-                   return lat >= 31.3 && lat <= 31.7 && lon >= 74.1 && lon <= 74.6;
-                 })
-                 .slice(0, 5)
-                 .map(item => ({
-                   name: item.display_name,
-                   lat: parseFloat(item.lat),
-                   lon: parseFloat(item.lon),
-                   description: item.type || 'Location in Lahore'
-                 }));
-               
-               window.ReactNativeWebView.postMessage(JSON.stringify({
-                 type: 'searchResults',
-                 results: results
-               }));
-               debug("Found " + results.length + " locations");
-             } else {
-               debug("No locations found");
-               window.ReactNativeWebView.postMessage(JSON.stringify({
-                 type: 'searchResults',
-                 results: []
-               }));
-             }
-           })
-           .catch(error => {
-             debug("Error searching: " + error.message);
-             window.ReactNativeWebView.postMessage(JSON.stringify({
-               type: 'searchError',
-               error: error.message
-             }));
-           });
-       }     
-       
-       // Function to go to a specific location and add a marker
-       function goToLocation(lat, lon, title, description) {
-         const latlng = L.latLng(lat, lon);
-         if (!lahoreBounds.contains(latlng)) {
-           debug("Location outside Lahore: " + title);
-           lat = 31.5204;
-           lon = 74.3587;
-           title = "Lahore";
-           description = "City in Pakistan";
-         }
-         
-         map.setView([lat, lon], 13);
-         addMarker(lat, lon, title, description);
-         debug("Moved to location: " + title);
-       }
-       
-       // Function to add a marker to the map - modified to NOT show popup
-       function addMarker(lat, lon, title, description) {
-         clearSearchMarkers();
-         
-         const marker = L.marker([lat, lon]).addTo(map);
-         
-         // Instead of using bindPopup, we directly handle the click
-         marker.on('click', function() {
-           // Send data to React Native to show custom card
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: lat,
-               lon: lon,
-               title: title,
-               description: description
-             }
-           }));
-         });
-         
-         markers.push(marker);
-         return marker;
-       }
-       
-       // Function to clear only search markers but keep fixed markers
-       function clearSearchMarkers() {
-         markers.forEach(marker => {
-           if (!marker.isFixedMarker) {
-             map.removeLayer(marker);
-           }
-         });
-         markers = markers.filter(marker => marker.isFixedMarker);
-       }
-       
-       // Function to clear all markers including fixed ones
-       function clearAllMarkers() {
-         markers.forEach(marker => {
-           map.removeLayer(marker);
-         });
-         markers = [];
-       }
+      // Zoom function with direct implementation
+      function zoomMap(direction) {
+        try {
+          let zoom = map.getZoom();
+          debug("Current zoom level: " + zoom);
+          
+          if (direction === 'in' && zoom < 18) {
+            map.setZoom(zoom + 1);
+            debug("Zoomed in to: " + map.getZoom());
+          } 
+          else if (direction === 'out' && zoom > 10) {
+            map.setZoom(zoom - 1);
+            debug("Zoomed out to: " + map.getZoom());
+          }
+          else if (direction === 'out') {
+            map.fitBounds(lahoreBounds);
+            debug("Reset to Lahore bounds");
+          }
+        } catch(e) {
+          debug("Zoom error: " + e.message);
+        }
+      }
+      
+      // Location search
+      function searchLocation(query) {
+        debug("Searching for: " + query);
+        
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' lahore pakistan'), {
+          headers: {
+            'User-Agent': 'LahoreMapApp/1.0'
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              const results = data
+                .filter(item => {
+                  const lat = parseFloat(item.lat);
+                  const lon = parseFloat(item.lon);
+                  return lat >= 31.40 && lat <= 31.65 && lon >= 74.15 && lon <= 74.45;
+                })
+                .slice(0, 5)
+                .map(item => ({
+                  name: item.display_name,
+                  lat: parseFloat(item.lat),
+                  lon: parseFloat(item.lon),
+                  description: item.type || 'Location in Lahore'
+                }));
+              
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'searchResults',
+                results: results
+              }));
+              debug("Found " + results.length + " locations");
+            } else {
+              debug("No locations found");
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'searchResults',
+                results: []
+              }));
+            }
+          })
+          .catch(error => {
+            debug("Error searching: " + error.message);
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'searchError',
+              error: error.message
+            }));
+          });
+      }
+      
+      // Go to location
+      function goToLocation(lat, lon, title, description) {
+        const latlng = L.latLng(lat, lon);
+        if (!lahoreBounds.contains(latlng)) {
+          debug("Location outside Lahore: " + title);
+          lat = 31.5204;
+          lon = 74.3587;
+          title = "Lahore";
+          description = "City in Pakistan";
+        }
+        
+        map.setView([lat, lon], 13);
+        addMarker(lat, lon, title, description);
+        debug("Moved to location: " + title);
+      }
+      
+      // Rest of your functions (keeping them simple)
+      function addMarker(lat, lon, title, description) {
+        clearSearchMarkers();
+        
+        const marker = L.marker([lat, lon]).addTo(map);
+        
+        marker.on('click', function() {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'markerClick',
+            data: {
+              lat: lat,
+              lon: lon,
+              title: title,
+              description: description
+            }
+          }));
+        });
+        
+        markers.push(marker);
+        return marker;
+      }
+      
+      function clearSearchMarkers() {
+        markers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        markers = [];
+      }
+      
+      function clearAllMarkers() {
+        markers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        markers = [];
+      }
 
-       // Function to clear all CSV markers
-       function clearCSVMarkers() {
-         csvMarkers.forEach(marker => {
-           map.removeLayer(marker);
-         });
-         csvMarkers = [];
-         debug("Cleared CSV markers");
-       }
+      function clearCSVMarkers() {
+        csvMarkers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        csvMarkers = [];
+        debug("Cleared CSV markers");
+      }
 
-       // Function to add CSV data points as invisible markers - modified to NOT show popup
-       function addCSVMarkers(points) {
-         debug("Adding " + points.length + " invisible CSV markers");
-         
-         points.forEach(point => {
-           const circleMarker = L.circleMarker([point.lat, point.lon], {
-             radius: 15,
-             fillColor: getValueColor(point.value),
-             color: '#fff',
-             weight: 0,
-             opacity: 0,
-             fillOpacity: 0
-           }).addTo(map);
-           
-           // Handle click without showing popup
-           circleMarker.on('click', function(e) {
-             window.ReactNativeWebView.postMessage(JSON.stringify({
-               type: 'csvMarkerClick',
-               data: {
-                 lat: point.lat,
-                 lon: point.lon,
-                 value: point.value,
-                 markerType: point.type
-               }
-             }));
-           });
-           
-           csvMarkers.push(circleMarker);
-         });
-         
-         debug("Added " + points.length + " invisible CSV markers");
-       }
+      function addCSVMarkers(points) {
+        debug("Adding " + points.length + " invisible CSV markers");
+        
+        points.forEach(point => {
+          const circleMarker = L.circleMarker([point.lat, point.lon], {
+            radius: 15,
+            fillColor: getValueColor(point.value),
+            color: '#fff',
+            weight: 0,
+            opacity: 0,
+            fillOpacity: 0
+          }).addTo(map);
+          
+          circleMarker.on('click', function(e) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'csvMarkerClick',
+              data: {
+                lat: point.lat,
+                lon: point.lon,
+                value: point.value,
+                markerType: point.type
+              }
+            }));
+          });
+          
+          csvMarkers.push(circleMarker);
+        });
+        
+        debug("Added " + points.length + " invisible CSV markers");
+      }
 
-       // Helper function to get color based on value
-       function getValueColor(value) {
-         if (value < 0.2) return '#00FF00';
-         else if (value < 0.4) return '#FFFF00';
-         else if (value < 0.6) return '#FFA500';
-         else if (value < 0.8) return '#FF0000';
-         else return '#800080';
-       }
-       
-       // Simplified function to display information about current view
-       function showCurrentLocation() {
-         const center = map.getCenter();
-         const zoom = map.getZoom();
-         
-         if (currentInfoBox) {
-           map.removeControl(currentInfoBox);
-         }
-         
-         const infoBoxControl = L.Control.extend({
-           options: {
-             position: 'bottomright'
-           },
-           onAdd: function() {
-             const div = L.DomUtil.create('div', 'info-box');
-             div.innerHTML = '<strong>Current View:</strong><br>' +
-                            '<strong>Coordinates:</strong> ' + 
-                            center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
-                            '<strong>Zoom Level:</strong> ' + zoom;
-             return div;
-           }
-         });
-         
-         currentInfoBox = new infoBoxControl();
-         map.addControl(currentInfoBox);
-         
-         debug("Map info updated");
-       }
-       
-       // Function to add fixed markers for Model Town and Gulberg
-       function addFixedLocationMarkers() {
-         // Create custom Model Town marker
-         const modelTownMarker = L.marker([31.4794, 74.3118], {
-           icon: L.divIcon({
-             className: 'custom-div-icon',
-             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>105</div>",
-             iconSize: [40, 40],
-             iconAnchor: [20, 20]
-           })
-         }).addTo(map);
-         
-         // Create custom Gulberg marker
-         const gulbergMarker = L.marker([31.5204, 74.3587], {
-           icon: L.divIcon({
-             className: 'custom-div-icon',
-             html: "<div style='background-color:#FFD700;color:black;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;border:2px solid white;'>125</div>",
-             iconSize: [40, 40],
-             iconAnchor: [20, 20]
-           })
-         }).addTo(map);
-         
-         // Add click handlers
-         modelTownMarker.on('click', function() {
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: 31.4794,
-               lon: 74.3118,
-               title: 'Model Town',
-               description: 'Particulate Matter (PM2.5)',
-               value: '105',
-               status: 'Moderate',
-               source: 'WWF-Pakistan'
-             }
-           }));
-         });
-         
-         gulbergMarker.on('click', function() {
-           window.ReactNativeWebView.postMessage(JSON.stringify({
-             type: 'markerClick',
-             data: {
-               lat: 31.5204,
-               lon: 74.3587,
-               title: 'Gulberg',
-               description: 'Particulate Matter (PM2.5)',
-               value: '125',
-               status: 'Moderate',
-               source: 'WWF-Pakistan'
-             }
-           }));
-         });
-         
-         // Mark these as fixed markers so they don't get removed by normal clearMarkers
-         modelTownMarker.isFixedMarker = true;
-         gulbergMarker.isFixedMarker = true;
-         
-         // Add markers to the global markers array
-         markers.push(modelTownMarker, gulbergMarker);
-         
-         debug("Added fixed markers for Model Town and Gulberg");
-       }
-       
-       // Listen for map move events
-       map.on('moveend', function() {
-         debug("Map moved");
-       });
-       
-       // Listen for zoom events
-       map.on('zoomend', function() {
-         debug("Map zoomed to level: " + map.getZoom());
-       });
-       
-       // Add the fixed markers after initialization
-       setTimeout(function() {
-         addFixedLocationMarkers();
-       }, 500);
-       
-       // Let React Native know the map is ready
-       debug("Map initialized");
-       
-       // Final initialization to ensure dragging works
-       setTimeout(function() {
-         forceEnableDragging();
-         map.invalidateSize();
-       }, 1000);
-     </script>
-   </body>
-   </html>
- `;
+      function getValueColor(value) {
+        if (value < 0.2) return '#00FF00';
+        else if (value < 0.4) return '#FFFF00';
+        else if (value < 0.6) return '#FFA500';
+        else if (value < 0.8) return '#FF0000';
+        else return '#800080';
+      }
+      
+      function showCurrentLocation() {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        
+        if (currentInfoBox) {
+          map.removeControl(currentInfoBox);
+        }
+        
+        const infoBoxControl = L.Control.extend({
+          options: {
+            position: 'bottomright'
+          },
+          onAdd: function() {
+            const div = L.DomUtil.create('div', 'info-box');
+            div.innerHTML = '<strong>Current View:</strong><br>' +
+                          '<strong>Coordinates:</strong> ' + 
+                          center.lat.toFixed(4) + ', ' + center.lng.toFixed(4) + '<br>' +
+                          '<strong>Zoom Level:</strong> ' + zoom;
+            return div;
+          }
+        });
+        
+        currentInfoBox = new infoBoxControl();
+        map.addControl(currentInfoBox);
+        
+        debug("Map info updated");
+      }
+      
+      // Let WebView know the map is ready
+      map.on('load', function() {
+        debug("Map fully loaded");
+      });
+      
+      debug("Map initialized");
+    </script>
+  </body>
+  </html>
+`;
 
   // Function to show Lahore-only notification
   const showLahoreOnlyNotification = () => {
@@ -799,26 +686,35 @@ const LahoreMap = () => {
              // FIXED: Improved fit bounds functionality to ensure entire TIFF layer is visible
              try {
                const bounds = tiffLayer.getBounds();
-               if (bounds && bounds.isValid()) {
-                 // Force a fairly low zoom level to ensure we see the whole TIFF
-                 map.setView(bounds.getCenter(), 11);
-                 debug("Map view set to center of TIFF at zoom level 11");
+               // Check if bounds are within Lahore bounds
+               const layerBounds = bounds && bounds.isValid() ? bounds : lahoreBounds;
+               
+               // Ensure we don't go outside Lahore bounds
+               const fitBounds = L.latLngBounds(
+                 [
+                   Math.max(layerBounds.getSouth(), lahoreBounds.getSouth()),
+                   Math.max(layerBounds.getWest(), lahoreBounds.getWest())
+                 ],
+                 [
+                   Math.min(layerBounds.getNorth(), lahoreBounds.getNorth()),
+                   Math.min(layerBounds.getEast(), lahoreBounds.getEast())
+                 ]
+               );
+               
+               if (fitBounds.isValid()) {
+                 map.fitBounds(fitBounds);
+                 debug("Map view set to fit TIFF within Lahore bounds");
                } else {
-                 throw new Error("Invalid TIFF bounds");
+                 throw new Error("Invalid fit bounds");
                }
              } catch(e) {
                debug("Could not fit to bounds: " + e.message);
-               map.setView([31.5204, 74.3587], 11);
+               map.fitBounds(lahoreBounds);
              }
              
-             // Re-enable dragging after loading TIFF
-             forceEnableDragging();
+             // Re-enable interactions after loading TIFF
+             enableMapInteractions();
              debug("TIFF loaded successfully");
-             
-             // Make sure fixed markers are on top
-             setTimeout(function() {
-               addFixedLocationMarkers();
-             }, 100);
            } catch(error) {
              debug("Error loading TIFF: " + error.message);
            }
@@ -894,18 +790,18 @@ showCurrentLocation();
 
     if (webViewRef.current && webViewLoaded) {
       const script = `
-      goToLocation(
-         ${location.lat}, 
-         ${location.lon}, 
-         "${location.name.replace(/"/g, '\\"')}", 
-         "${
-           location.description
-             ? location.description.replace(/"/g, '\\"')
-             : 'Selected location'
-         }"
-       );
-       true;
-     `;
+    goToLocation(
+       ${location.lat}, 
+       ${location.lon},
+       "${location.name.replace(/"/g, '\\"')}", 
+       "${
+         location.description
+           ? location.description.replace(/"/g, '\\"')
+           : 'Selected location'
+       }"
+     );
+     true;
+   `;
       webViewRef.current.injectJavaScript(script);
       setStatus(`Navigated to ${location.name}`);
     }
@@ -928,28 +824,60 @@ showCurrentLocation();
       // Handle marker clicks from search
       if (data.type === 'markerClick') {
         const markerData = data.data;
+
+        // FIXED: Set card data with proper location info and color information
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
           value: markerData.value || 'N/A',
           source: markerData.source || 'Search Result',
-          location: markerData.title,
+          location:
+            markerData.title ||
+            `Location at ${markerData.lat.toFixed(4)}, ${markerData.lon.toFixed(
+              4,
+            )}`,
           type: markerData.description,
           status: markerData.status || 'Location Info',
+          color: markerData.color || null, // Store color for styling the card
         });
         setShowPollutionCard(true);
       }
       // Handle CSV marker clicks
       else if (data.type === 'csvMarkerClick') {
         const markerData = data.data;
+
+        // Determine appropriate color based on value
+        let color = '#00FF00'; // Default green
+        let status = 'Good';
+        const value = markerData.value;
+
+        if (value < 0.2) {
+          color = '#00FF00'; // Green
+          status = 'Good';
+        } else if (value < 0.4) {
+          color = '#FFFF00'; // Yellow
+          status = 'Moderate';
+        } else if (value < 0.6) {
+          color = '#FFA500'; // Orange
+          status = 'Unhealthy for Sensitive Groups';
+        } else if (value < 0.8) {
+          color = '#FF0000'; // Red
+          status = 'Unhealthy';
+        } else {
+          color = '#800080'; // Purple
+          status = 'Hazardous';
+        }
+
+        // FIXED: Include exact location and color in marker data
         setSelectedMarkerData({
           id: `${markerData.lat}-${markerData.lon}`,
           value: markerData.value.toFixed(2),
           source: 'CSV Data',
-          location: `Lat: ${markerData.lat.toFixed(
+          location: `Location at ${markerData.lat.toFixed(
             5,
-          )}, Lon: ${markerData.lon.toFixed(5)}`,
+          )}, ${markerData.lon.toFixed(5)}`,
           type: markerData.markerType,
-          status: getStatusFromValue(markerData.value),
+          status: status,
+          color: color,
         });
         setShowPollutionCard(true);
       }
@@ -1003,39 +931,184 @@ showCurrentLocation();
     setShowPollutantDropdown(!showPollutantDropdown);
   };
 
-  // Function to go to current location (centered on Lahore)
+  // Function to go to current location (centered on Lahore) - IMPROVED
   const goToCurrentLocation = () => {
     if (webViewRef.current && webViewLoaded) {
       const script = `
-        map.setView([31.5204, 74.3587], 12);
-        
-        // Make sure fixed markers are visible
-        setTimeout(function() {
-          addFixedLocationMarkers();
-        }, 100);
-        true;
-      `;
+      // Always reset to Lahore bounds
+      map.fitBounds(lahoreBounds);
+      map.setMaxBounds(lahoreBounds);
+      enableMapInteractions();
+      debug("Reset to Lahore boundaries");
+      true;
+    `;
       webViewRef.current.injectJavaScript(script);
       setStatus('Returned to Lahore center');
     }
   };
 
-  // Function to periodically force enable map dragging
+  // Function to periodically force enable map dragging and enforce Lahore boundaries
   useEffect(() => {
     if (webViewLoaded && webViewRef.current) {
       const interval = setInterval(() => {
         webViewRef.current.injectJavaScript(`
-          if (map) {
-            map.dragging.enable();
-            map.touchZoom.enable();
+        if (map) {
+          enableMapInteractions();
+          
+          // ADDED: Periodic check to ensure we stay within Lahore bounds
+          if (!lahoreBounds.contains(map.getBounds())) {
+            map.fitBounds(lahoreBounds);
+            debug("Enforcing Lahore bounds");
           }
-          true;
-        `);
+        }
+        true;
+      `);
       }, 3000);
 
       return () => clearInterval(interval);
     }
   }, [webViewLoaded]);
+
+  // Use an effect to process sensor data when it loads
+  useEffect(() => {
+    if (sensorData && webViewLoaded && webViewRef.current) {
+      console.log('Processing sensor data:', sensorData.length);
+      processSensorData(sensorData);
+    }
+  }, [sensorData, webViewLoaded]);
+
+  // FIXED: Enhanced function to process and display sensor data on the map
+  const processSensorData = sensors => {
+    if (!sensors || !webViewRef.current) {
+      return;
+    }
+
+    try {
+      // Format sensor data for the map
+      const formattedSensors = sensors
+        .filter(sensor => sensor.latitude && sensor.longitude)
+        .map(sensor => ({
+          lat: sensor.latitude,
+          lon: sensor.longitude,
+          value: sensor.sensor_value || 0,
+          type: 'PM2.5',
+          name:
+            sensor.location ||
+            `Location at ${sensor.latitude.toFixed(
+              4,
+            )}, ${sensor.longitude.toFixed(4)}`,
+          timestamp: sensor.timestamp,
+        }));
+
+      console.log(
+        `Processing ${formattedSensors.length} sensor readings from Barki`,
+      );
+
+      if (formattedSensors.length === 0) {
+        console.log('No valid sensor data found');
+        return;
+      }
+
+      // Inject JavaScript to add colored circles for sensors based on value
+      const script = `
+    try {
+      // Create array for sensor markers if it doesn't exist
+      if (!window.sensorMarkers) {
+        window.sensorMarkers = [];
+      }
+      
+      // Clear previous sensor markers
+      if (window.sensorMarkers && window.sensorMarkers.length) {
+        window.sensorMarkers.forEach(marker => {
+          map.removeLayer(marker);
+        });
+        window.sensorMarkers = [];
+        debug("Cleared existing sensor markers");
+      }
+      
+      // Add sensor markers with colored circles based on value
+      const sensorData = ${JSON.stringify(formattedSensors)};
+      debug("Adding " + sensorData.length + " sensor markers");
+      
+      sensorData.forEach((sensor, index) => {
+        // Format the value - round to nearest integer
+        const valueDisplay = Math.round(parseFloat(sensor.value)).toString();
+        const value = parseFloat(sensor.value);
+        
+        // Determine background color and status based on value ranges
+        let bgColor = '#00FF00'; // Green for 0-50
+        let statusText = "Good";
+        
+        if (value > 250) {
+          bgColor = '#FF0000'; // Red for > 250
+          statusText = "Hazardous";
+        } else if (value > 150) {
+          bgColor = '#800080'; // Purple for 150-250
+          statusText = "Unhealthy";
+        } else if (value > 100) {
+          bgColor = '#FFA500'; // Orange for 100-150
+          statusText = "Unhealthy for Sensitive Groups";
+        } else if (value > 50) {
+          bgColor = '#FFD700'; // Yellow for 50-150
+          statusText = "Moderate";
+        }
+        
+        // Create a custom icon with the value inside
+        const customIcon = L.divIcon({
+      className: 'custom-div-icon',
+      html: "<div style='position:relative;'>" +
+        "<div style='background-color:" + bgColor + ";color:white;border-radius:8px;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
+        "<div style='position:absolute;bottom:-6px;left:16px;width:8px;height:8px;background-color:" + bgColor + ";transform:rotate(45deg);'></div>" +
+        "</div>",
+      iconSize: [40, 50],
+      iconAnchor: [20, 48]
+      });
+
+        
+        // Create marker with the custom icon
+        const marker = L.marker([sensor.lat, sensor.lon], {
+          icon: customIcon
+        }).addTo(map);
+        
+        // Add a click handler that sends comprehensive data
+        marker.on('click', function(e) {
+          debug("Sensor marker clicked: " + index);
+          
+          // FIXED: Send comprehensive data including location and color
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'markerClick',
+            data: {
+              lat: sensor.lat,
+              lon: sensor.lon,
+              title: sensor.name || "Sensor Location",
+              description: 'Particulate Matter (PM2.5)',
+              value: valueDisplay,
+              status: statusText,
+              source: 'Sensor Data',
+              color: bgColor
+            }
+          }));
+        });
+        
+        // Store in our sensor markers array
+        window.sensorMarkers.push(marker);
+      });
+      
+      debug("Successfully added " + sensorData.length + " sensor markers with values");
+      true;
+    } catch(e) {
+      debug("Error adding sensor markers: " + e.message);
+      true;
+    }
+    `;
+
+      webViewRef.current.injectJavaScript(script);
+      setStatus(`Added ${formattedSensors.length} sensor readings`);
+    } catch (error) {
+      console.error('Error processing sensor data:', error);
+      setStatus('Error processing sensor data');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1050,21 +1123,6 @@ showCurrentLocation();
             onLoad={() => {
               setWebViewLoaded(true);
               setStatus('Map loaded');
-
-              // Force enable map interaction on load
-              setTimeout(() => {
-                if (webViewRef.current) {
-                  webViewRef.current.injectJavaScript(`
-                    if (map) {
-                      map.dragging.enable();
-                      map.touchZoom.enable();
-                      map.invalidateSize();
-                      debug("Map interaction explicitly enabled on load");
-                    }
-                    true;
-                  `);
-                }
-              }, 500);
             }}
             onError={syntheticEvent => {
               const {nativeEvent} = syntheticEvent;
@@ -1081,7 +1139,7 @@ showCurrentLocation();
             )}
             containerStyle={{flex: 1}}
             nestedScrollEnabled={false}
-            scalesPageToFit={false}
+            scalesPageToFit={true}
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
             directionalLockEnabled={false}
@@ -1090,28 +1148,6 @@ showCurrentLocation();
             bounces={false}
             allowFileAccess={true}
             useWebKit={true}
-            cacheEnabled={true}
-            javaScriptEnabledAndroid={true}
-            geolocationEnabled={true}
-            mediaPlaybackRequiresUserAction={false}
-            mixedContentMode="always"
-            allowsInlineMediaPlayback={true}
-            allowsBackForwardNavigationGestures={false}
-            injectedJavaScript={`
-              // Force touch detection
-              L.Browser.touch = true;
-              L.Browser.mobile = true;
-              
-              // Make sure map is ready for interaction
-              setTimeout(function() {
-                if (map) {
-                  map.dragging.enable();
-                  map.touchZoom.enable();
-                  map.invalidateSize();
-                }
-              }, 1000);
-              true;
-            `}
           />
         </View>
 
@@ -1143,7 +1179,7 @@ showCurrentLocation();
         <TouchableOpacity
           style={styles.aqiIndicator}
           onPress={handlePollutantSelect}>
-          <Text style={styles.aqiText}>AQI</Text>
+          {/* <Text style={styles.aqiText}>AQI</Text> */}
           <Text style={styles.aqiValue}>
             {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
           </Text>
@@ -1206,18 +1242,14 @@ showCurrentLocation();
             onPress={() => {
               if (webViewRef.current && webViewLoaded) {
                 const script = `
-                  if (tiffLayer) {
-                    map.removeLayer(tiffLayer);
-                    tiffLayer = null;
-                    debug("Removed TIFF layer");
-                  }
-                  clearCSVMarkers();
-                  // Make sure fixed markers remain visible
-                  setTimeout(function() {
-                    addFixedLocationMarkers();
-                  }, 100);
-                  true;
-                `;
+                if (tiffLayer) {
+                  map.removeLayer(tiffLayer);
+                  tiffLayer = null;
+                  debug("Removed TIFF layer");
+                }
+                clearCSVMarkers();
+                true;
+              `;
                 webViewRef.current.injectJavaScript(script);
                 setCurrentLayer(null);
                 setCsvMarkers([]);
@@ -1228,12 +1260,15 @@ showCurrentLocation();
           </TouchableOpacity>
         )}
 
-        {/* Modified: Pollution Info Card - Black background */}
+        {/* FIXED: Pollution Info Card - Now uses marker color for styling */}
         {showPollutionCard && selectedMarkerData && (
           <View style={styles.pollutionInfoCardContainer}>
             <View style={styles.pollutionInfoCard}>
               <Text style={styles.pollutionInfoSource}>
                 Source: {selectedMarkerData.source}
+              </Text>
+              <Text style={styles.pollutionInfoLocation}>
+                {selectedMarkerData.location}
               </Text>
               <Text style={styles.pollutionInfoType}>
                 {selectedMarkerData.type}
@@ -1241,8 +1276,22 @@ showCurrentLocation();
               <Text style={styles.pollutionInfoValue}>
                 {selectedMarkerData.value}
               </Text>
-              <View style={styles.pollutionInfoStatus}>
-                <Text style={styles.pollutionInfoStatusText}>
+              <View
+                style={[
+                  styles.pollutionInfoStatus,
+                  {backgroundColor: selectedMarkerData.color || '#FFD700'},
+                ]}>
+                <Text
+                  style={[
+                    styles.pollutionInfoStatusText,
+                    {
+                      color:
+                        selectedMarkerData.color === '#FFFF00' ||
+                        selectedMarkerData.color === '#00FF00'
+                          ? 'black'
+                          : 'white',
+                    },
+                  ]}>
                   {selectedMarkerData.status}
                 </Text>
               </View>
@@ -1346,16 +1395,28 @@ const styles = StyleSheet.create({
   },
   // Modified: Black background for pollution info card
   pollutionInfoCard: {
-    width: 250,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderRadius: 10,
-    padding: 15,
+    width: 300,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.2,
+    shadowRadius: 32,
+    elevation: 5,
   },
   pollutionInfoSource: {
     color: 'rgba(255, 0, 0, 0.8)',
     fontSize: 12,
+    marginBottom: 5,
+  },
+  // ADDED: New style for location text
+  pollutionInfoLocation: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
     marginBottom: 5,
   },
   pollutionInfoType: {

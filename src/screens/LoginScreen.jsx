@@ -51,7 +51,7 @@ const LoginScreen = () => {
             <View style={styles.inputContainer}>
               {/* Email Field */}
               <View style={styles.inputWrapper}>
-                <View style={styles.input}>
+                <TouchableOpacity style={styles.input} activeOpacity={1}>
                   <Image
                     source={require('../assets/icons/mail.png')}
                     style={styles.inputIcon}
@@ -62,11 +62,11 @@ const LoginScreen = () => {
                     placeholder="Email Address"
                     placeholderTextColor="#757575"
                   />
-                </View>
+                </TouchableOpacity>
               </View>
               {/* Password Field */}
               <View style={styles.inputWrapper}>
-                <View style={styles.input}>
+                <TouchableOpacity style={styles.input} activeOpacity={1}>
                   <Image
                     source={require('../assets/icons/password.png')}
                     style={styles.inputIcon}
@@ -78,7 +78,7 @@ const LoginScreen = () => {
                     placeholderTextColor="#757575"
                     secureTextEntry
                   />
-                </View>
+                </TouchableOpacity>
                 <Text style={styles.forgotPassword}>Forgot Password?</Text>
               </View>
               {/* Login Button */}
@@ -186,6 +186,12 @@ const styles = StyleSheet.create({
     height: 20,
     marginRight: 10,
     tintColor: '#757575',
+  },
+  textInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: '#333',
   },
   inputContainer: {
     width: '100%', // Take 90% of the parent width

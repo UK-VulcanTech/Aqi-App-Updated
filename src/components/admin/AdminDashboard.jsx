@@ -3,13 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   SafeAreaView,
   Image,
   TextInput,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+
+// Get screen dimensions
+const {height} = Dimensions.get('window');
 
 const AdminDashboard = () => {
   const navigation = useNavigation();
@@ -20,7 +24,6 @@ const AdminDashboard = () => {
     .map((_, i) => ({
       id: '703703',
       name: 'Ahmad Ali',
-      email: 'michelle.riv@gmail.com',
       sensorName: 'MQ135',
     }));
 
@@ -42,38 +45,47 @@ const AdminDashboard = () => {
     navigation.navigate('CreateUser');
   };
 
+  // Function to navigate to user profile
+  const navigateToProfile = userId => {
+    navigation.navigate('AdminProfile', {userId});
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header - Fixed at the top */}
-      <View style={styles.header}>
-        <View style={styles.headerLeftSection}>
-          <TouchableOpacity onPress={goBack} style={styles.backButton}>
+      {/* Fixed Header */}
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <View style={styles.headerLeftSection}>
+            <TouchableOpacity onPress={goBack} style={styles.backButton}>
+              <Image
+                source={require('../../assets/icons/back.png')}
+                style={styles.backIcon}
+              />
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.headerText}>Admin</Text>
+              {/* <Text style={styles.headerSubText}>Admin</Text> */}
+            </View>
+          </View>
+          <View style={styles.profileImageContainer}>
             <Image
-              source={require('../../assets/icons/back.png')}
-              style={styles.backIcon}
+              source={require('../../assets/icons/profile.png')}
+              style={styles.profileImage}
             />
-            s
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerText}>Dashboard</Text>
-            <Text style={styles.headerSubText}>Admin</Text>
           </View>
         </View>
-        <View style={styles.profileImageContainer}>
-          <Image
-            source={require('../../assets/icons/profile.png')}
-            style={styles.profileImage}
-          />
+
+        <View style={styles.dateContainer}>
+          <View style={styles.dateBorder} />
+          <Text style={styles.dateText}>06- 03 March, 2025</Text>
         </View>
       </View>
 
-      <View style={styles.dateContainer}>
-        <View style={styles.dateBorder} />
-        <Text style={styles.dateText}>06- 03 March, 2025</Text>
-      </View>
-
-      {/* Main content - Scrollable */}
-      <ScrollView style={styles.mainScrollView}>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}>
         <View style={styles.card}>
           {/* User Count and New User Button section */}
           <View style={styles.userInfoSection}>
@@ -95,85 +107,104 @@ const AdminDashboard = () => {
             <View style={styles.searchContainer}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
-                placeholder="Search by name or email"
+                placeholder="Search by name"
                 style={styles.searchInput}
                 placeholderTextColor="#888"
               />
             </View>
           </View>
 
-          {/* Table Section - Keep horizontal scrolling */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-            <View style={styles.tableContainer}>
-              {/* Table Header */}
-              <View style={styles.tableHeader}>
-                <Text style={[styles.headerCell, styles.nameColumn]}>Name</Text>
-                <Text style={[styles.headerCell, styles.idColumn]}>
+          {/* Table Section */}
+          <View style={styles.tableContainer}>
+            {/* Table Header */}
+            <View style={styles.tableHeader}>
+              <View style={styles.nameColumn}>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.headerCell}>
+                  Name
+                </Text>
+              </View>
+              <View style={styles.idColumn}>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.headerCell}>
                   ID Number
                 </Text>
-                <Text style={[styles.headerCell, styles.emailColumn]}>
-                  Email Address
-                </Text>
-                <Text style={[styles.headerCell, styles.sensorColumn]}>
+              </View>
+              <View style={styles.sensorColumn}>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.headerCell}>
                   Sensor Name
                 </Text>
               </View>
+            </View>
 
-              {/* Table Body - Scrollable */}
-              <ScrollView style={styles.tableBody}>
-                {paginatedData.map((item, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <View style={[styles.nameCell, styles.nameColumn]}>
-                      <Image
-                        source={require('../../assets/icons/profile.png')}
-                        style={styles.userAvatar}
-                      />
-                      <Text style={styles.nameText}>{item.name}</Text>
-                    </View>
-                    <Text style={[styles.tableCell, styles.idColumn]}>
-                      {item.id}
-                    </Text>
-                    <Text style={[styles.tableCell, styles.emailColumn]}>
-                      {item.email}
-                    </Text>
-                    <Text style={[styles.tableCell, styles.sensorColumn]}>
-                      {item.sensorName}
-                    </Text>
+            {/* Table Body - Each row is now clickable */}
+            <View style={styles.tableBody}>
+              {paginatedData.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.tableRow}
+                  onPress={() => navigateToProfile(item.id)}
+                  activeOpacity={0.7}>
+                  <View style={styles.nameColumn}>
+                    <Text style={styles.tableCell}>{item.name}</Text>
                   </View>
-                ))}
-              </ScrollView>
+                  <View style={styles.idColumn}>
+                    <Text style={styles.tableCell}>{item.id}</Text>
+                  </View>
+                  <View style={styles.sensorColumn}>
+                    <Text style={styles.tableCell}>{item.sensorName}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
-          </ScrollView>
+          </View>
 
-          {/* Pagination - Exactly as in the original code */}
+          {/* Simple arrow pagination - restored to original style */}
           <View style={styles.paginationContainer}>
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                currentPage === 1 && styles.paginationButtonDisabled,
-              ]}
-              onPress={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}>
-              <Text style={styles.paginationButtonText}>Previous</Text>
-            </TouchableOpacity>
-
-            <View style={styles.paginationPages}>
-              <Text style={styles.paginationText}>
-                Page {currentPage} of {totalPages}
-              </Text>
+            <Text style={styles.paginationText}>
+              {(currentPage - 1) * rowsPerPage + 1} -
+              {Math.min(currentPage * rowsPerPage, usersData.length)} of{' '}
+              {usersData.length}
+            </Text>
+            <View style={styles.paginationButtons}>
+              <TouchableOpacity
+                onPress={() =>
+                  currentPage > 1 && setCurrentPage(currentPage - 1)
+                }
+                disabled={currentPage === 1}
+                style={currentPage === 1 ? styles.disabledButton : null}>
+                <Text
+                  style={[
+                    styles.paginationArrow,
+                    currentPage === 1 ? styles.disabledText : null,
+                  ]}>
+                  ◀
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  currentPage < totalPages && setCurrentPage(currentPage + 1)
+                }
+                disabled={currentPage === totalPages}
+                style={
+                  currentPage === totalPages ? styles.disabledButton : null
+                }>
+                <Text
+                  style={[
+                    styles.paginationArrow,
+                    currentPage === totalPages ? styles.disabledText : null,
+                  ]}>
+                  ▶
+                </Text>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                currentPage === totalPages && styles.paginationButtonDisabled,
-              ]}
-              onPress={() =>
-                currentPage < totalPages && setCurrentPage(currentPage + 1)
-              }
-              disabled={currentPage === totalPages}>
-              <Text style={styles.paginationButtonText}>Next</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -185,6 +216,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f0f0',
+  },
+  headerContainer: {
+    backgroundColor: '#f0f0f0',
+    zIndex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -228,7 +263,7 @@ const styles = StyleSheet.create({
   dateContainer: {
     alignItems: 'center',
     paddingVertical: 8,
-    position: 'relative', // To position the border correctly
+    position: 'relative',
   },
   dateBorder: {
     position: 'absolute',
@@ -236,18 +271,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#e0e0e0', // Light gray border color
+    backgroundColor: '#e0e0e0',
   },
   dateText: {
     color: '#666',
     fontSize: 14,
-    marginTop: 4, // Small margin to separate from the border
+    marginTop: 4,
   },
-  mainScrollView: {
+  scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 50, // Extra padding at bottom
+    minHeight: height * 0.7, // Ensure content is scrollable
+  },
   card: {
-    margin: 16,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
@@ -322,87 +362,76 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     marginTop: 8,
-    width: 600, // Fixed width to prevent excess space
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 4,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#F0F7F4',
-    padding: 8,
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    alignItems: 'center',
   },
   headerCell: {
     fontSize: 14,
     fontWeight: '600',
     color: '#10B981',
-    paddingHorizontal: 4,
   },
   nameColumn: {
-    width: 150, // Fixed width
+    width: '30%',
+    paddingHorizontal: 8,
   },
   idColumn: {
-    width: 100, // Fixed width
-  },
-  emailColumn: {
-    width: 220, // Fixed width
+    width: '35%',
+    paddingHorizontal: 8,
   },
   sensorColumn: {
-    width: 130, // Fixed width
+    width: '40%',
+    paddingHorizontal: 8,
   },
   tableBody: {
-    maxHeight: 350,
+    width: '100%',
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderTopWidth: 1,
     borderColor: '#eee',
-    padding: 8,
-  },
-  nameCell: {
-    flexDirection: 'row',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
     alignItems: 'center',
-  },
-  userAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  nameText: {
-    fontSize: 14,
-    color: '#444',
   },
   tableCell: {
     fontSize: 14,
     color: '#444',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    textAlignVertical: 'center',
   },
+  // Original simple pagination styles
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  paginationButton: {
-    backgroundColor: '#0EA959',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginHorizontal: 8,
-  },
-  paginationButtonDisabled: {
-    backgroundColor: '#CCCCCC',
-  },
-  paginationButtonText: {
-    color: 'white',
-    fontWeight: '500',
-  },
-  paginationPages: {
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 20,
   },
   paginationText: {
-    color: '#4B5563',
+    fontSize: 14,
+    color: '#666',
+    marginRight: 12,
+  },
+  paginationButtons: {
+    flexDirection: 'row',
+  },
+  paginationArrow: {
+    fontSize: 16,
+    color: '#10B981',
+    paddingHorizontal: 6,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: '#ccc',
   },
 });
 

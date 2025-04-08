@@ -110,7 +110,7 @@ const Header = () => {
   const menuItems = [
     {
       icon: require('../../assets/icons/mobile.png'),
-      label: 'Dashboard',
+      label: 'Home',
       route: 'Home', // This will now correctly navigate to HomeScreen
     },
     {
@@ -120,14 +120,14 @@ const Header = () => {
     },
     {
       icon: require('../../assets/icons/file.png'),
-      label: 'Policy',
-      route: 'policy',
+      label: 'Blogs',
+      route: 'Blogs',
     },
-    {
-      icon: require('../../assets/icons/persons.png'),
-      label: 'About Us',
-      route: 'About',
-    },
+    // {
+    //   icon: require('../../assets/icons/persons.png'),
+    //   label: 'About Us',
+    //   route: 'About',
+    // },
     {
       icon: require('../../assets/icons/contact.png'),
       label: 'Contact Us',
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingHorizontal: 70,
   },
   menuIconContainer: {
     width: 20,

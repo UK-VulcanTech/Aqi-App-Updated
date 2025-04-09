@@ -437,16 +437,16 @@ const AirQualityChart = () => {
               </View>
               <View style={styles.statSeparator} />
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Max</Text>
-                <Text style={[styles.statValue, styles.maxStatValue]}>
-                  {maxValue}
+                <Text style={styles.statLabel}>Avg</Text>
+                <Text style={[styles.statValue, styles.avgStatValue]}>
+                  {avgValue}
                 </Text>
               </View>
               <View style={styles.statSeparator} />
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Avg</Text>
-                <Text style={[styles.statValue, styles.avgStatValue]}>
-                  {avgValue}
+                <Text style={styles.statLabel}>Max</Text>
+                <Text style={[styles.statValue, styles.maxStatValue]}>
+                  {maxValue}
                 </Text>
               </View>
             </View>
@@ -517,6 +517,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 12,
+    // marginLeft: 8,
+    gap: 40,
   },
   chartTypeButton: {
     paddingHorizontal: 16,
@@ -724,7 +726,7 @@ const styles = StyleSheet.create({
     color: '#FF4D4F', // Red for max
   },
   avgStatValue: {
-    color: '#4CAF50', // Green for avg
+    color: '#FEBA17', // Green for avg
   },
   statSeparator: {
     height: 24,

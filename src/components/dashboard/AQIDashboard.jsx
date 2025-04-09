@@ -50,7 +50,7 @@ const AQIDashboard = () => {
       );
       if (gulbergSensor) {
         setSelectedSensor(gulbergSensor);
-        setSelectedLocation('Gulberg, Lahore, Punjab, PK');
+        setSelectedLocation('Gulberg, Lahore');
       } else {
         // Fallback to first sensor if Gulberg not found
         setSelectedSensor(sensorData[0]);
@@ -96,10 +96,10 @@ const AQIDashboard = () => {
       <View style={styles.content}>
         {/* AQI Title and Location */}
         <View style={styles.titleContainer}>
-          <Image
+          {/* <Image
             source={require('../../assets/icons/aqi.png')}
             style={styles.aqiIcon}
-          />
+          /> */}
           <Text style={styles.title}>AQI Level</Text>
         </View>
 
@@ -199,15 +199,20 @@ const AQIDashboard = () => {
         </View>
 
         {/* Weather Card */}
+        {/* Weather Card */}
         <View style={styles.weatherCardWrapper}>
           <View style={styles.weatherCard}>
             <View style={styles.weatherTopSection}>
               <Text style={styles.temperatureText}>17°C</Text>
-              <Text style={styles.weatherCondition}>Weather Forecast</Text>
+              <Text style={styles.weatherCondition}>Weather</Text>
             </View>
 
             <View style={styles.weatherBottomSection}>
               <View style={styles.weatherDataItem}>
+                <Image
+                  source={require('../../assets/icons/humidity.png')}
+                  style={styles.weatherIcon}
+                />
                 <Text style={styles.weatherDataLabel}>Humidity</Text>
                 <Text style={styles.weatherDataValue}>66 %</Text>
               </View>
@@ -215,6 +220,10 @@ const AQIDashboard = () => {
               <View style={styles.weatherDataItemSeparator} />
 
               <View style={styles.weatherDataItem}>
+                <Image
+                  source={require('../../assets/icons/wind.png')}
+                  style={styles.weatherIcon}
+                />
                 <Text style={styles.weatherDataLabel}>Wind Speed</Text>
                 <Text style={styles.weatherDataValue}>7 km/h</Text>
               </View>
@@ -222,6 +231,10 @@ const AQIDashboard = () => {
               <View style={styles.weatherDataItemSeparator} />
 
               <View style={styles.weatherDataItem}>
+                <Image
+                  source={require('../../assets/icons/uv.png')}
+                  style={styles.weatherIcon}
+                />
                 <Text style={styles.weatherDataLabel}>UV Index</Text>
                 <Text style={styles.weatherDataValue}>2</Text>
               </View>
@@ -296,7 +309,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 3,
-    marginRight: 15,
+    marginRight: 35, // Increased from 25 to 35 for more space
   },
   moderateText: {
     color: 'white',
@@ -333,19 +346,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 123,
   },
-  pointer: {
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 12,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: 'black',
-    transform: [{rotate: '-90deg'}],
-  },
+  // pointer: {
+  //   width: 0,
+  //   height: 0,
+  //   backgroundColor: 'transparent',
+  //   borderStyle: 'solid',
+  //   borderLeftWidth: 10,
+  //   borderRightWidth: 10,
+  //   borderTopWidth: 12,
+  //   borderLeftColor: 'transparent',
+  //   borderRightColor: 'transparent',
+  //   borderTopColor: 'black',
+  //   transform: [{rotate: '-90deg'}],
+  // },
   levelsContainer: {
     flex: 1,
   },
@@ -461,6 +474,11 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  weatherIcon: {
+    width: 20,
+    height: 20,
+    marginBottom: 5,
   },
 });
 

@@ -113,11 +113,11 @@ const Header = () => {
       label: 'Home',
       route: 'Home', // This will now correctly navigate to HomeScreen
     },
-    {
-      icon: require('../../assets/icons/clock.png'),
-      label: 'History',
-      route: 'history',
-    },
+    // {
+    //   icon: require('../../assets/icons/clock.png'),
+    //   label: 'History',
+    //   route: 'history',
+    // },
     {
       icon: require('../../assets/icons/file.png'),
       label: 'Blogs',

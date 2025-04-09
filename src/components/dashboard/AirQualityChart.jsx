@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import {BarChart} from 'react-native-chart-kit';
 
-import {useGetAllSensors} from '../../services/sensor.hooks';
+// import {useGetAllSensors} from '../../services/sensor.hooks';
+import {useGetSensorDataLastSevenDays} from '../../services/sensor.hooks';
 
 const AirQualityChart = () => {
   const [selectedPollutant, setSelectedPollutant] = useState('PM 10');
@@ -20,27 +21,24 @@ const AirQualityChart = () => {
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - 120;
 
-  // Get color based on value - always return yellow
+  const {data: sensorData} = useGetSensorDataLastSevenDays();
+  console.log('🚀 ~ AirQualityChart ~ sensorData:', sensorData);
+
   const getValueColor = (value, pollutant) => {
-    return 'yellow';
+    return '#FEBA17';
   };
 
-  // Get subset of data for 24 hours and 30 days to prevent bar merging
   const getSubsetData = (data, type) => {
     if (type === '24 Hours') {
-      // Show every 4 hours for 24-hour view (like 30 days)
       return data.filter((_, index) => index % 4 === 0);
     } else if (type === '30 Days') {
-      // Show every 3 days for 30-day view
       return data.filter((_, index) => index % 3 === 0);
     }
     return data;
   };
 
-  // Generate AQI data with proper color variations
   const generatePollutantData = (pollutant, range) => {
     let data = [];
-
     if (range === '24 Hours') {
       data = Array.from({length: 24}, (_, i) => {
         const value = Math.floor(Math.random() * 60) + 120;
@@ -63,7 +61,6 @@ const AirQualityChart = () => {
         };
       });
     } else {
-      // 30 Days
       data = Array.from({length: 30}, (_, i) => {
         const day = new Date();
         day.setDate(day.getDate() - 29 + i);
@@ -76,11 +73,9 @@ const AirQualityChart = () => {
         };
       });
     }
-
     return data;
   };
 
-  // Predefined data for various pollutants and time ranges
   const pollutantData = {
     AQI: {
       '24 Hours': generatePollutantData('AQI', '24 Hours'),
@@ -122,49 +117,37 @@ const AirQualityChart = () => {
   const pollutants = ['AQI', 'PM 2.5', 'PM 10', 'CO', 'SO2', 'NO2', 'O3'];
   const timeRanges = ['24 Hours', '7 Days', '30 Days'];
 
-  // Initialize data on component mount and when selections change
   useEffect(() => {
-    // Get full data
     const fullData = pollutantData[selectedPollutant][timeRange];
-
-    // Apply subset filtering to prevent bar merging for 24h and 30d views
     const displayData =
       timeRange === '7 Days' ? fullData : getSubsetData(fullData, timeRange);
-
-    // Set data
     setBarData(displayData);
   }, [selectedPollutant, timeRange]);
 
-  // Initialize with default data on component mount
   useEffect(() => {
     const initialData = pollutantData['PM 10']['7 Days'];
     setBarData(initialData);
   }, []);
 
-  // Chart configuration
   const barChartConfig = {
     backgroundColor: '#ffffff',
     backgroundGradientFrom: '#ffffff',
     backgroundGradientTo: '#ffffff',
     decimalPlaces: 0,
-    color: (opacity = 1) => {
-      // Return dark green color for bars
-      return `rgba(0, 100, 0, ${opacity})`;
-    },
+    color: () => 'rgba(254, 186, 23, 1)', // Always fully opaque
     labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-    barPercentage: timeRange === '7 Days' ? 0.85 : 0.6, // Adjust spacing between bars
+    barPercentage: timeRange === '7 Days' ? 0.85 : 0.6,
     barRadius: 4,
     propsForLabels: {
-      fontSize: 0, // Hide default labels
+      fontSize: 0,
     },
-    formatYLabel: () => '', // Hide Y axis labels
+    formatYLabel: () => '',
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
         <View style={styles.chartCard}>
-          {/* Card title and time range selector inside card */}
           <Text style={styles.cardTitle}>Air Quality Statistics</Text>
 
           <View style={styles.timeRangeContainer}>
@@ -189,7 +172,6 @@ const AirQualityChart = () => {
 
           <View style={styles.divider} />
 
-          {/* Pollutant selector */}
           <View style={styles.controlsRow}>
             <View style={styles.pollutantContainer}>
               <TouchableOpacity
@@ -233,7 +215,6 @@ const AirQualityChart = () => {
           </View>
 
           <View style={styles.chartContainer}>
-            {/* Y-axis labels */}
             <View style={styles.yAxisContainer}>
               <View style={styles.customYAxisLabels}>
                 <Text style={styles.yAxisLabelTop}>500</Text>
@@ -244,7 +225,6 @@ const AirQualityChart = () => {
               </View>
             </View>
 
-            {/* Chart area */}
             <View style={styles.chartWrapper}>
               {barData.length > 0 && (
                 <View style={{height: 230, paddingBottom: 20}}>
@@ -273,7 +253,6 @@ const AirQualityChart = () => {
                 </View>
               )}
 
-              {/* Date labels container */}
               <View style={styles.dateLabelsContainer}>
                 {barData.map((item, index) => {
                   const sectionWidth = chartWidth / barData.length;
@@ -294,7 +273,6 @@ const AirQualityChart = () => {
             </View>
           </View>
 
-          {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
@@ -327,7 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    paddingBottom: 50, // Added padding at the bottom for space below card
+    paddingBottom: 50,
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
@@ -340,14 +318,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    flex: 1, // Make the card expand to fill available space
+    flex: 1,
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 12,
-    textAlign: 'left', // Changed from center to left
+    textAlign: 'left',
   },
   timeRangeContainer: {
     flexDirection: 'row',
@@ -362,7 +340,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTimeRangeButton: {
-    backgroundColor: '#4CAF50', // Light green theme
+    backgroundColor: '#1B56FD',
   },
   timeRangeText: {
     fontSize: 14,
@@ -388,7 +366,7 @@ const styles = StyleSheet.create({
   pollutantButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50', // Light green theme
+    backgroundColor: '#1B56FD',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
@@ -434,14 +412,14 @@ const styles = StyleSheet.create({
     color: '#4B5563',
   },
   selectedDropdownText: {
-    color: '#4CAF50', // Light green theme
+    color: '#1B56FD',
     fontWeight: '600',
   },
   selectedIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4CAF50', // Light green theme
+    backgroundColor: '#1B56FD',
   },
   chartContainer: {
     height: 280,
@@ -556,7 +534,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50', // Light green theme
+    color: '#1B56FD',
   },
   statSeparator: {
     height: 24,

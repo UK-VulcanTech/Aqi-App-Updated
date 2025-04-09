@@ -34,12 +34,7 @@ const LahoreMap = () => {
   const [selectedMarkerData, setSelectedMarkerData] = useState(null);
   const [csvMarkers, setCsvMarkers] = useState([]);
   // const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
-  const {
-    data: sensorData,
-    isLoading: sensorsLoading,
-    error: sensorsError,
-    refetch, // Add this to get the refetch function
-  } = useGetAllSensors();
+  const {data: sensorData} = useGetAllSensors();
   console.log('🚀 ~ LahoreMap ~ sensorData:', sensorData);
 
   // Define different pollutant layers - ensuring consistent capitalization
@@ -354,11 +349,11 @@ const LahoreMap = () => {
       }
 
       function getValueColor(value) {
-        if (value < 0.2) return '#00FF00';
-        else if (value < 0.4) return '#FFFF00';
-        else if (value < 0.6) return '#FFA500';
+        if (value < 0.2) return '#8BC83B';
+        else if (value < 0.4) return '#EEC732';
+        else if (value < 0.6) return '#EA8C34';
         else if (value < 0.8) return '#FF0000';
-        else return '#800080';
+        else return '#A97EBC';
       }
       
       function showCurrentLocation() {
@@ -399,6 +394,62 @@ const LahoreMap = () => {
   </body>
   </html>
 `;
+
+  // Add this function near the top of your component
+  const getColorForAQI = aqi => {
+    if (aqi <= 50) {
+      return {
+        textColor: '#506E29',
+        bgColor: '#8BC83B',
+        status: 'Good',
+      };
+    }
+    if (aqi <= 100) {
+      return {
+        textColor: '#796009',
+        bgColor: '#EEC732',
+        status: 'Moderate',
+      };
+    }
+    if (aqi <= 150) {
+      return {
+        textColor: '#894215',
+        bgColor: '#EA8C34',
+        status: 'Poor',
+      };
+    }
+    if (aqi <= 200) {
+      return {
+        textColor: '#78191A',
+        bgColor: '#A45152',
+        status: 'Unhealthy',
+      };
+    }
+    if (aqi <= 250) {
+      return {
+        textColor: '#67327E',
+        bgColor: '#A97EBC',
+        status: 'Very unhealthy',
+      };
+    }
+    if (aqi > 250) {
+      return {
+        textColor: '#740814',
+        bgColor: '#C92033',
+        status: 'Hazardous',
+      };
+    }
+  };
+
+  // Add this sample data near the top of your component
+  const pollutantsData = [
+    {pollutant: 'PM2.5', value: 35, unit: 'μg/m³'},
+    {pollutant: 'PM10', value: 283.81, unit: 'μg/m³'},
+    {pollutant: 'CO', value: 4.513, unit: 'μg/m³'},
+    {pollutant: 'O₃', value: 18.977, unit: 'ppb'},
+    {pollutant: 'NO₂', value: 107.81, unit: 'ppb'},
+    {pollutant: 'SO₂', value: 6.005, unit: 'ppb'},
+  ];
 
   // Function to show Lahore-only notification
   const showLahoreOnlyNotification = () => {
@@ -463,11 +514,11 @@ const LahoreMap = () => {
 
   // Unified color scale for all pollution layers
   const getUnifiedColorScale = () => `
-   if (value < 0.2) return 'rgba(0, 255, 0, 0.7)';      // green (low)
-   else if (value < 0.4) return 'rgba(255, 255, 0, 0.7)'; // yellow (medium-low)
-   else if (value < 0.6) return 'rgba(255, 165, 0, 0.7)'; // orange (medium)
-   else if (value < 0.8) return 'rgba(255, 0, 0, 0.7)';   // red (medium-high)
-   else return 'rgba(128, 0, 128, 0.7)';                  // purple (high)
+   if (value < 0.2) return '#8BC83B';      // green (low)
+   else if (value < 0.4) return '#EEC732'; // yellow (medium-low)
+   else if (value < 0.6) return '#EA8C34'; // orange (medium)
+   else if (value < 0.8) return '#C92033';   // red (medium-high)
+   else return '#A97EBC';                  // purple (high)
  `;
 
   // Function to load and parse CSV data
@@ -846,24 +897,24 @@ showCurrentLocation();
         const markerData = data.data;
 
         // Determine appropriate color based on value
-        let color = '#00FF00'; // Default green
+        let color = '#8BC83B'; // Default green
         let status = 'Good';
         const value = markerData.value;
 
         if (value < 0.2) {
-          color = '#00FF00'; // Green
+          color = '#8BC83B'; // Green
           status = 'Good';
         } else if (value < 0.4) {
-          color = '#FFFF00'; // Yellow
+          color = '#EEC732'; // Yellow
           status = 'Moderate';
         } else if (value < 0.6) {
-          color = '#FFA500'; // Orange
+          color = '#EA8C34'; // Orange
           status = 'Unhealthy for Sensitive Groups';
         } else if (value < 0.8) {
           color = '#FF0000'; // Red
           status = 'Unhealthy';
         } else {
-          color = '#800080'; // Purple
+          color = '#A97EBC'; // Purple
           status = 'Hazardous';
         }
 
@@ -1036,17 +1087,17 @@ showCurrentLocation();
         const value = parseFloat(sensor.value);
         
         // Determine background color and status based on value ranges
-        let bgColor = '#00FF00'; // Green for 0-50
+        let bgColor = '#8BC83B'; // Green for 0-50
         let statusText = "Good";
         
         if (value > 250) {
           bgColor = '#FF0000'; // Red for > 250
           statusText = "Hazardous";
         } else if (value > 150) {
-          bgColor = '#800080'; // Purple for 150-250
+          bgColor = '#A97EBC'; // Purple for 150-250
           statusText = "Unhealthy";
         } else if (value > 100) {
-          bgColor = '#FFA500'; // Orange for 100-150
+          bgColor = '#EA8C34'; // Orange for 100-150
           statusText = "Unhealthy for Sensitive Groups";
         } else if (value > 50) {
           bgColor = '#FFD700'; // Yellow for 50-150
@@ -1150,7 +1201,6 @@ showCurrentLocation();
             useWebKit={true}
           />
         </View>
-
         {/* Search Component with transparent background */}
         <View style={styles.header}>
           <SearchBox
@@ -1164,7 +1214,6 @@ showCurrentLocation();
             setShowDropdown={setShowDropdown}
           />
         </View>
-
         {/* Zoom Controls - Modified with fully transparent background */}
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
@@ -1174,7 +1223,6 @@ showCurrentLocation();
             <Text style={styles.zoomButtonText}>-</Text>
           </TouchableOpacity>
         </View>
-
         {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
         <TouchableOpacity
           style={styles.aqiIndicator}
@@ -1184,7 +1232,6 @@ showCurrentLocation();
             {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
           </Text>
         </TouchableOpacity>
-
         {/* Modified: Location Button with functionality */}
         <TouchableOpacity
           style={styles.locationButton}
@@ -1194,16 +1241,14 @@ showCurrentLocation();
             style={{width: 34, height: 34}}
           />
         </TouchableOpacity>
-
         {/* Pollutant Selection Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.pollutantButton}
           onPress={() => setShowPollutantDropdown(!showPollutantDropdown)}>
           <Text style={styles.pollutantButtonText}>
             {currentLayer ? currentLayer.name : 'Select Pollutant'}
           </Text>
-        </TouchableOpacity>
-
+        </TouchableOpacity> */}
         {/* Loading Overlay */}
         {(tiffLoading || csvLoading) && (
           <View style={styles.loadingOverlay}>
@@ -1215,7 +1260,6 @@ showCurrentLocation();
             </Text>
           </View>
         )}
-
         {/* Pollutant Layers Dropdown */}
         {showPollutantDropdown && (
           <View style={styles.pollutantDropdown}>
@@ -1234,7 +1278,6 @@ showCurrentLocation();
             </ScrollView>
           </View>
         )}
-
         {/* Add this after the Pollutant Selection Button */}
         {currentLayer && (
           <TouchableOpacity
@@ -1259,46 +1302,245 @@ showCurrentLocation();
             <Text style={styles.removeLayerButtonText}>Remove Layer</Text>
           </TouchableOpacity>
         )}
-
         {/* FIXED: Pollution Info Card - Now uses marker color for styling */}
         {showPollutionCard && selectedMarkerData && (
-          <View style={styles.pollutionInfoCardContainer}>
-            <View style={styles.pollutionInfoCard}>
-              <Text style={styles.pollutionInfoSource}>
-                Source: {selectedMarkerData.source}
+          <View
+            style={{
+              position: 'absolute',
+              top: '12%',
+              left: 20,
+              right: 20,
+              zIndex: 1000,
+            }}>
+            <View
+              style={{
+                backgroundColor: 'rgba(40, 40, 40, 0.9)', // Less transparent background
+                padding: 16,
+                borderRadius: 12,
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.5,
+                shadowRadius: 4,
+                elevation: 8,
+                borderWidth: 1,
+                borderColor:
+                  selectedMarkerData.color || 'rgba(255,255,255,0.3)',
+              }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: 'bold',
+                  marginBottom: 8,
+                  color: 'white',
+                  textShadowColor: 'rgba(0,0,0,0.75)',
+                  textShadowOffset: {width: 1, height: 1},
+                  textShadowRadius: 3,
+                }}>
+                Air Quality Information
               </Text>
-              <Text style={styles.pollutionInfoLocation}>
-                {selectedMarkerData.location}
-              </Text>
-              <Text style={styles.pollutionInfoType}>
-                {selectedMarkerData.type}
-              </Text>
-              <Text style={styles.pollutionInfoValue}>
-                {selectedMarkerData.value}
-              </Text>
+
               <View
-                style={[
-                  styles.pollutionInfoStatus,
-                  {backgroundColor: selectedMarkerData.color || '#FFD700'},
-                ]}>
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  // marginVertical: 2,
+                }}>
                 <Text
-                  style={[
-                    styles.pollutionInfoStatusText,
-                    {
-                      color:
-                        selectedMarkerData.color === '#FFFF00' ||
-                        selectedMarkerData.color === '#00FF00'
-                          ? 'black'
-                          : 'white',
-                    },
-                  ]}>
-                  {selectedMarkerData.status}
+                  style={{
+                    color: selectedMarkerData.color || 'red',
+                    fontSize: 20,
+                    marginRight: 8,
+                  }}>
+                  ●
+                </Text>
+                <Text style={{color: 'white', fontSize: 16, fontWeight: '500'}}>
+                  {selectedMarkerData.location}
                 </Text>
               </View>
+
+              <View
+                style={{
+                  height: 1,
+                  width: '100%',
+                  backgroundColor: 'rgba(255,255,255,0.4)',
+                  marginVertical: 12,
+                }}
+              />
+
+              {/* Dynamic PM2.5 value display */}
+              <View
+                style={{
+                  alignItems: 'center',
+                  marginVertical: 12,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  borderRadius: 12,
+                  padding: 16,
+                }}>
+                <Text
+                  style={{
+                    color: 'white',
+                    fontSize: 18,
+                    fontWeight: '600',
+                    // marginBottom: 5,
+                    // marginTop: '10',
+                  }}>
+                  {selectedMarkerData.type || 'PM2.5 Level'}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 42,
+                    fontWeight: 'bold',
+                    color: selectedMarkerData.color || '#FFD700',
+                    textShadowColor: 'rgba(0,0,0,0.5)',
+                    textShadowOffset: {width: 1, height: 1},
+                    textShadowRadius: 2,
+                  }}>
+                  {selectedMarkerData.value}
+                </Text>
+
+                <View
+                  style={{
+                    backgroundColor:
+                      selectedMarkerData.color ||
+                      getColorForAQI(parseFloat(selectedMarkerData.value))
+                        ?.bgColor,
+                    paddingHorizontal: 20,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginTop: 12,
+                  }}>
+                  <Text
+                    style={{
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: 16,
+                    }}>
+                    {selectedMarkerData.status ||
+                      getColorForAQI(parseFloat(selectedMarkerData.value))
+                        ?.status}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Pollutants section */}
+              <View
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  marginTop: 12,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                }}>
+                <Text
+                  style={{
+                    color: 'white',
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginBottom: 8,
+                  }}>
+                  Additional Pollutants
+                </Text>
+
+                {pollutantsData &&
+                  pollutantsData.map((data, index) => {
+                    const maxValue = Math.max(
+                      ...pollutantsData.map(item => item.value),
+                    );
+                    const barWidth = (data.value / maxValue) * 100;
+
+                    // Skip PM2.5 if it's already the main reading shown above
+                    if (
+                      selectedMarkerData.type &&
+                      selectedMarkerData.type.includes('PM2.5') &&
+                      data.pollutant === 'PM2.5'
+                    ) {
+                      return null;
+                    }
+
+                    return (
+                      <View key={data.pollutant} style={{marginBottom: 0}}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}>
+                          <Text
+                            style={{
+                              color: 'white',
+                              fontSize: 12,
+                              width: '25%',
+                            }}>
+                            {data.pollutant}
+                          </Text>
+                          <View
+                            style={{
+                              height: 8,
+                              width: '50%',
+                              backgroundColor: 'rgba(80,80,80,1)',
+                              borderRadius: 4,
+                              overflow: 'hidden',
+                            }}>
+                            <View
+                              style={{
+                                height: '100%',
+                                width: `${barWidth}%`,
+                                backgroundColor:
+                                  getColorForAQI(data.value)?.bgColor ||
+                                  '#8BC83B',
+                                borderRadius: 4,
+                              }}
+                            />
+                          </View>
+                          <Text
+                            style={{
+                              color: 'white',
+                              fontSize: 10,
+                              width: '25%',
+                              textAlign: 'right',
+                            }}>
+                            {data.value} {data.unit}
+                          </Text>
+                        </View>
+
+                        {index !== pollutantsData.length - 1 && (
+                          <View
+                            style={{
+                              height: 1,
+                              width: '100%',
+                              backgroundColor: 'rgba(255,255,255,0.2)',
+                              marginVertical: 14,
+                            }}
+                          />
+                        )}
+                      </View>
+                    );
+                  })}
+              </View>
+
+              {/* Close button */}
+              <TouchableOpacity
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  borderRadius: 15,
+                  width: 30,
+                  height: 30,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => setShowPollutionCard(false)}>
+                <Text
+                  style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
+                  ✕
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
-
         {/* Touch handler to close dropdowns when clicking outside */}
         {(showPollutantDropdown || showPollutionCard) && (
           <TouchableOpacity

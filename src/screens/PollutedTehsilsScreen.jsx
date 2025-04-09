@@ -320,9 +320,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     backgroundColor: '#FFFFFF',
   },
-  headingContainer: {
-    marginBottom: 24,
-  },
   h1Text: {
     fontSize: 28,
     fontWeight: 'bold',

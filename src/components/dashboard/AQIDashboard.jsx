@@ -177,7 +177,7 @@ const AQIDashboard = () => {
 
             {/* PM2.5 text and Person with mask - right side */}
             <View style={styles.personContainer}>
-              {/* PM2.5 text above the person image - in one line */}
+              {/* PM2.5 text above the person image - aligned to right */}
               <Text style={styles.pmText}>
                 PM2.5:{' '}
                 <Text style={styles.pmValue}>
@@ -294,44 +294,41 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   aqiCenterContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 20,
   },
   aqiDisplayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Space between category box and number
   },
   moderateBox: {
     backgroundColor: '#B75E5E',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 3,
-    marginRight: 35, // Increased from 25 to 35 for more space
   },
   moderateText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 18,
   },
+  // In the styles object, update the aqiNumber style:
   aqiNumber: {
     fontSize: 70,
     fontWeight: 'bold',
     color: '#8B2323',
+    textAlign: 'right',
+    marginLeft: 80, // Add left margin to push value to the right
   },
   scaleSection: {
     marginTop: 10,
     marginBottom: 15,
   },
-  // Update the pmText style in your StyleSheet
   pmText: {
-    fontSize: 13, // Reduced from 14 to make it fit better on one line
+    fontSize: 13,
     color: '#444',
     marginBottom: 20,
-    flexShrink: 1, // Allows the text to shrink rather than wrap
-    flexDirection: 'row', // Ensures text flows horizontally
-    flexWrap: 'nowrap', // Prevents text from wrapping
-    whiteSpace: 'nowrap', // Additional property to prevent wrapping
+    textAlign: 'right', // Align text to right
   },
   pmValue: {
     fontWeight: 'bold',
@@ -339,29 +336,20 @@ const styles = StyleSheet.create({
   aqiScaleContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between', // Creates space between scale and person
   },
   scaleContainer: {
     flexDirection: 'row',
-    width: 180,
+    width: 160, // Reduce width to create more space for PM2.5
   },
   pointerContainer: {
-    width: 20,
+    width: 5,
     justifyContent: 'center',
-    marginTop: 123,
+    marginTop: 12,
   },
-  // pointer: {
-  //   width: 0,
-  //   height: 0,
-  //   backgroundColor: 'transparent',
-  //   borderStyle: 'solid',
-  //   borderLeftWidth: 10,
-  //   borderRightWidth: 10,
-  //   borderTopWidth: 12,
-  //   borderLeftColor: 'transparent',
-  //   borderRightColor: 'transparent',
-  //   borderTopColor: 'black',
-  //   transform: [{rotate: '-90deg'}],
-  // },
+  pointer: {
+    // Pointer styles if needed
+  },
   levelsContainer: {
     flex: 1,
   },
@@ -406,16 +394,12 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   personContainer: {
-    flex: 1,
-    alignItems: 'flex-start',
-    paddingLeft: 10,
-    flexDirection: 'column',
-    marginRight: 20,
+    alignItems: 'flex-end', // Align content to right
+    marginLeft: 20, // Add space between scale and person container
   },
   personImage: {
     width: 120,
     height: 120,
-    alignSelf: 'flex-start',
   },
   cityBackground: {
     width: '100%',
@@ -431,7 +415,7 @@ const styles = StyleSheet.create({
   weatherCard: {
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'rgba(240, 220, 220, 0.25)',
+    backgroundColor: 'rgba(240, 220, 220, 0.15)', // Changed from 0.25 to 0.15
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },

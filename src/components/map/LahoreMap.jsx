@@ -1087,21 +1087,21 @@ showCurrentLocation();
         const value = parseFloat(sensor.value);
         
         // Determine background color and status based on value ranges
-        let bgColor = '#8BC83B'; // Green for 0-50
+        let bgColor = '#96CF49'; // Green for 0-50
         let statusText = "Good";
         
         if (value > 250) {
-          bgColor = '#FF0000'; // Red for > 250
-          statusText = "Hazardous";
+        bgColor = '#FF4D4D'; // Lighter Red for > 250
+        statusText = "Hazardous";
         } else if (value > 150) {
-          bgColor = '#A97EBC'; // Purple for 150-250
-          statusText = "Unhealthy";
+        bgColor = '#B782C9'; // Purple for 150-250
+        statusText = "Unhealthy";
         } else if (value > 100) {
-          bgColor = '#EA8C34'; // Orange for 100-150
-          statusText = "Unhealthy for Sensitive Groups";
+        bgColor = '#F1913A'; // Orange for 100-150
+        statusText = "Unhealthy for Sensitive Groups";
         } else if (value > 50) {
-          bgColor = '#FFD700'; // Yellow for 50-150
-          statusText = "Moderate";
+        bgColor = '#FFD633'; // Yellow for 50-150
+        statusText = "Moderate";
         }
         
         // Create a custom icon with the value inside
@@ -1185,7 +1185,7 @@ showCurrentLocation();
             startInLoadingState={true}
             renderLoading={() => (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFD700" />
+                <ActivityIndicator size="large" color="#FFD633" />
               </View>
             )}
             containerStyle={{flex: 1}}
@@ -1252,7 +1252,7 @@ showCurrentLocation();
         {/* Loading Overlay */}
         {(tiffLoading || csvLoading) && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#FFD700" />
+            <ActivityIndicator size="large" color="#FFD633" />
             <Text style={styles.loadingText}>
               {csvLoading
                 ? 'Loading pollution data points...'
@@ -1389,7 +1389,7 @@ showCurrentLocation();
                   style={{
                     fontSize: 36, // Reduced size
                     fontWeight: 'bold',
-                    color: selectedMarkerData.color || '#FFD700',
+                    color: selectedMarkerData.color || '#FFD633',
                     textShadowColor: 'rgba(0,0,0,0.5)',
                     textShadowOffset: {width: 1, height: 1},
                     textShadowRadius: 2,
@@ -1664,7 +1664,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   pollutionInfoValue: {
-    color: '#FFD700', // Gold color for the value
+    color: '#FFD633', // Gold color for the value
     fontSize: 36,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -1672,7 +1672,7 @@ const styles = StyleSheet.create({
   },
   pollutionInfoStatus: {
     alignSelf: 'center',
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FFD633',
     paddingHorizontal: 20,
     paddingVertical: 5,
     borderRadius: 15,

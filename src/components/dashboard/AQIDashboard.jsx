@@ -184,8 +184,7 @@ const AQIDashboard = () => {
                   {selectedSensor
                     ? Math.round(selectedSensor.sensor_value / 2)
                     : '--'}
-                </Text>
-                <Text>{''}</Text>
+                </Text>{' '}
                 μg/m³
               </Text>
 
@@ -198,7 +197,6 @@ const AQIDashboard = () => {
           </View>
         </View>
 
-        {/* Weather Card */}
         {/* Weather Card */}
         <View style={styles.weatherCardWrapper}>
           <View style={styles.weatherCard}>
@@ -325,10 +323,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
   },
+  // Update the pmText style in your StyleSheet
   pmText: {
-    fontSize: 14,
+    fontSize: 13, // Reduced from 14 to make it fit better on one line
     color: '#444',
     marginBottom: 20,
+    flexShrink: 1, // Allows the text to shrink rather than wrap
+    flexDirection: 'row', // Ensures text flows horizontally
+    flexWrap: 'nowrap', // Prevents text from wrapping
+    whiteSpace: 'nowrap', // Additional property to prevent wrapping
   },
   pmValue: {
     fontWeight: 'bold',

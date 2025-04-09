@@ -13,7 +13,7 @@ import {BarChart} from 'react-native-chart-kit';
 import {useGetSensorDataLastSevenDays} from '../../services/sensor.hooks';
 
 const AirQualityChart = () => {
-  const [selectedPollutant, setSelectedPollutant] = useState('PM 10');
+  const [selectedPollutant, setSelectedPollutant] = useState('PM 2.5');
   const [timeRange, setTimeRange] = useState('7 Days');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [barData, setBarData] = useState([]);
@@ -22,7 +22,24 @@ const AirQualityChart = () => {
   const chartWidth = screenWidth - 120;
 
   const {data: sensorData} = useGetSensorDataLastSevenDays();
-  console.log('🚀 ~ AirQualityChart ~ sensorData:', sensorData);
+
+  // Extract just the overall_mean values for each date
+  const overallMeansByDate = sensorData?.daily_means
+    ? Object.entries(sensorData.daily_means).reduce((result, [date, data]) => {
+        result[date] = data.overall_mean;
+        return result;
+      }, {})
+    : {};
+
+  console.log(
+    '🚀 ~ AirQualityChart ~ Daily Overall Mean AQI:',
+    overallMeansByDate,
+  );
+
+  // Custom rounding function to round up to next integer
+  const roundUp = value => {
+    return Math.ceil(value);
+  };
 
   const getValueColor = (value, pollutant) => {
     return '#FEBA17';
@@ -37,6 +54,32 @@ const AirQualityChart = () => {
     return data;
   };
 
+  const processPM25Data = () => {
+    if (!sensorData || !sensorData.daily_means) return [];
+
+    // Sort dates in ascending order to show properly on chart
+    const sortedDates = Object.keys(sensorData.daily_means).sort();
+
+    return sortedDates.slice(-7).map(date => {
+      // Use overall_mean for PM 2.5 data
+      const value = sensorData.daily_means[date].overall_mean || 0;
+
+      // Round up the value to next integer
+      const roundedValue = roundUp(value);
+
+      const dateObj = new Date(date);
+      const dayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+        dateObj.getDay()
+      ];
+
+      return {
+        label: dayLabel,
+        value: roundedValue,
+        color: getValueColor(roundedValue, 'PM 2.5'),
+      };
+    });
+  };
+
   const generatePollutantData = (pollutant, range) => {
     let data = [];
     if (range === '24 Hours') {
@@ -44,22 +87,25 @@ const AirQualityChart = () => {
         const value = Math.floor(Math.random() * 60) + 120;
         return {
           label: `${i}:00`,
-          value: value,
-          date: '04/07',
+          value: roundUp(value),
           color: getValueColor(value, pollutant),
         };
       });
     } else if (range === '7 Days') {
-      const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      data = Array.from({length: 7}, (_, i) => {
-        const value = Math.floor(Math.random() * 60) + 120;
-        return {
-          label: dayLabels[i],
-          value: value,
-          date: `04/${i + 1}`,
-          color: getValueColor(value, pollutant),
-        };
-      });
+      // For PM 2.5, use actual data from API if available
+      if (pollutant === 'PM 2.5' && sensorData?.daily_means) {
+        return processPM25Data();
+      } else {
+        const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        data = Array.from({length: 7}, (_, i) => {
+          const value = Math.floor(Math.random() * 60) + 120;
+          return {
+            label: dayLabels[i],
+            value: roundUp(value),
+            color: getValueColor(value, pollutant),
+          };
+        });
+      }
     } else {
       data = Array.from({length: 30}, (_, i) => {
         const day = new Date();
@@ -67,8 +113,7 @@ const AirQualityChart = () => {
         const value = Math.floor(Math.random() * 60) + 120;
         return {
           label: `${day.getDate()}`,
-          value: value,
-          date: `${day.getMonth() + 1}/${day.getDate()}`,
+          value: roundUp(value),
           color: getValueColor(value, pollutant),
         };
       });
@@ -118,15 +163,29 @@ const AirQualityChart = () => {
   const timeRanges = ['24 Hours', '7 Days', '30 Days'];
 
   useEffect(() => {
-    const fullData = pollutantData[selectedPollutant][timeRange];
-    const displayData =
-      timeRange === '7 Days' ? fullData : getSubsetData(fullData, timeRange);
-    setBarData(displayData);
-  }, [selectedPollutant, timeRange]);
+    // For PM 2.5 and 7 Days, refresh data when sensorData changes
+    if (
+      selectedPollutant === 'PM 2.5' &&
+      timeRange === '7 Days' &&
+      sensorData?.daily_means
+    ) {
+      setBarData(processPM25Data());
+    } else {
+      // Use existing pollutant data for other cases
+      const fullData = pollutantData[selectedPollutant][timeRange];
+      const displayData =
+        timeRange === '7 Days' ? fullData : getSubsetData(fullData, timeRange);
+      setBarData(displayData);
+    }
+  }, [selectedPollutant, timeRange, sensorData]);
 
   useEffect(() => {
-    const initialData = pollutantData['PM 10']['7 Days'];
-    setBarData(initialData);
+    // Initialize with PM 2.5 data
+    if (sensorData?.daily_means) {
+      setBarData(processPM25Data());
+    } else {
+      setBarData(pollutantData['PM 2.5']['7 Days']);
+    }
   }, []);
 
   const barChartConfig = {
@@ -136,7 +195,7 @@ const AirQualityChart = () => {
     decimalPlaces: 0,
     color: () => 'rgba(254, 186, 23, 1)', // Always fully opaque
     labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-    barPercentage: timeRange === '7 Days' ? 0.85 : 0.6,
+    barPercentage: timeRange === '7 Days' ? 0.75 : 0.6,
     barRadius: 4,
     propsForLabels: {
       fontSize: 0,
@@ -227,7 +286,7 @@ const AirQualityChart = () => {
 
             <View style={styles.chartWrapper}>
               {barData.length > 0 && (
-                <View style={{height: 230, paddingBottom: 20}}>
+                <View style={{height: 200, paddingBottom: 20}}>
                   <BarChart
                     data={{
                       labels: barData.map(item => item.label),
@@ -238,9 +297,14 @@ const AirQualityChart = () => {
                       ],
                     }}
                     width={chartWidth}
-                    height={230}
+                    height={200}
                     yAxisSuffix=""
-                    chartConfig={barChartConfig}
+                    chartConfig={{
+                      ...barChartConfig,
+                      // Add top padding or offset reduction
+                      paddingTop: 0, // Reduce padding at top
+                      yAxisLabelWidth: 35, // Adjust as needed
+                    }}
                     style={styles.chart}
                     fromZero={true}
                     withInnerLines={false}
@@ -263,9 +327,6 @@ const AirQualityChart = () => {
                       key={index}
                       style={[styles.dateLabelContainer, {left: xPos - 15}]}>
                       <Text style={styles.dateLabel}>{item.label}</Text>
-                      {timeRange !== '24 Hours' && (
-                        <Text style={styles.dateSubLabel}>{item.date}</Text>
-                      )}
                     </View>
                   );
                 })}
@@ -277,14 +338,14 @@ const AirQualityChart = () => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Min</Text>
-                <Text style={styles.statValue}>
+                <Text style={[styles.statValue, styles.minStatValue]}>
                   {Math.min(...barData.map(item => item.value))}
                 </Text>
               </View>
               <View style={styles.statSeparator} />
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Max</Text>
-                <Text style={styles.statValue}>
+                <Text style={[styles.statValue, styles.maxStatValue]}>
                   {Math.max(...barData.map(item => item.value))}
                 </Text>
               </View>
@@ -304,13 +365,14 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 50,
+    paddingVertical: 8, // Reduced vertical padding
+    paddingBottom: 30,
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
+    paddingTop: 10, // Reduced top padding
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -321,29 +383,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 12,
+    marginBottom: 16, // Increase this to create more space below the title
     textAlign: 'left',
   },
+
   timeRangeContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginTop: 8, // Add this to create additional space above the buttons
+    marginBottom: 12,
   },
   timeRangeButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 6, // Reduced padding
     marginRight: 8,
     backgroundColor: '#E5E7EB',
     borderRadius: 8,
   },
   activeTimeRangeButton: {
-    backgroundColor: '#1B56FD',
+    backgroundColor: '#696969',
   },
   timeRangeText: {
-    fontSize: 14,
+    fontSize: 13, // Reduced font size
     color: '#6B7280',
   },
   activeTimeRangeText: {
@@ -352,13 +416,13 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',
-    marginVertical: 8,
+    marginVertical: 6, // Reduced margin
   },
   controlsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced margin
   },
   pollutantContainer: {
     position: 'relative',
@@ -366,14 +430,14 @@ const styles = StyleSheet.create({
   pollutantButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B56FD',
+    backgroundColor: '#696969',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 6, // Reduced padding
     borderRadius: 6,
   },
   pollutantButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13, // Reduced font size
     fontWeight: '500',
     marginRight: 8,
   },
@@ -385,7 +449,7 @@ const styles = StyleSheet.create({
   dropdown: {
     position: 'absolute',
     right: 0,
-    top: 40,
+    top: 34, // Adjusted position
     width: 160,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -403,12 +467,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8, // Reduced padding
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   dropdownText: {
-    fontSize: 14,
+    fontSize: 13, // Reduced font size
     color: '#4B5563',
   },
   selectedDropdownText: {
@@ -422,12 +486,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B56FD',
   },
   chartContainer: {
-    height: 280,
+    height: 240, // Reduced height
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced margin
   },
   yAxisContainer: {
-    height: 250,
+    height: 220, // Reduced height
     width: 40,
     position: 'relative',
     alignItems: 'flex-end',
@@ -435,7 +499,7 @@ const styles = StyleSheet.create({
   customYAxisLabels: {
     position: 'relative',
     width: 40,
-    height: 250,
+    height: 220, // Reduced height
   },
   yAxisLabelTop: {
     position: 'absolute',
@@ -447,7 +511,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel240: {
     position: 'absolute',
-    top: 50,
+    top: 45, // Adjusted position
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -455,7 +519,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel120: {
     position: 'absolute',
-    top: 100,
+    top: 90, // Adjusted position
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -463,7 +527,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel60: {
     position: 'absolute',
-    top: 150,
+    top: 135, // Adjusted position
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -471,20 +535,20 @@ const styles = StyleSheet.create({
   },
   yAxisLabel0: {
     position: 'absolute',
-    top: 200,
+    top: 180, // Adjusted position
     right: 10,
     fontSize: 10,
     color: '#6B7280',
     textAlign: 'right',
   },
   chart: {
-    marginVertical: 8,
+    marginVertical: 6, // Reduced margin
     borderRadius: 16,
     paddingRight: 0,
     marginLeft: 0,
   },
   chartWrapper: {
-    height: 280,
+    height: 240, // Reduced height
     position: 'relative',
     flex: 1,
   },
@@ -493,7 +557,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 40,
+    height: 30, // Reduced height
   },
   dateLabelContainer: {
     position: 'absolute',
@@ -505,17 +569,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
-  dateSubLabel: {
-    marginTop: 2,
-    fontSize: 8,
-    color: '#9CA3AF',
-    textAlign: 'center',
-  },
   statsContainer: {
-    marginTop: 8,
+    marginTop: 6, // Reduced margin
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    paddingTop: 16,
+    paddingTop: 12, // Reduced padding
   },
   statsRow: {
     flexDirection: 'row',
@@ -534,7 +592,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1B56FD',
+  },
+  minStatValue: {
+    color: '#FEBA17', // Yellow for min
+  },
+  maxStatValue: {
+    color: '#FF4D4F', // Red for max
   },
   statSeparator: {
     height: 24,

@@ -74,20 +74,6 @@ const ContactUsScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
-          {/* Title and Emblem */}
-          <View style={styles.titleSection}>
-            <Image
-              source={{
-                uri: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Emblem_of_Pakistan.svg',
-              }}
-              style={styles.emblem}
-            />
-            <Text style={styles.titleText}>Contact Us</Text>
-            <Text style={styles.subtitleText}>
-              Environment Protection Department
-            </Text>
-          </View>
-
           {/* About Us Card */}
           <View style={styles.mainCard}>
             {/* About Us Title with Icon */}
@@ -196,65 +182,10 @@ const ContactUsScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
 
-            <View style={styles.divider} />
-
-            {/* Working Hours Section */}
-            <View style={styles.hoursSection}>
-              <View
-                style={[
-                  styles.sectionIconContainer,
-                  {backgroundColor: '#E8F5E9'},
-                ]}>
-                <Image
-                  source={{
-                    uri: 'https://cdn-icons-png.flaticon.com/512/2784/2784459.png',
-                  }}
-                  style={[styles.sectionIcon, {tintColor: '#2E8B57'}]}
-                />
-              </View>
-              <Text style={styles.sectionTitle}>Working Hours</Text>
-              <View style={styles.hoursRow}>
-                <Text style={styles.daysText}>Monday - Thursday:</Text>
-                <Text style={styles.timeText}>9:00 AM - 5:00 PM</Text>
-              </View>
-              <View style={styles.hoursRow}>
-                <Text style={styles.daysText}>Friday:</Text>
-                <Text style={styles.timeText}>9:00 AM - 1:00 PM</Text>
-              </View>
-              <View style={styles.hoursRow}>
-                <Text style={styles.daysText}>Saturday - Sunday:</Text>
-                <Text style={styles.timeText}>Closed</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Location Section */}
-            <View style={styles.locationSection}>
-              <View
-                style={[
-                  styles.sectionIconContainer,
-                  {backgroundColor: '#E8F5E9'},
-                ]}>
-                <Image
-                  source={{
-                    uri: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-                  }}
-                  style={[styles.sectionIcon, {tintColor: '#2E8B57'}]}
-                />
-              </View>
-              <Text style={styles.sectionTitle}>Visit Us</Text>
-              <TouchableOpacity onPress={handleMap}>
-                <Text style={styles.contactText}>
-                  Gaddafi Stadium, Ferozepur Road, Lahore, Punjab
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Social Media Section */}
+          {/* Social Media Section as separate card with original icons */}
+          <View style={styles.mainCard}>
             <View style={styles.socialSection}>
               <Text style={styles.sectionTitle}>Connect With Us</Text>
               <View style={styles.socialIcons}>
@@ -265,7 +196,7 @@ const ContactUsScreen = () => {
                     source={{
                       uri: 'https://cdn-icons-png.flaticon.com/512/733/733547.png',
                     }}
-                    style={[styles.socialIcon, {tintColor: '#2E8B57'}]}
+                    style={styles.socialIcon}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -275,7 +206,7 @@ const ContactUsScreen = () => {
                     source={{
                       uri: 'https://cdn-icons-png.flaticon.com/512/733/733579.png',
                     }}
-                    style={[styles.socialIcon, {tintColor: '#2E8B57'}]}
+                    style={styles.socialIcon}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -285,7 +216,7 @@ const ContactUsScreen = () => {
                     source={{
                       uri: 'https://cdn-icons-png.flaticon.com/512/2111/2111463.png',
                     }}
-                    style={[styles.socialIcon, {tintColor: '#2E8B57'}]}
+                    style={styles.socialIcon}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -295,7 +226,7 @@ const ContactUsScreen = () => {
                     source={{
                       uri: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png',
                     }}
-                    style={[styles.socialIcon, {tintColor: '#2E8B57'}]}
+                    style={styles.socialIcon}
                   />
                 </TouchableOpacity>
               </View>
@@ -311,7 +242,7 @@ const ContactUsScreen = () => {
               style={styles.footerFlag}
             />
             <Text style={styles.footerText}>
-              Environment Protection Department, Government of the Punjab
+              {/* Environment Protection Department, Government of the Punjab */}
             </Text>
           </View>
         </View>
@@ -327,10 +258,11 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   header: {
-    height: 56,
+    marginBottom: 20,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    paddingBottom: 10, // Added this line to create space below the header
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
@@ -363,12 +295,12 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   contentContainer: {
-    padding: 20,
-    paddingTop: 10,
+    padding: 16,
+    paddingTop: 8,
   },
   titleSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 0, // Removed space here
   },
   emblem: {
     width: 70,
@@ -394,11 +326,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 24,
+    marginBottom: 16, // Reduced from 24 to 16
   },
   contactUsTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   contactUsIcon: {
@@ -468,34 +401,16 @@ const styles = StyleSheet.create({
   contactRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    columnGap: 20, // Add this line to create space between columns
   },
   contactColumn: {
     flex: 1,
+    alignItems: 'flex-start',
   },
   contactText: {
     fontSize: 14,
     color: '#555',
     marginBottom: 6,
-  },
-  hoursSection: {
-    marginBottom: 16,
-  },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  daysText: {
-    fontSize: 14,
-    color: '#555',
-    fontWeight: '500',
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  locationSection: {
-    marginBottom: 16,
   },
   socialSection: {
     alignItems: 'center',
@@ -522,7 +437,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 24,
+    // paddingVertical: 24,
   },
   footerFlag: {
     width: 24,

@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   dashboardWrapper: {
-    height: '35%',
+    height: '32.7%',
   },
   advisoryWrapper: {
     // No specific height needed, will take its natural height

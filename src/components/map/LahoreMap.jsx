@@ -1307,15 +1307,16 @@ showCurrentLocation();
           <View
             style={{
               position: 'absolute',
-              top: '12%',
+              top: '50%',
               left: 20,
               right: 20,
+              transform: [{translateY: -180}], // Adjusted to better center the card
               zIndex: 1000,
             }}>
             <View
               style={{
-                backgroundColor: 'rgba(40, 40, 40, 0.9)', // Less transparent background
-                padding: 16,
+                backgroundColor: 'rgba(40, 40, 40, 0.9)',
+                padding: 12, // Reduced padding
                 borderRadius: 12,
                 shadowColor: '#000',
                 shadowOffset: {width: 0, height: 2},
@@ -1328,9 +1329,9 @@ showCurrentLocation();
               }}>
               <Text
                 style={{
-                  fontSize: 22,
+                  fontSize: 20, // Reduced font size
                   fontWeight: 'bold',
-                  marginBottom: 8,
+                  marginBottom: 6, // Reduced margin
                   color: 'white',
                   textShadowColor: 'rgba(0,0,0,0.75)',
                   textShadowOffset: {width: 1, height: 1},
@@ -1343,17 +1344,16 @@ showCurrentLocation();
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  // marginVertical: 2,
                 }}>
                 <Text
                   style={{
                     color: selectedMarkerData.color || 'red',
-                    fontSize: 20,
+                    fontSize: 18, // Reduced size
                     marginRight: 8,
                   }}>
                   ●
                 </Text>
-                <Text style={{color: 'white', fontSize: 16, fontWeight: '500'}}>
+                <Text style={{color: 'white', fontSize: 14, fontWeight: '500'}}>
                   {selectedMarkerData.location}
                 </Text>
               </View>
@@ -1363,7 +1363,7 @@ showCurrentLocation();
                   height: 1,
                   width: '100%',
                   backgroundColor: 'rgba(255,255,255,0.4)',
-                  marginVertical: 12,
+                  marginVertical: 8, // Reduced margin
                 }}
               />
 
@@ -1371,25 +1371,23 @@ showCurrentLocation();
               <View
                 style={{
                   alignItems: 'center',
-                  marginVertical: 12,
+                  marginVertical: 8, // Reduced margin
                   backgroundColor: 'rgba(0,0,0,0.3)',
                   borderRadius: 12,
-                  padding: 16,
+                  padding: 10, // Reduced padding
                 }}>
                 <Text
                   style={{
                     color: 'white',
-                    fontSize: 18,
+                    fontSize: 16, // Reduced size
                     fontWeight: '600',
-                    // marginBottom: 5,
-                    // marginTop: '10',
                   }}>
                   {selectedMarkerData.type || 'PM2.5 Level'}
                 </Text>
 
                 <Text
                   style={{
-                    fontSize: 42,
+                    fontSize: 36, // Reduced size
                     fontWeight: 'bold',
                     color: selectedMarkerData.color || '#FFD700',
                     textShadowColor: 'rgba(0,0,0,0.5)',
@@ -1405,16 +1403,16 @@ showCurrentLocation();
                       selectedMarkerData.color ||
                       getColorForAQI(parseFloat(selectedMarkerData.value))
                         ?.bgColor,
-                    paddingHorizontal: 20,
-                    paddingVertical: 8,
+                    paddingHorizontal: 16, // Reduced padding
+                    paddingVertical: 6, // Reduced padding
                     borderRadius: 20,
-                    marginTop: 12,
+                    marginTop: 8, // Reduced margin
                   }}>
                   <Text
                     style={{
                       color: 'white',
                       fontWeight: 'bold',
-                      fontSize: 16,
+                      fontSize: 14, // Reduced size
                     }}>
                     {selectedMarkerData.status ||
                       getColorForAQI(parseFloat(selectedMarkerData.value))
@@ -1427,17 +1425,17 @@ showCurrentLocation();
               <View
                 style={{
                   width: '100%',
-                  padding: 12,
-                  marginTop: 12,
+                  padding: 10, // Reduced padding
+                  marginTop: 8, // Reduced margin
                   borderRadius: 12,
                   backgroundColor: 'rgba(0,0,0,0.6)',
                 }}>
                 <Text
                   style={{
                     color: 'white',
-                    fontSize: 16,
+                    fontSize: 14, // Reduced size
                     fontWeight: 'bold',
-                    marginBottom: 8,
+                    marginBottom: 6, // Reduced margin
                   }}>
                   Additional Pollutants
                 </Text>
@@ -1449,7 +1447,6 @@ showCurrentLocation();
                     );
                     const barWidth = (data.value / maxValue) * 100;
 
-                    // Skip PM2.5 if it's already the main reading shown above
                     if (
                       selectedMarkerData.type &&
                       selectedMarkerData.type.includes('PM2.5') &&
@@ -1469,17 +1466,17 @@ showCurrentLocation();
                           <Text
                             style={{
                               color: 'white',
-                              fontSize: 12,
+                              fontSize: 11, // Reduced size
                               width: '25%',
                             }}>
                             {data.pollutant}
                           </Text>
                           <View
                             style={{
-                              height: 8,
+                              height: 6, // Reduced height
                               width: '50%',
                               backgroundColor: 'rgba(80,80,80,1)',
-                              borderRadius: 4,
+                              borderRadius: 3,
                               overflow: 'hidden',
                             }}>
                             <View
@@ -1489,14 +1486,14 @@ showCurrentLocation();
                                 backgroundColor:
                                   getColorForAQI(data.value)?.bgColor ||
                                   '#8BC83B',
-                                borderRadius: 4,
+                                borderRadius: 3,
                               }}
                             />
                           </View>
                           <Text
                             style={{
                               color: 'white',
-                              fontSize: 10,
+                              fontSize: 9, // Reduced size
                               width: '25%',
                               textAlign: 'right',
                             }}>
@@ -1510,7 +1507,7 @@ showCurrentLocation();
                               height: 1,
                               width: '100%',
                               backgroundColor: 'rgba(255,255,255,0.2)',
-                              marginVertical: 14,
+                              marginVertical: 8, // Reduced margin
                             }}
                           />
                         )}
@@ -1527,14 +1524,14 @@ showCurrentLocation();
                   right: 8,
                   backgroundColor: 'rgba(0,0,0,0.5)',
                   borderRadius: 15,
-                  width: 30,
-                  height: 30,
+                  width: 26, // Reduced size
+                  height: 26, // Reduced size
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
                 onPress={() => setShowPollutionCard(false)}>
                 <Text
-                  style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
+                  style={{color: 'white', fontSize: 14, fontWeight: 'bold'}}>
                   ✕
                 </Text>
               </TouchableOpacity>

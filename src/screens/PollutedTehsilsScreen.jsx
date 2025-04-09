@@ -24,67 +24,62 @@ const PollutedTehsilsScreen = () => {
   // List of pollutants for dropdown
   const pollutants = ['AQI', 'PM2.5', 'PM10', 'NO2', 'SO2', 'CO', 'O3'];
 
-  // Sample data
+  // Updated sample data to represent all categories
   const tehsilData = [
     {
       id: '01',
       name: 'Shalimar',
-      aqi: 178,
-      pm25: 165,
-      pm10: 142,
-      no2: 120,
-      so2: 90,
-      co: 110,
-      o3: 125,
-      status: 'Unhealthy',
+      aqi: 520,
+      pm25: 550,
+      pm10: 530,
+      no2: 520,
+      so2: 540,
+      co: 510,
+      o3: 530,
     },
     {
       id: '02',
       name: 'Lahore City',
-      aqi: 165,
-      pm25: 158,
-      pm10: 138,
-      no2: 125,
-      so2: 85,
-      co: 90,
-      o3: 120,
-      status: 'Unhealthy',
+      aqi: 320,
+      pm25: 290,
+      pm10: 280,
+      no2: 310,
+      so2: 270,
+      co: 300,
+      o3: 330,
     },
     {
       id: '03',
       name: 'Model Town',
-      aqi: 163,
-      pm25: 150,
-      pm10: 132,
-      no2: 115,
-      so2: 95,
-      co: 105,
-      o3: 110,
-      status: 'Unhealthy',
+      aqi: 180,
+      pm25: 170,
+      pm10: 190,
+      no2: 175,
+      so2: 185,
+      co: 165,
+      o3: 195,
     },
     {
       id: '04',
       name: 'Raiwind',
-      aqi: 144,
+      aqi: 120,
       pm25: 135,
-      pm10: 120,
-      no2: 110,
-      so2: 80,
-      co: 95,
-      o3: 105,
-      status: 'Poor',
+      pm10: 110,
+      no2: 90,
+      so2: 120,
+      co: 100,
+      o3: 130,
     },
     {
       id: '05',
       name: 'Lahore Cantt',
-      aqi: 138,
-      pm25: 130,
-      pm10: 118,
-      no2: 105,
-      so2: 75,
-      co: 88,
-      o3: 100,
-      status: 'Poor',
+      aqi: 35,
+      pm25: 30,
+      pm10: 40,
+      no2: 25,
+      so2: 20,
+      co: 45,
+      o3: 40,
     },
   ];
 
@@ -96,26 +91,22 @@ const PollutedTehsilsScreen = () => {
 
   const sortedData = getSortedData();
 
-  // Get pollution status and color based on pollutant value
+  // Updated pollution status and color based on pollutant value
   const getPollutantStatus = (pollutant, value) => {
     let status, color;
 
-    // Generic thresholds (can be adjusted for specific pollutants if needed)
     if (value <= 50) {
       status = 'Good';
       color = '#10B981'; // Green
     } else if (value <= 100) {
       status = 'Moderate';
-      color = '#F59E0B'; // Amber
+      color = '#FBBF24'; // Amber/Yellow
     } else if (value <= 150) {
       status = 'Poor';
-      color = '#F59E0B'; // Amber/Yellow
-    } else if (value <= 200) {
+      color = '#F97316'; // Orange
+    } else if (value <= 500) {
       status = 'Unhealthy';
       color = '#EF4444'; // Red
-    } else if (value <= 300) {
-      status = 'Very Unhealthy';
-      color = '#B91C1C'; // Dark Red
     } else {
       status = 'Hazardous';
       color = '#7F1D1D'; // Very Dark Red
@@ -288,15 +279,27 @@ const PollutedTehsilsScreen = () => {
               </View>
               <View style={styles.legendItem}>
                 <View
-                  style={[styles.legendIndicator, {backgroundColor: '#F59E0B'}]}
+                  style={[styles.legendIndicator, {backgroundColor: '#FBBF24'}]}
                 />
-                <Text style={styles.legendText}>51-150: Poor/Moderate</Text>
+                <Text style={styles.legendText}>51-100: Moderate</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendIndicator, {backgroundColor: '#F97316'}]}
+                />
+                <Text style={styles.legendText}>101-150: Poor</Text>
               </View>
               <View style={styles.legendItem}>
                 <View
                   style={[styles.legendIndicator, {backgroundColor: '#EF4444'}]}
                 />
-                <Text style={styles.legendText}>151+: Unhealthy</Text>
+                <Text style={styles.legendText}>151-500: Unhealthy</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View
+                  style={[styles.legendIndicator, {backgroundColor: '#7F1D1D'}]}
+                />
+                <Text style={styles.legendText}>500+: Hazardous</Text>
               </View>
             </View>
           </View>
@@ -319,6 +322,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 24,
     backgroundColor: '#FFFFFF',
+  },
+  headingContainer: {
+    marginBottom: 20,
   },
   h1Text: {
     fontSize: 28,
@@ -549,9 +555,9 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
-    marginRight: 12,
-    width: '30%',
+    marginBottom: 8,
+    marginRight: 10,
+    width: '45%',
   },
   legendIndicator: {
     width: 12,

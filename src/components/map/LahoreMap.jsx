@@ -1336,7 +1336,7 @@ showCurrentLocation();
                   textShadowOffset: {width: 1, height: 1},
                   textShadowRadius: 3,
                 }}>
-                Air Quality Information
+                Air Quality
               </Text>
 
               <View

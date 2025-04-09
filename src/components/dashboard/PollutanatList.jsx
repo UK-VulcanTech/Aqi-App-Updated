@@ -15,19 +15,19 @@ const PollutantsList = () => {
               <Text style={styles.pollutantLabel}>
                 Particulate Matter (PM2.5)
               </Text>
-              <Text style={styles.pollutantValue}>49µg/m³</Text>
+              <Text style={styles.pollutantValue}>149.839µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.blueBorder]}>
               <Text style={styles.pollutantLabel}>
                 Particulate Matter (PM10)
               </Text>
-              <Text style={styles.pollutantValue}>49µg/m³</Text>
+              <Text style={styles.pollutantValue}>283.281µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.fuchsiaBorder]}>
               <Text style={styles.pollutantLabel}>Nitrogen Dioxide (NO2)</Text>
-              <Text style={styles.pollutantValue}>49µg/m³</Text>
+              <Text style={styles.pollutantValue}>107µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.greenBorder]}>
@@ -37,12 +37,12 @@ const PollutantsList = () => {
 
             <View style={[styles.pollutantCard, styles.orangeBorder]}>
               <Text style={styles.pollutantLabel}>Carbon Monoxide (CO)</Text>
-              <Text style={styles.pollutantValue}>49µg/m³</Text>
+              <Text style={styles.pollutantValue}>4.513µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.redBorder]}>
               <Text style={styles.pollutantLabel}>Ozone (O3)</Text>
-              <Text style={styles.pollutantValue}>49µg/m³</Text>
+              <Text style={styles.pollutantValue}>18.977µg/m³</Text>
             </View>
           </View>
         </View>

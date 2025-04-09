@@ -13,11 +13,15 @@ import {
 import maryam from '../assets/images/maryam.jpg';
 import raja from '../assets/images/raja.jpg';
 import imran from '../assets/images/imran.png';
+import backIcon from '../assets/icons/back.png'; // Import your back icon image
 
 // Get device width for responsive sizing
 const {width} = Dimensions.get('window');
 
-const BlogsScreen = () => {
+// Define light green color to use throughout
+const lightGreen = '#67AE6E';
+
+const BlogsScreen = ({navigation}) => {
   const solutionCards = [
     {
       id: 1,
@@ -50,12 +54,29 @@ const BlogsScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Back header */}
+      <View style={styles.backHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}>
+          <Image source={backIcon} style={styles.backIconImage} />
+          <Text style={styles.backHeaderText}>Blogs</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
+        {/* Enhanced Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>
-            Environment Protection Department
-          </Text>
+          <View style={styles.headerWrapper}>
+            <Text style={styles.headerCaption}>BLOGS</Text>
+            <Text style={styles.headerText}>
+              Environment Protection Department
+            </Text>
+            <View style={styles.headerDivider} />
+            <Text style={styles.headerSubtext}>
+              Leading the way towards a cleaner, healthier Punjab
+            </Text>
+          </View>
 
           <View style={styles.cardsContainer}>
             {solutionCards.map((card, index) => {
@@ -100,6 +121,29 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#f5f5f5',
   },
+  backHeader: {
+    height: 56,
+    backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backIconImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  backHeaderText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
   scrollContainer: {
     paddingBottom: 24,
     paddingHorizontal: 12,
@@ -107,12 +151,40 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingVertical: 20,
   },
+  headerWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  headerCaption: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: lightGreen,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
   headerText: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#333',
     marginBottom: 8,
-    paddingHorizontal: 4,
+  },
+  headerDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: lightGreen,
+    marginBottom: 12,
+  },
+  headerSubtext: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
   },
   cardsContainer: {
     alignItems: 'center',
@@ -131,6 +203,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     height: width * 0.55, // Fixed height based on device width ratio
+    borderLeftWidth: 3,
+    borderLeftColor: lightGreen,
   },
   cardContent: {
     flexDirection: 'row',
@@ -151,12 +225,13 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 12,
-    color: '#666',
+    color: lightGreen,
+    fontWeight: '500',
     marginBottom: 2,
   },
   subtitleText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#333',
     marginBottom: 6,
   },
@@ -170,7 +245,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#67AE6E',
+    backgroundColor: lightGreen, // Changed to light green
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
@@ -180,7 +255,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
 

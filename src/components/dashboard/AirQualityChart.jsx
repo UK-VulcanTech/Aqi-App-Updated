@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Image,
 } from 'react-native';
-import {BarChart} from 'react-native-chart-kit';
+import {BarChart, LineChart} from 'react-native-chart-kit';
 
 // import {useGetAllSensors} from '../../services/sensor.hooks';
 import {useGetSensorDataLastSevenDays} from '../../services/sensor.hooks';
@@ -17,6 +17,7 @@ const AirQualityChart = () => {
   const [timeRange, setTimeRange] = useState('7 Days');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [barData, setBarData] = useState([]);
+  const [chartType, setChartType] = useState('bar'); // Default chart type: 'bar' or 'line'
 
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - 120;
@@ -161,6 +162,7 @@ const AirQualityChart = () => {
 
   const pollutants = ['AQI', 'PM 2.5', 'PM 10', 'CO', 'SO2', 'NO2', 'O3'];
   const timeRanges = ['24 Hours', '7 Days', '30 Days'];
+  const chartTypes = ['bar', 'line'];
 
   useEffect(() => {
     // For PM 2.5 and 7 Days, refresh data when sensorData changes
@@ -203,6 +205,90 @@ const AirQualityChart = () => {
     formatYLabel: () => '',
   };
 
+  const lineChartConfig = {
+    ...barChartConfig,
+    strokeWidth: 3,
+    useShadowColorFromDataset: false,
+    color: () => 'rgba(254, 186, 23, 1)',
+  };
+
+  // Calculate statistics
+  const minValue =
+    barData.length > 0 ? Math.min(...barData.map(item => item.value)) : 0;
+  const maxValue =
+    barData.length > 0 ? Math.max(...barData.map(item => item.value)) : 0;
+  const avgValue =
+    barData.length > 0
+      ? Math.round(
+          barData.reduce((sum, item) => sum + item.value, 0) / barData.length,
+        )
+      : 0;
+
+  // Render the appropriate chart based on chartType
+  const renderChart = (data, config) => {
+    if (chartType === 'bar') {
+      return (
+        <BarChart
+          data={{
+            labels: data.map(item => item.label),
+            datasets: [
+              {
+                data: data.map(item => item.value),
+              },
+            ],
+          }}
+          width={chartWidth}
+          height={200}
+          yAxisSuffix=""
+          chartConfig={{
+            ...config,
+            paddingTop: 0,
+            yAxisLabelWidth: 35,
+          }}
+          style={styles.chart}
+          fromZero={true}
+          withInnerLines={false}
+          segments={5}
+          showValuesOnTopOfBars={true}
+          withHorizontalLabels={false}
+          yAxisLabel=""
+          withVerticalLines={false}
+        />
+      );
+    } else {
+      return (
+        <LineChart
+          data={{
+            labels: data.map(item => item.label),
+            datasets: [
+              {
+                data: data.map(item => item.value),
+                color: (opacity = 1) => 'rgba(254, 186, 23, 1)',
+                strokeWidth: 3,
+              },
+            ],
+          }}
+          width={chartWidth}
+          height={200}
+          chartConfig={{
+            ...config,
+            paddingTop: 0,
+            yAxisLabelWidth: 35,
+          }}
+          style={styles.chart}
+          bezier
+          fromZero
+          withInnerLines={false}
+          withHorizontalLabels={false}
+          withVerticalLabels={true}
+          hidePointsAtIndex={[]}
+          withDots={true}
+          withShadow={false}
+        />
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
@@ -227,6 +313,38 @@ const AirQualityChart = () => {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+
+          {/* Chart Type Selector */}
+          <View style={styles.chartTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.chartTypeButton,
+                chartType === 'bar' && styles.activeChartTypeButton,
+              ]}
+              onPress={() => setChartType('bar')}>
+              <Text
+                style={[
+                  styles.chartTypeText,
+                  chartType === 'bar' && styles.activeChartTypeText,
+                ]}>
+                Bar Chart
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.chartTypeButton,
+                chartType === 'line' && styles.activeChartTypeButton,
+              ]}
+              onPress={() => setChartType('line')}>
+              <Text
+                style={[
+                  styles.chartTypeText,
+                  chartType === 'line' && styles.activeChartTypeText,
+                ]}>
+                Line Chart
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.divider} />
@@ -273,6 +391,7 @@ const AirQualityChart = () => {
             </View>
           </View>
 
+          {/* Chart */}
           <View style={styles.chartContainer}>
             <View style={styles.yAxisContainer}>
               <View style={styles.customYAxisLabels}>
@@ -287,33 +406,7 @@ const AirQualityChart = () => {
             <View style={styles.chartWrapper}>
               {barData.length > 0 && (
                 <View style={{height: 200, paddingBottom: 20}}>
-                  <BarChart
-                    data={{
-                      labels: barData.map(item => item.label),
-                      datasets: [
-                        {
-                          data: barData.map(item => item.value),
-                        },
-                      ],
-                    }}
-                    width={chartWidth}
-                    height={200}
-                    yAxisSuffix=""
-                    chartConfig={{
-                      ...barChartConfig,
-                      // Add top padding or offset reduction
-                      paddingTop: 0, // Reduce padding at top
-                      yAxisLabelWidth: 35, // Adjust as needed
-                    }}
-                    style={styles.chart}
-                    fromZero={true}
-                    withInnerLines={false}
-                    segments={5}
-                    showValuesOnTopOfBars={true}
-                    withHorizontalLabels={false}
-                    yAxisLabel=""
-                    withVerticalLines={false}
-                  />
+                  {renderChart(barData, barChartConfig)}
                 </View>
               )}
 
@@ -339,14 +432,21 @@ const AirQualityChart = () => {
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Min</Text>
                 <Text style={[styles.statValue, styles.minStatValue]}>
-                  {Math.min(...barData.map(item => item.value))}
+                  {minValue}
+                </Text>
+              </View>
+              <View style={styles.statSeparator} />
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Avg</Text>
+                <Text style={[styles.statValue, styles.avgStatValue]}>
+                  {avgValue}
                 </Text>
               </View>
               <View style={styles.statSeparator} />
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Max</Text>
                 <Text style={[styles.statValue, styles.maxStatValue]}>
-                  {Math.max(...barData.map(item => item.value))}
+                  {maxValue}
                 </Text>
               </View>
             </View>
@@ -365,14 +465,14 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 8, // Reduced vertical padding
+    paddingVertical: 8,
     paddingBottom: 30,
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    paddingTop: 10, // Reduced top padding
+    paddingTop: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -386,19 +486,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 16, // Increase this to create more space below the title
+    marginBottom: 16,
     textAlign: 'left',
   },
-
   timeRangeContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8, // Add this to create additional space above the buttons
+    marginTop: 8,
     marginBottom: 12,
   },
   timeRangeButton: {
     paddingHorizontal: 16,
-    paddingVertical: 6, // Reduced padding
+    paddingVertical: 6,
     marginRight: 8,
     backgroundColor: '#E5E7EB',
     borderRadius: 8,
@@ -407,22 +506,49 @@ const styles = StyleSheet.create({
     backgroundColor: '#696',
   },
   timeRangeText: {
-    fontSize: 13, // Reduced font size
+    fontSize: 13,
     color: '#6B7280',
   },
   activeTimeRangeText: {
     color: '#FFFFFF',
   },
+  // Chart type selector styles
+  chartTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 12,
+    // marginLeft: 8,
+    gap: 40,
+  },
+  chartTypeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginRight: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  activeChartTypeButton: {
+    backgroundColor: '#4CAF50',
+  },
+  chartTypeText: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  activeChartTypeText: {
+    color: '#FFFFFF',
+  },
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',
-    marginVertical: 6, // Reduced margin
+    marginVertical: 6,
   },
   controlsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 12, // Reduced margin
+    marginBottom: 12,
   },
   pollutantContainer: {
     position: 'relative',
@@ -432,12 +558,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#696969',
     paddingHorizontal: 16,
-    paddingVertical: 6, // Reduced padding
+    paddingVertical: 6,
     borderRadius: 6,
   },
   pollutantButtonText: {
     color: '#FFFFFF',
-    fontSize: 13, // Reduced font size
+    fontSize: 13,
     fontWeight: '500',
     marginRight: 8,
   },
@@ -449,7 +575,7 @@ const styles = StyleSheet.create({
   dropdown: {
     position: 'absolute',
     right: 0,
-    top: 34, // Adjusted position
+    top: 34,
     width: 160,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -467,31 +593,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8, // Reduced padding
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   dropdownText: {
-    fontSize: 13, // Reduced font size
+    fontSize: 13,
     color: '#4B5563',
   },
   selectedDropdownText: {
-    color: '#1B56FD',
+    color: '#4CAF50',
     fontWeight: '600',
   },
   selectedIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#1B56FD',
+    backgroundColor: '#4CAF50',
   },
   chartContainer: {
-    height: 240, // Reduced height
+    height: 240,
     flexDirection: 'row',
-    marginBottom: 12, // Reduced margin
+    marginBottom: 12,
   },
   yAxisContainer: {
-    height: 220, // Reduced height
+    height: 220,
     width: 40,
     position: 'relative',
     alignItems: 'flex-end',
@@ -499,7 +625,7 @@ const styles = StyleSheet.create({
   customYAxisLabels: {
     position: 'relative',
     width: 40,
-    height: 220, // Reduced height
+    height: 220,
   },
   yAxisLabelTop: {
     position: 'absolute',
@@ -511,7 +637,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel240: {
     position: 'absolute',
-    top: 45, // Adjusted position
+    top: 45,
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -519,7 +645,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel120: {
     position: 'absolute',
-    top: 90, // Adjusted position
+    top: 90,
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -527,7 +653,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel60: {
     position: 'absolute',
-    top: 135, // Adjusted position
+    top: 135,
     right: 10,
     fontSize: 10,
     color: '#6B7280',
@@ -535,20 +661,20 @@ const styles = StyleSheet.create({
   },
   yAxisLabel0: {
     position: 'absolute',
-    top: 180, // Adjusted position
+    top: 180,
     right: 10,
     fontSize: 10,
     color: '#6B7280',
     textAlign: 'right',
   },
   chart: {
-    marginVertical: 6, // Reduced margin
+    marginVertical: 6,
     borderRadius: 16,
     paddingRight: 0,
     marginLeft: 0,
   },
   chartWrapper: {
-    height: 240, // Reduced height
+    height: 240,
     position: 'relative',
     flex: 1,
   },
@@ -557,7 +683,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 30, // Reduced height
+    height: 30,
   },
   dateLabelContainer: {
     position: 'absolute',
@@ -570,10 +696,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statsContainer: {
-    marginTop: 6, // Reduced margin
+    marginTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    paddingTop: 12, // Reduced padding
+    paddingTop: 12,
   },
   statsRow: {
     flexDirection: 'row',
@@ -598,6 +724,9 @@ const styles = StyleSheet.create({
   },
   maxStatValue: {
     color: '#FF4D4F', // Red for max
+  },
+  avgStatValue: {
+    color: '#FEBA17', // Green for avg
   },
   statSeparator: {
     height: 24,

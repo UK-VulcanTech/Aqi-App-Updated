@@ -342,7 +342,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748B',
     fontWeight: '400',
-    marginTop: 4,
+    // marginTop: 4,
+    marginBottom: -25,
   },
   tableHeaderSection: {
     flexDirection: 'row',

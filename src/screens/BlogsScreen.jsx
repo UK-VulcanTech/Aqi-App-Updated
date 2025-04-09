@@ -68,7 +68,7 @@ const BlogsScreen = ({navigation}) => {
         {/* Enhanced Header */}
         <View style={styles.headerContainer}>
           <View style={styles.headerWrapper}>
-            <Text style={styles.headerCaption}>INSIGHTS & UPDATES</Text>
+            <Text style={styles.headerCaption}>BLOGS</Text>
             <Text style={styles.headerText}>
               Environment Protection Department
             </Text>

@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTimeRangeButton: {
-    backgroundColor: '#696969',
+    backgroundColor: '#696',
   },
   timeRangeText: {
     fontSize: 13, // Reduced font size

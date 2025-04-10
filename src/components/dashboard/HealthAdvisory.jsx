@@ -82,6 +82,78 @@ const HealthAdvisory = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Health Advisory</Text>
+
+      {/* NEW CARD - Health Alert at the top */}
+      <View style={styles.topCardContainer}>
+        <View style={styles.healthAlertContainer}>
+          <ImageBackground
+            source={require('../../assets/images/smoke.jpg')}
+            style={styles.backgroundImage}
+            imageStyle={styles.backgroundImageStyleLighter}>
+            <View style={styles.contentContainer}>
+              <View style={styles.alertHeaderContainer}>
+                <Animated.Text
+                  style={[styles.alertTitleText, {opacity: fadeAnim}]}>
+                  <Text style={styles.redText}>HEALTH ALERT</Text>
+                </Animated.Text>
+              </View>
+
+              <View style={styles.alertContentRow}>
+                <View style={styles.alertLeftColumn}>
+                  <Animated.View
+                    style={[
+                      styles.aqiCircle,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{scale: pulseAnim}],
+                      },
+                    ]}>
+                    <Text style={styles.aqiValue}>167</Text>
+                    <Text style={styles.aqiLabel}>Unhealthy</Text>
+                  </Animated.View>
+                </View>
+
+                <View style={styles.alertRightColumn}>
+                  <Animated.View style={[{opacity: fadeAnim}]}>
+                    <Text style={styles.alertHeading}>Current Air Quality</Text>
+                    <View style={styles.miniBulletContainer}>
+                      <Text style={styles.miniBullet}>•</Text>
+                      <Text style={styles.alertText}>
+                        Sensitive groups should limit outdoor activity
+                      </Text>
+                    </View>
+                    <View style={styles.miniBulletContainer}>
+                      <Text style={styles.miniBullet}>•</Text>
+                      <Text style={styles.alertText}>
+                        Use N95 masks when going outdoors
+                      </Text>
+                    </View>
+                    <View style={styles.miniBulletContainer}>
+                      <Text style={styles.miniBullet}>•</Text>
+                      <Text style={styles.alertText}>
+                        Keep windows closed, use air purifiers
+                      </Text>
+                    </View>
+                  </Animated.View>
+                </View>
+              </View>
+
+              <View style={styles.scrollingAlertContainer}>
+                <Animated.Text
+                  style={[
+                    styles.scrollingAlertText,
+                    {transform: [{translateX: textScrollAnim}]},
+                  ]}>
+                  Health alert issued for Lahore • AQI levels may worsen in
+                  evening hours • Check your health app for updates • Stay
+                  hydrated • Limit strenuous outdoor activities
+                </Animated.Text>
+              </View>
+            </View>
+          </ImageBackground>
+        </View>
+      </View>
+
       <View style={styles.border}>
         <ScrollView
           ref={scrollViewRef}
@@ -222,7 +294,7 @@ const HealthAdvisory = () => {
           </View>
         </ScrollView>
 
-        {/* Enhanced Carousel Indicators */}
+        {/* Enhanced Carousel Indicators - keep at 2 since we only have 2 cards in carousel */}
         <View style={styles.indicatorContainer}>
           {[0, 1].map(index => (
             <TouchableOpacity
@@ -250,6 +322,89 @@ const styles = StyleSheet.create({
     fontWeight: 600,
     color: '#495159',
     padding: 20,
+  },
+  // Top card container (for the standalone card above carousel)
+  topCardContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  healthAlertContainer: {
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#2A2F34', // Slightly lighter background
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  alertHeaderContainer: {
+    width: '100%',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+  alertTitleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+  },
+  alertContentRow: {
+    flexDirection: 'row',
+    width: '100%',
+    flex: 1,
+  },
+  alertLeftColumn: {
+    flex: 0.35,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertRightColumn: {
+    flex: 0.65,
+    paddingLeft: 10,
+    justifyContent: 'center',
+  },
+  alertHeading: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 5,
+  },
+  miniBulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  miniBullet: {
+    color: '#EF4444',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginRight: 5,
+    lineHeight: 20,
+  },
+  alertText: {
+    color: 'white',
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 18,
+  },
+  scrollingAlertContainer: {
+    height: 24,
+    width: '100%',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 5,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    marginTop: 5,
+  },
+  scrollingAlertText: {
+    color: 'white',
+    fontSize: 11,
+    position: 'absolute',
+    fontWeight: '500',
+    width: 800, // Make sure this is wide enough for all text
   },
   border: {
     borderTopWidth: 1,
@@ -432,6 +587,27 @@ const styles = StyleSheet.create({
   activeIndicator: {
     backgroundColor: '#EF4444',
     width: 16,
+  },
+  // New AQI card styles
+  aqiCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 2,
+    borderColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aqiValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#EF4444',
+  },
+  aqiLabel: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '600',
   },
 });
 

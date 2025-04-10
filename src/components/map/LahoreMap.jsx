@@ -1104,15 +1104,12 @@ showCurrentLocation();
         statusText = "Moderate";
         }
         
-        // Create a custom icon with the value inside
-        const customIcon = L.divIcon({
-      className: 'custom-div-icon',
-      html: "<div style='position:relative;'>" +
-        "<div style='background-color:" + bgColor + ";color:white;border-radius:8px;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
-        "<div style='position:absolute;bottom:-6px;left:16px;width:8px;height:8px;background-color:" + bgColor + ";transform:rotate(45deg);'></div>" +
+       const customIcon = L.divIcon({
+       className: 'custom-div-icon',
+       html: "<div style='position:relative;'>" +
+        "<div style='background-color:" + bgColor + ";color:white;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
         "</div>",
-      iconSize: [40, 50],
-      iconAnchor: [20, 48]
+      iconSize: [40, 40]
       });
 
         
@@ -1212,6 +1209,7 @@ showCurrentLocation();
             setSearchResults={setSearchResults}
             showDropdown={showDropdown}
             setShowDropdown={setShowDropdown}
+            onSearchInteraction={() => setShowPollutionCard(false)} // Add this line
           />
         </View>
         {/* Zoom Controls - Modified with fully transparent background */}

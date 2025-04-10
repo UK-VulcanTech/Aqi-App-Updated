@@ -10,19 +10,89 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import {useGetAllSensors} from '../../services/sensor.hooks';
 
 const {width} = Dimensions.get('window');
 const cardWidth = width - 32; // Full width minus padding
 
+// Function to get AQI category based on value (same as in AQIDashboard)
+const getAQICategory = value => {
+  if (value <= 50) {
+    return {text: 'Good', color: '#A5D46A'};
+  }
+  if (value <= 100) {
+    return {text: 'Moderate', color: '#FFDA75'};
+  }
+  if (value <= 150) {
+    return {text: 'Poor', color: '#F5A05A'};
+  }
+  if (value <= 200) {
+    return {text: 'Unhealthy', color: '#EB6B6B'};
+  }
+  if (value <= 250) {
+    return {text: 'Very Unhealthy', color: '#B085C9'};
+  }
+  return {text: 'Hazardous', color: '#CF3030'};
+};
+
 const HealthAdvisory = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef(null);
+  const [selectedSensor, setSelectedSensor] = useState(null);
+  const [cigarettesPerDay, setCigarettesPerDay] = useState('01');
+
+  // Use the same API hook as AQIDashboard
+  const {
+    data: sensorData,
+    isLoading: sensorsLoading,
+    error: sensorsError,
+  } = useGetAllSensors();
 
   // Create animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const textScrollAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Process sensor data when it loads (similar to AQIDashboard)
+  useEffect(() => {
+    if (sensorData && sensorData.length > 0) {
+      // Using Gulberg data as in the AQIDashboard example
+      const gulbergSensor = sensorData.find(
+        sensor => sensor.location === 'Gulberg',
+      );
+      if (gulbergSensor) {
+        setSelectedSensor(gulbergSensor);
+      } else {
+        // Fallback to first sensor if Gulberg not found
+        setSelectedSensor(sensorData[0]);
+      }
+    }
+  }, [sensorData]);
+
+  // Calculate cigarettes per day based on AQI
+  useEffect(() => {
+    if (selectedSensor) {
+      // A simple estimation: divide AQI by 100 and round to get cigarette equivalence
+      // This is just an example formula - replace with actual conversion if available
+      const aqi = selectedSensor.sensor_value;
+      let cigaretteEquivalent;
+
+      if (aqi <= 50) {
+        cigaretteEquivalent = '01';
+      } else if (aqi <= 100) {
+        cigaretteEquivalent = '01';
+      } else if (aqi <= 200) {
+        cigaretteEquivalent = '01';
+      } else if (aqi <= 300) {
+        cigaretteEquivalent = '01';
+      } else {
+        cigaretteEquivalent = '01';
+      }
+
+      setCigarettesPerDay(cigaretteEquivalent);
+    }
+  }, [selectedSensor]);
 
   useEffect(() => {
     // Create animation sequence
@@ -79,11 +149,68 @@ const HealthAdvisory = () => {
     setActiveIndex(index);
   };
 
+  // Get AQI category based on current sensor value
+  const getAQIDetails = () => {
+    if (!selectedSensor) {
+      return {text: 'Loading...', color: '#FFDA75'};
+    }
+    return getAQICategory(selectedSensor.sensor_value);
+  };
+
+  const aqiCategory = getAQIDetails();
+
+  // Generate health recommendations based on AQI level
+  const getHealthRecommendations = () => {
+    if (!selectedSensor) return [];
+
+    const aqi = selectedSensor.sensor_value;
+
+    if (aqi <= 50) {
+      return [
+        'Air quality is good - perfect for outdoor activities',
+        'No specific precautions needed',
+        'Enjoy outdoor activities as normal',
+      ];
+    } else if (aqi <= 100) {
+      return [
+        'Sensitive individuals should limit prolonged outdoor activity',
+        'Consider reducing intense outdoor activities',
+        'Keep windows closed during peak pollution hours',
+      ];
+    } else if (aqi <= 150) {
+      return [
+        'Sensitive groups should limit outdoor activity',
+        'Consider wearing masks when going outdoors',
+        'Keep windows closed, use air purifiers if available',
+      ];
+    } else if (aqi <= 200) {
+      return [
+        'Sensitive groups should avoid outdoor activity',
+        'Use N95 masks when going outdoors',
+        'Keep windows closed, use air purifiers',
+      ];
+    } else if (aqi <= 300) {
+      return [
+        'Everyone should avoid outdoor activities',
+        'Wear N95 masks when outside is essential',
+        'Keep windows sealed, use air purifiers on high',
+      ];
+    } else {
+      return [
+        'Evacuate area if possible or stay indoors completely',
+        'Wear N95 masks even indoors if no air purification',
+        'Run air purifiers at maximum, seal all openings',
+      ];
+    }
+  };
+
+  const healthRecommendations = getHealthRecommendations();
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Health Advisory</Text>
 
-      {/* NEW CARD - Health Alert at the top */}
+      {/* Health Alert card at the top */}
       <View style={styles.topCardContainer}>
         <View style={styles.healthAlertContainer}>
           <ImageBackground
@@ -106,34 +233,37 @@ const HealthAdvisory = () => {
                       {
                         opacity: fadeAnim,
                         transform: [{scale: pulseAnim}],
+                        borderColor: aqiCategory.color,
+                        backgroundColor: `${aqiCategory.color}20`,
                       },
                     ]}>
-                    <Text style={styles.aqiValue}>167</Text>
-                    <Text style={styles.aqiLabel}>Unhealthy</Text>
+                    <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
+                      {selectedSensor
+                        ? Math.round(selectedSensor.sensor_value)
+                        : '--'}
+                    </Text>
+                    {/* <Text style={styles.aqiLabel}>{aqiCategory.text}</Text> */}
+                    <Text
+                      style={[
+                        styles.aqiLabel,
+                        aqiCategory.text === 'Hazardous'
+                          ? {fontSize: 10}
+                          : null,
+                      ]}>
+                      {aqiCategory.text}
+                    </Text>
                   </Animated.View>
                 </View>
 
                 <View style={styles.alertRightColumn}>
                   <Animated.View style={[{opacity: fadeAnim}]}>
                     <Text style={styles.alertHeading}>Current Air Quality</Text>
-                    <View style={styles.miniBulletContainer}>
-                      <Text style={styles.miniBullet}>•</Text>
-                      <Text style={styles.alertText}>
-                        Sensitive groups should limit outdoor activity
-                      </Text>
-                    </View>
-                    <View style={styles.miniBulletContainer}>
-                      <Text style={styles.miniBullet}>•</Text>
-                      <Text style={styles.alertText}>
-                        Use N95 masks when going outdoors
-                      </Text>
-                    </View>
-                    <View style={styles.miniBulletContainer}>
-                      <Text style={styles.miniBullet}>•</Text>
-                      <Text style={styles.alertText}>
-                        Keep windows closed, use air purifiers
-                      </Text>
-                    </View>
+                    {healthRecommendations.map((recommendation, index) => (
+                      <View key={index} style={styles.miniBulletContainer}>
+                        <Text style={styles.miniBullet}>•</Text>
+                        <Text style={styles.alertText}>{recommendation}</Text>
+                      </View>
+                    ))}
                   </Animated.View>
                 </View>
               </View>
@@ -163,7 +293,7 @@ const HealthAdvisory = () => {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           contentContainerStyle={styles.scrollViewContent}>
-          {/* First Card - Original Cigarette Card (unchanged) */}
+          {/* First Card - Cigarette Card with dynamic data */}
           <View style={styles.cardContainer}>
             <View style={styles.gradientContainer}>
               <ImageBackground
@@ -182,7 +312,9 @@ const HealthAdvisory = () => {
                     <View style={styles.cigaretteContainer}>
                       <View style={styles.cigaretteTextContainer}>
                         <Text style={styles.cigaretteText}>
-                          <Text style={styles.redNumberText}>01 </Text>
+                          <Text style={styles.redNumberText}>
+                            {cigarettesPerDay}{' '}
+                          </Text>
                           Cigarettes per day
                         </Text>
                         <Image
@@ -208,8 +340,10 @@ const HealthAdvisory = () => {
 
                     <Animated.Text
                       style={[styles.quoteText, {opacity: fadeAnim}]}>
-                      "Inhaling the air here is equivalent to smoking 01
-                      cigarette daily in terms of health impact."
+                      "Inhaling the air here is equivalent to smoking{' '}
+                      {cigarettesPerDay} cigarette
+                      {cigarettesPerDay !== '01' ? 's' : ''} daily in terms of
+                      health impact."
                     </Animated.Text>
                   </View>
                 </View>
@@ -217,7 +351,7 @@ const HealthAdvisory = () => {
             </View>
           </View>
 
-          {/* Second Card - Enhanced Health Disclaimer */}
+          {/* Second Card - Health Disclaimer */}
           <View style={styles.cardContainer}>
             <View style={styles.gradientContainer}>
               <ImageBackground
@@ -232,7 +366,7 @@ const HealthAdvisory = () => {
                     </Text>
                   </View>
 
-                  {/* Enhanced warning icon */}
+                  {/* Warning icon */}
                   <View style={styles.warningIconContainer}>
                     <Animated.View style={{transform: [{scale: pulseAnim}]}}>
                       <Image
@@ -242,7 +376,7 @@ const HealthAdvisory = () => {
                     </Animated.View>
                   </View>
 
-                  {/* Enhanced bullet points */}
+                  {/* Bullet points */}
                   <View style={styles.bulletPointsContainer}>
                     <View style={styles.bulletLine}>
                       <View style={styles.bulletIconContainer}>
@@ -275,7 +409,7 @@ const HealthAdvisory = () => {
                     </View>
                   </View>
 
-                  {/* Enhanced scrolling text */}
+                  {/* Scrolling text */}
                   <View style={styles.scrollingTextContainer}>
                     <Animated.Text
                       style={[
@@ -294,7 +428,7 @@ const HealthAdvisory = () => {
           </View>
         </ScrollView>
 
-        {/* Enhanced Carousel Indicators - keep at 2 since we only have 2 cards in carousel */}
+        {/* Carousel Indicators */}
         <View style={styles.indicatorContainer}>
           {[0, 1].map(index => (
             <TouchableOpacity
@@ -369,6 +503,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginBottom: 5,
+    marginTop: 20,
+    marginLeft: -20,
   },
   miniBulletContainer: {
     flexDirection: 'row',
@@ -588,7 +724,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
     width: 16,
   },
-  // New AQI card styles
+  // AQI card styles
   aqiCircle: {
     width: 80,
     height: 80,

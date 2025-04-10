@@ -145,11 +145,13 @@ const Header = () => {
   return (
     <>
       <View style={styles.header}>
-        <Image
-          source={require('../../assets/icons/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+          <Image
+            source={require('../../assets/icons/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => toggleMenu(true)}>

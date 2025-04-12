@@ -294,7 +294,7 @@ const HealthAdvisory = () => {
           scrollEventThrottle={16}
           contentContainerStyle={styles.scrollViewContent}>
           {/* First Card - Cigarette Card with dynamic data */}
-          <View style={styles.cardContainer}>
+          {/* <View style={styles.cardContainer}>
             <View style={styles.gradientContainer}>
               <ImageBackground
                 source={require('../../assets/images/smoke.jpg')}
@@ -349,7 +349,7 @@ const HealthAdvisory = () => {
                 </View>
               </ImageBackground>
             </View>
-          </View>
+          </View> */}
 
           {/* Second Card - Health Disclaimer */}
           <View style={styles.cardContainer}>

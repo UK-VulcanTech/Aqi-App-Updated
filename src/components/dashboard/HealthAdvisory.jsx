@@ -368,12 +368,7 @@ const HealthAdvisory = () => {
 
                   {/* Warning icon */}
                   <View style={styles.warningIconContainer}>
-                    <Animated.View style={{transform: [{scale: pulseAnim}]}}>
-                      <Image
-                        source={require('../../assets/icons/warning.png')}
-                        style={styles.warningIcon}
-                      />
-                    </Animated.View>
+                    <Text>{''}</Text>
                   </View>
 
                   {/* Bullet points */}
@@ -643,15 +638,7 @@ const styles = StyleSheet.create({
   },
   // Enhanced disclaimer card styles
   warningIconContainer: {
-    alignItems: 'center',
-    marginVertical: 5,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.5)',
+    marginTop: 10,
   },
   warningIcon: {
     width: 30,

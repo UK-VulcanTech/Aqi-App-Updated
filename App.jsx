@@ -20,9 +20,18 @@ import CreateUser from './src/components/admin/CreateUser';
 import AdminProfile from './src/components/admin/AdminProfile';
 import EditAdminProfile from './src/components/admin/EditAdminProfile';
 import BlogsScreen from './src/screens/BlogsScreen';
+import SensorDataForm from './src/screens/SensorData/SensorDataForm';
 
-// Create a client
-const queryClient = new QueryClient();
+// Create a client with better caching settings for WebSocket support
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: Infinity, // Prevent automatic refetching that might override WebSocket updates
+      cacheTime: 1000 * 60 * 60, // Longer cache time to maintain data
+    },
+  },
+});
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -122,6 +131,13 @@ function App() {
               tabBarIcon: getTabIcon(
                 require('./src/assets/icons/location1.png'),
               ),
+            }}
+          />
+          <Tab.Screen
+            name="Data"
+            component={withHeader(SensorDataForm)}
+            options={{
+              tabBarIcon: getTabIcon(require('./src/assets/icons/data.png')),
             }}
           />
           <Tab.Screen

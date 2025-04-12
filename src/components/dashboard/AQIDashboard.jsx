@@ -10,6 +10,8 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {useGetAllSensors} from '../../services/sensor.hooks';
 
+// import websocketService from '../../services/websockets.services';
+
 // Function to get AQI category based on value
 const getAQICategory = value => {
   if (value <= 50) {

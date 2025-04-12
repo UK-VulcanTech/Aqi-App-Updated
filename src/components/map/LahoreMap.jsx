@@ -1224,7 +1224,8 @@ showCurrentLocation();
         {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
         <TouchableOpacity
           style={styles.aqiIndicator}
-          onPress={handlePollutantSelect}>
+          // onPress={handlePollutantSelect}
+        >
           {/* <Text style={styles.aqiText}>AQI</Text> */}
           <Text style={styles.aqiValue}>
             {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}

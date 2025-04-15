@@ -6,7 +6,7 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
 // Properly transform the URL from HTTP to WebSocket protocol
-const BASE_URL = 'https://75e4-206-42-117-63.ngrok-free.app';
+const BASE_URL = 'https://cf46-206-42-117-63.ngrok-free.app';
 console.log('🚀 ~ BASE_URL:', BASE_URL);
 const WS_URL = BASE_URL.replace('https://', 'wss://') + '/ws';
 console.log('🚀 ~ WS_URL:', WS_URL);

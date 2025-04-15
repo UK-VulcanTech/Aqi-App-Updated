@@ -35,6 +35,7 @@ const LahoreMap = () => {
   const [csvMarkers, setCsvMarkers] = useState([]);
   // const [selectedAqiTab, setSelectedAqiTab] = useState('AQI');
   const {data: sensorData} = useGetAllSensors();
+  const [activeMetric, setActiveMetric] = useState('PM2.5'); // Add this for tracking active metric
   console.log('🚀 ~ LahoreMap ~ sensorData:', sensorData);
 
   // Define different pollutant layers - ensuring consistent capitalization
@@ -865,6 +866,7 @@ showCurrentLocation();
   };
 
   // Handle messages from WebView
+  // Handle messages from WebView
   const handleWebViewMessage = event => {
     console.log('WebView message:', event.nativeEvent.data);
 
@@ -1024,12 +1026,12 @@ showCurrentLocation();
   useEffect(() => {
     if (sensorData && webViewLoaded && webViewRef.current) {
       console.log('Processing sensor data:', sensorData.length);
-      processSensorData(sensorData);
+      processSensorData(sensorData, 'sensor_value'); // Default to PM2.5
     }
   }, [sensorData, webViewLoaded]);
 
   // FIXED: Enhanced function to process and display sensor data on the map
-  const processSensorData = sensors => {
+  const processSensorData = (sensors, valueType = 'sensor_value') => {
     if (!sensors || !webViewRef.current) {
       return;
     }
@@ -1041,8 +1043,11 @@ showCurrentLocation();
         .map(sensor => ({
           lat: sensor.latitude,
           lon: sensor.longitude,
-          value: sensor.sensor_value || 0,
-          type: 'PM2.5',
+          value:
+            valueType === 'aqi_value'
+              ? sensor.aqi_value || 0
+              : sensor.sensor_value || 0,
+          type: valueType === 'aqi_value' ? 'AQI' : 'PM2.5',
           name:
             sensor.location ||
             `Location at ${sensor.latitude.toFixed(
@@ -1052,13 +1057,18 @@ showCurrentLocation();
         }));
 
       console.log(
-        `Processing ${formattedSensors.length} sensor readings from Barki`,
+        `Processing ${formattedSensors.length} sensor readings for ${
+          valueType === 'aqi_value' ? 'AQI' : 'PM2.5'
+        }`,
       );
 
       if (formattedSensors.length === 0) {
         console.log('No valid sensor data found');
         return;
       }
+
+      // Set active metric based on what is being displayed
+      setActiveMetric(valueType === 'aqi_value' ? 'AQI' : 'PM2.5');
 
       // Inject JavaScript to add colored circles for sensors based on value
       const script = `
@@ -1083,8 +1093,13 @@ showCurrentLocation();
       
       sensorData.forEach((sensor, index) => {
         // Format the value - round to nearest integer
-        const valueDisplay = Math.round(parseFloat(sensor.value)).toString();
         const value = parseFloat(sensor.value);
+        let valueDisplay;
+        if (value >= 1000) {
+          valueDisplay = (value / 1000).toFixed(1) + 'K';
+        } else {
+          valueDisplay = Math.round(value).toString();
+        }
         
         // Determine background color and status based on value ranges
         let bgColor = '#96CF49'; // Green for 0-50
@@ -1104,12 +1119,15 @@ showCurrentLocation();
         statusText = "Moderate";
         }
         
+        // Adjust size based on value length
+        const iconSize = value >= 1000 ? 48 : 40;
+        
        const customIcon = L.divIcon({
        className: 'custom-div-icon',
        html: "<div style='position:relative;'>" +
-        "<div style='background-color:" + bgColor + ";color:white;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
+        "<div style='background-color:" + bgColor + ";color:white;border-radius:50%;width:" + iconSize + "px;height:" + iconSize + "px;display:flex;justify-content:center;align-items:center;font-weight:bold;'>" + valueDisplay + "</div>" +
         "</div>",
-      iconSize: [40, 40]
+      iconSize: [iconSize, iconSize]
       });
 
         
@@ -1129,8 +1147,8 @@ showCurrentLocation();
               lat: sensor.lat,
               lon: sensor.lon,
               title: sensor.name || "Sensor Location",
-              description: 'Particulate Matter (PM2.5)',
-              value: valueDisplay,
+              description: sensor.type === 'AQI' ? 'Air Quality Index' : 'Particulate Matter (PM2.5)',
+              value: sensor.value.toString(),
               status: statusText,
               source: 'Sensor Data',
               color: bgColor
@@ -1151,7 +1169,11 @@ showCurrentLocation();
     `;
 
       webViewRef.current.injectJavaScript(script);
-      setStatus(`Added ${formattedSensors.length} sensor readings`);
+      setStatus(
+        `Added ${formattedSensors.length} sensor readings for ${
+          valueType === 'aqi_value' ? 'AQI' : 'PM2.5'
+        }`,
+      );
     } catch (error) {
       console.error('Error processing sensor data:', error);
       setStatus('Error processing sensor data');
@@ -1221,16 +1243,38 @@ showCurrentLocation();
             <Text style={styles.zoomButtonText}>-</Text>
           </TouchableOpacity>
         </View>
-        {/* MODIFIED: AQI Indicator - Now touchable to show pollutant dropdown */}
-        <TouchableOpacity
-          style={styles.aqiIndicator}
-          // onPress={handlePollutantSelect}
-        >
-          {/* <Text style={styles.aqiText}>AQI</Text> */}
-          <Text style={styles.aqiValue}>
-            {currentLayer ? currentLayer.name.split(' ')[0] : 'PM2.5'}
-          </Text>
-        </TouchableOpacity>
+
+        {/* MODIFIED: Separate AQI and PM2.5 Buttons */}
+        <View style={styles.pollutantButtonsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.aqiButton,
+              activeMetric === 'AQI' && styles.activeButton,
+            ]}
+            onPress={() => {
+              if (webViewRef.current && webViewLoaded && sensorData) {
+                processSensorData(sensorData, 'aqi_value');
+              }
+              setActiveMetric('AQI');
+            }}>
+            <Text style={styles.aqiValue}>AQI</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.pm25Button,
+              activeMetric === 'PM2.5' && styles.activeButton,
+            ]}
+            onPress={() => {
+              if (webViewRef.current && webViewLoaded && sensorData) {
+                processSensorData(sensorData, 'sensor_value');
+              }
+              setActiveMetric('PM2.5');
+            }}>
+            <Text style={styles.aqiValue}>PM2.5</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Modified: Location Button with functionality */}
         <TouchableOpacity
           style={styles.locationButton}
@@ -1555,6 +1599,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  aqiValueContainer: {
+    display: 'flex',
+    flexDirection: 'column', // Horizontal layout
+    justifyContent: 'space-between', // Space elements evenly
+    alignItems: 'center',
+    width: '100%', // Use full width of parent
+  },
   // FIXED: Improved mapTouchable style for better touch handling
   mapTouchable: {
     flex: 1,
@@ -1573,6 +1624,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+  },
+  // Added for the AQI and PM2.5 buttons
+  pollutantButtonsContainer: {
+    position: 'absolute',
+    left: 20,
+    bottom: 80,
+    zIndex: 10,
+    backgroundColor: 'transparent',
+    flexDirection: 'column',
+  },
+  aqiButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    marginBottom: 10,
+  },
+  pm25Button: {
+    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+  },
+  activeButton: {
+    borderWidth: 2,
+    borderColor: 'white',
   },
   removeLayerButton: {
     position: 'absolute',
@@ -1680,6 +1761,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
   },
+  // MODIFIED: Added styling to make A
   // MODIFIED: Added styling to make AQI indicator look clickable
   aqiIndicator: {
     position: 'absolute',
@@ -1700,7 +1782,7 @@ const styles = StyleSheet.create({
   aqiValue: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 12,
   },
   loadingContainer: {
     position: 'absolute',

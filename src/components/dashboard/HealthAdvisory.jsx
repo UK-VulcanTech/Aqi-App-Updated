@@ -10,12 +10,63 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import {useGetAllSensors} from '../../services/sensor.hooks';
+import {useGetLatestMeanAQIValues} from '../../services/sensor.hooks';
+
+// Health advisories data
+const healthAdvisories = [
+  {
+    id: 1,
+    aqi_content: '0-50',
+    content:
+      'In terms of performance assessment, exposure to this air results in Good to Moderate.',
+  },
+  {
+    id: 8,
+    aqi_content: 'aqi_content',
+    content: 'content',
+  },
+  {
+    id: 7,
+    aqi_content: '51-100',
+    content:
+      'In terms of performance assessment, exposure to this air results in Good to Moderate.',
+  },
+  {
+    id: 2,
+    aqi_content: '101-150',
+    content:
+      ' Keep a regular check on your health vitals e.g. oxygen levels, blood pressure etc.  In case of respiratory problem etc. consult your doctor/family physician.  Eat healthy diet to naturally boost your immunity.  Avoid smoking or any related activity.  Reduce prolonged or heavy outdoor exertion.  Make the emergency equipment such as nebulizers available at home as first aid measure.',
+  },
+  {
+    id: 3,
+    aqi_content: '151-200',
+    content:
+      ' Check AQI level before outdoor workout/ exercise.  Wear face masks during outdoor activities.  Restrict children from playing outdoors.  Avoid unnecessary traveling, residing, and visits in the areas having unhealthy AQI.  Elderly people should minimize outdoor exposure.  Consider doors and windows closed to reduce outdoor air intake.  Avoid prolonged or heavy outdoor exertion.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+  },
+  {
+    id: 4,
+    aqi_content: '201-250',
+    content:
+      ' Regularly check AQI and health vitals.  Spend maximum time at home.  Use N95 mask when going outside is unavoidable.  Restrict prolonged or heavy outdoor exertion.  Bar children from unnecessary outdoor visits/activities.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+  },
+  {
+    id: 5,
+    aqi_content: '251-300',
+    content:
+      ' Stay indoors.  Use N95 or equivalent mask and pollution protective glasses/ goggles when going outside is unavoidable.  Regularly check AQI and health vitals.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+  },
+  {
+    id: 6,
+    aqi_content: '300',
+    content:
+      ' Stay at home.  Use air purifiers or equivalent.  Frequently check health vitals.',
+  },
+];
 
 const {width} = Dimensions.get('window');
 const cardWidth = width - 32; // Full width minus padding
 
-// Function to get AQI category based on value (same as in AQIDashboard)
+// Function to get AQI category based on value
 const getAQICategory = value => {
   if (value <= 50) {
     return {text: 'Good', color: '#A5D46A'};
@@ -38,15 +89,16 @@ const getAQICategory = value => {
 const HealthAdvisory = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef(null);
-  const [selectedSensor, setSelectedSensor] = useState(null);
+  const [aqiData, setAqiData] = useState(null);
   const [cigarettesPerDay, setCigarettesPerDay] = useState('01');
+  const [healthAdvice, setHealthAdvice] = useState([]);
 
-  // Use the same API hook as AQIDashboard
+  // Use the latest mean AQI values hook
   const {
     data: sensorData,
     isLoading: sensorsLoading,
     error: sensorsError,
-  } = useGetAllSensors();
+  } = useGetLatestMeanAQIValues();
 
   // Create animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -54,45 +106,84 @@ const HealthAdvisory = () => {
   const textScrollAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Process sensor data when it loads (similar to AQIDashboard)
+  // Process sensor data when it loads
   useEffect(() => {
-    if (sensorData && sensorData.length > 0) {
-      // Using Gulberg data as in the AQIDashboard example
-      const gulbergSensor = sensorData.find(
-        sensor => sensor.location === 'Gulberg',
-      );
-      if (gulbergSensor) {
-        setSelectedSensor(gulbergSensor);
-      } else {
-        // Fallback to first sensor if Gulberg not found
-        setSelectedSensor(sensorData[0]);
-      }
+    if (sensorData && sensorData.overall) {
+      // Use the overall AQI value from the data
+      setAqiData({
+        overall_value: Math.round(sensorData.overall.latest_hour_mean),
+        pm25_value: Math.round(sensorData.overall.latest_hour_mean / 2),
+        timestamp: sensorData.latest_date,
+      });
     }
   }, [sensorData]);
 
+  // Get appropriate health advisory content for current AQI from local data
+  useEffect(() => {
+    if (aqiData) {
+      const aqi = aqiData.overall_value;
+
+      // Find the appropriate advisory based on AQI value
+      const matchingAdvisory = healthAdvisories.find(advisory => {
+        // Skip the item with "aqi_content": "aqi_content"
+        if (advisory.aqi_content === 'aqi_content') {
+          return false;
+        }
+
+        // Handle specific case for 300+
+        if (advisory.aqi_content === '300' && aqi >= 300) {
+          return true;
+        }
+
+        const range = advisory.aqi_content.split('-');
+        if (range.length === 2) {
+          const min = parseInt(range[0]);
+          const max = parseInt(range[1]);
+          return aqi >= min && aqi <= max;
+        }
+
+        return false;
+      });
+
+      if (matchingAdvisory) {
+        // Split content by double spaces which seem to separate the bullet points
+        const content = matchingAdvisory.content;
+        const bulletPoints = content
+          .split(/  +/) // Split by two or more spaces
+          .map(point => point.trim())
+          .filter(point => point.length > 0);
+
+        setHealthAdvice(bulletPoints.length > 0 ? bulletPoints : [content]);
+      } else {
+        // If no matching advisory is found, use a simple default message
+        setHealthAdvice([
+          'No specific health recommendations available for the current AQI level',
+        ]);
+      }
+    }
+  }, [aqiData]);
+
   // Calculate cigarettes per day based on AQI
   useEffect(() => {
-    if (selectedSensor) {
-      // A simple estimation: divide AQI by 100 and round to get cigarette equivalence
-      // This is just an example formula - replace with actual conversion if available
-      const aqi = selectedSensor.sensor_value;
+    if (aqiData) {
+      const aqi = aqiData.overall_value;
       let cigaretteEquivalent;
 
       if (aqi <= 50) {
         cigaretteEquivalent = '01';
       } else if (aqi <= 100) {
-        cigaretteEquivalent = '01';
+        cigaretteEquivalent = '02';
       } else if (aqi <= 200) {
-        cigaretteEquivalent = '01';
+        cigaretteEquivalent = '04';
       } else if (aqi <= 300) {
-        cigaretteEquivalent = '01';
+        cigaretteEquivalent = '06';
       } else {
-        cigaretteEquivalent = '01';
+        cigaretteEquivalent = '08';
       }
 
       setCigarettesPerDay(cigaretteEquivalent);
     }
-  }, [selectedSensor]);
+  }, [aqiData]);
 
   useEffect(() => {
     // Create animation sequence
@@ -149,62 +240,21 @@ const HealthAdvisory = () => {
     setActiveIndex(index);
   };
 
-  // Get AQI category based on current sensor value
+  // Get AQI category based on current AQI value
   const getAQIDetails = () => {
-    if (!selectedSensor) {
+    if (!aqiData) {
       return {text: 'Loading...', color: '#FFDA75'};
     }
-    return getAQICategory(selectedSensor.sensor_value);
+    return getAQICategory(aqiData.overall_value);
   };
 
   const aqiCategory = getAQIDetails();
 
-  // Generate health recommendations based on AQI level
-  const getHealthRecommendations = () => {
-    if (!selectedSensor) return [];
-
-    const aqi = selectedSensor.sensor_value;
-
-    if (aqi <= 50) {
-      return [
-        'Air quality is good - perfect for outdoor activities',
-        'No specific precautions needed',
-        'Enjoy outdoor activities as normal',
-      ];
-    } else if (aqi <= 100) {
-      return [
-        'Sensitive individuals should limit prolonged outdoor activity',
-        'Consider reducing intense outdoor activities',
-        'Keep windows closed during peak pollution hours',
-      ];
-    } else if (aqi <= 150) {
-      return [
-        'Sensitive groups should limit outdoor activity',
-        'Consider wearing masks when going outdoors',
-        'Keep windows closed, use air purifiers if available',
-      ];
-    } else if (aqi <= 200) {
-      return [
-        'Sensitive groups should avoid outdoor activity',
-        'Use N95 masks when going outdoors',
-        'Keep windows closed, use air purifiers',
-      ];
-    } else if (aqi <= 300) {
-      return [
-        'Everyone should avoid outdoor activities',
-        'Wear N95 masks when outside is essential',
-        'Keep windows sealed, use air purifiers on high',
-      ];
-    } else {
-      return [
-        'Evacuate area if possible or stay indoors completely',
-        'Wear N95 masks even indoors if no air purification',
-        'Run air purifiers at maximum, seal all openings',
-      ];
-    }
-  };
-
-  const healthRecommendations = getHealthRecommendations();
+  // Limit the number of displayed recommendations to avoid overflow
+  const displayHealthRecommendations =
+    healthAdvice.length > 0
+      ? healthAdvice.slice(0, 3) // Show only first 3 recommendations
+      : ['Loading health recommendations...'];
 
   return (
     <View style={styles.container}>
@@ -238,11 +288,8 @@ const HealthAdvisory = () => {
                       },
                     ]}>
                     <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
-                      {selectedSensor
-                        ? Math.round(selectedSensor.sensor_value)
-                        : '--'}
+                      {aqiData ? Math.round(aqiData.overall_value) : '--'}
                     </Text>
-                    {/* <Text style={styles.aqiLabel}>{aqiCategory.text}</Text> */}
                     <Text
                       style={[
                         styles.aqiLabel,
@@ -258,12 +305,22 @@ const HealthAdvisory = () => {
                 <View style={styles.alertRightColumn}>
                   <Animated.View style={[{opacity: fadeAnim}]}>
                     <Text style={styles.alertHeading}>Current Air Quality</Text>
-                    {healthRecommendations.map((recommendation, index) => (
-                      <View key={index} style={styles.miniBulletContainer}>
-                        <Text style={styles.miniBullet}>•</Text>
-                        <Text style={styles.alertText}>{recommendation}</Text>
-                      </View>
-                    ))}
+                    {sensorsLoading ? (
+                      <Text style={styles.alertText}>
+                        Loading health recommendations...
+                      </Text>
+                    ) : (
+                      displayHealthRecommendations.map(
+                        (recommendation, index) => (
+                          <View key={index} style={styles.miniBulletContainer}>
+                            <Text style={styles.miniBullet}>•</Text>
+                            <Text style={styles.alertText}>
+                              {recommendation}
+                            </Text>
+                          </View>
+                        ),
+                      )
+                    )}
                   </Animated.View>
                 </View>
               </View>
@@ -294,7 +351,7 @@ const HealthAdvisory = () => {
           scrollEventThrottle={16}
           contentContainerStyle={styles.scrollViewContent}>
           {/* First Card - Cigarette Card with dynamic data */}
-          {/* <View style={styles.cardContainer}>
+          <View style={styles.cardContainer}>
             <View style={styles.gradientContainer}>
               <ImageBackground
                 source={require('../../assets/images/smoke.jpg')}
@@ -349,7 +406,7 @@ const HealthAdvisory = () => {
                 </View>
               </ImageBackground>
             </View>
-          </View> */}
+          </View>
 
           {/* Second Card - Health Disclaimer */}
           <View style={styles.cardContainer}>
@@ -441,6 +498,7 @@ const HealthAdvisory = () => {
   );
 };
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     width: '100%',

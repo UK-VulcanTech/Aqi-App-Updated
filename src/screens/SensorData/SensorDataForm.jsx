@@ -230,7 +230,7 @@ const SensorDataForm = () => {
 
               {/* Sensor Value Input */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Sensor Value (AQI)</Text>
+                <Text style={styles.label}>Sensor Value (PM2.5)</Text>
                 <TextInput
                   style={styles.textInput}
                   value={sensorValue}

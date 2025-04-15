@@ -276,6 +276,32 @@ export const useGetLatestMeanAQIValues = () => {
 };
 
 
+export const useGetHealthAdvisory = () => {
+    return useQuery({
+        queryKey: ['HealthAdvisory'],
+        queryFn: async () => {
+            try {
+                console.log('Fetching Latest Mean AQI Values');
+                const response = await sensorServices.getHealthAdvisory();
+                console.log('Latest Mean AQI data fetched successfully:', response.data);
+                return response.data;
+            } catch (error) {
+                console.error('Failed to fetch latest AQI data from sensors:', error.message);
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                }
+                throw error;
+            }
+        },
+        retry: 2,
+        retryDelay: 1000,
+    });
+};
+
+
+
+// Submit Sensor Data
+// Submit Sensor Data
 // Submit Sensor Data
 export const useSubmitSensorReading = () => {
     const queryClient = useQueryClient();
@@ -285,24 +311,16 @@ export const useSubmitSensorReading = () => {
             return sensorServices.submitSensorReading(data);
         },
         onSuccess: (response, variables) => {
-            console.log('Sensor reading submitted successfully');
+            console.log('Sensor reading submitted successfully for location:', variables.location);
 
-            // Optimistically update the sensors data
-            queryClient.setQueryData(['sensors'], (oldData) => {
-                if (!Array.isArray(oldData)) { return oldData; }
+            // Instead of trying to update the cache manually,
+            // simply invalidate all sensor-related queries to force a fresh fetch
+            queryClient.invalidateQueries(['sensors']);
 
-                const index = oldData.findIndex(item => item.sensor_id === variables.sensor_id);
+            // If you have other related queries that should refresh:
+            queryClient.invalidateQueries(['MeanAQIValues']);
 
-                if (index >= 0) {
-                    // Update existing reading
-                    const newData = [...oldData];
-                    newData[index] = { ...newData[index], ...variables };
-                    return newData;
-                } else {
-                    // Add new reading
-                    return [...oldData, variables];
-                }
-            });
+            console.log('Invalidated queries to refresh all components');
         },
         onError: (error) => {
             console.error('Failed to submit sensor reading:', error.message);

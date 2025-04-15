@@ -2,8 +2,7 @@
 import axios from 'axios';
 
 // Use exactly this URL since you confirmed data is coming from here
-const BASE_URL = 'https://2c10-206-42-117-63.ngrok-free.app';
-
+const BASE_URL = 'https://75e4-206-42-117-63.ngrok-free.app';
 const sensorServices = {
     getAllSensors: () => {
         console.log(`Making API request to: ${BASE_URL}/sensor-readings`);
@@ -24,6 +23,12 @@ const sensorServices = {
             timeout: 10000,
         });
     },
+    getLatestMeanAQIValues: () => {
+        console.log(`Making API request to: ${BASE_URL}/sensor-readings/latest-aqi-means`);
+        return axios.get(`${BASE_URL}/sensor-readings/latest-aqi-means`, {
+            timeout: 1000,
+        });
+    },
     // Submit Sensor Readings
     submitSensorReading: (data) => {
         console.log(`Posting sensor data to: ${BASE_URL}/sensor-readings`, data);
@@ -33,7 +38,7 @@ const sensorServices = {
                 'Content-Type': 'application/json',
             },
         });
-    }
+    },
 };
 
 export default sensorServices;

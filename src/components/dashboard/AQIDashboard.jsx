@@ -79,7 +79,7 @@ const AQIDashboard = () => {
     if (!selectedSensor) {
       return {text: '--', color: '#FFDA75'};
     }
-    return getAQICategory(selectedSensor.sensor_value);
+    return getAQICategory(selectedSensor.aqi_value);
   };
 
   const aqiCategory = getAQIDetails();
@@ -119,7 +119,7 @@ const AQIDashboard = () => {
               <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
             <Text style={styles.aqiNumber}>
-              {selectedSensor ? Math.round(selectedSensor.sensor_value) : '--'}
+              {selectedSensor ? Math.round(selectedSensor.aqi_value) : '--'}
             </Text>
           </View>
         </View>

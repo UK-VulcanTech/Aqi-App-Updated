@@ -252,6 +252,30 @@ export const useGetSensorLocations = () => {
     return query;
 };
 
+// Get Latest AQI Mean
+export const useGetLatestMeanAQIValues = () => {
+    return useQuery({
+        queryKey: ['MeanAQIValues'],
+        queryFn: async () => {
+            try {
+                console.log('Fetching Latest Mean AQI Values');
+                const response = await sensorServices.getLatestMeanAQIValues();
+                console.log('Latest Mean AQI data fetched successfully:', response.data);
+                return response.data;
+            } catch (error) {
+                console.error('Failed to fetch latest AQI data from sensors:', error.message);
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                }
+                throw error;
+            }
+        },
+        retry: 2,
+        retryDelay: 1000,
+    });
+};
+
+
 // Submit Sensor Data
 export const useSubmitSensorReading = () => {
     const queryClient = useQueryClient();
@@ -289,3 +313,9 @@ export const useSubmitSensorReading = () => {
         },
     });
 };
+
+
+
+// Get Latest AQI Mean
+
+

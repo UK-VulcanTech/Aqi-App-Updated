@@ -64,37 +64,16 @@ const AQIDashboard = () => {
     error: sensorsError,
   } = useGetLatestMeanAQIValues();
 
-  const [selectedLocation, setSelectedLocation] = useState('Lahore');
+  const {
+    data: sensorLocations,
+    isLoading: locationsLoading,
+    error: locationsError,
+  } = useGetAllSensors();
+
+  // Hardcode the location as "Lahore"
+  const [selectedLocation] = useState('Lahore');
   const [aqiData, setAqiData] = useState(null);
-
-  // Process sensor data when it loads
-  // useEffect(() => {
-  //   // TEST VALUE: Change this number to test different AQI values
-  //   const testValue = 225;
-
-  //   // Use test value instead of real data
-  //   setAqiData({
-  //     overall_value: testValue,
-  //     pm25_value: Math.round(testValue / 2),
-  //     timestamp: new Date().toISOString(),
-  //   });
-
-  //   setSelectedLocation(`Test AQI Value: ${testValue}`);
-
-  //   /* Comment out this block of real data logic while testing
-  //   if (sensorData && sensorData.overall) {
-  //     setAqiData({
-  //       overall_value: Math.round(sensorData.overall.latest_hour_mean),
-  //       pm25_value: Math.round(sensorData.overall.latest_hour_mean / 2),
-  //       timestamp: sensorData.latest_date,
-  //     });
-
-  //     if (sensorData.locations['Gulberg']) {
-  //       setSelectedLocation('Gulberg, Lahore');
-  //     }
-  //   }
-  //   */
-  // }, [sensorData]);
+  const [pm25Data, setPm25Data] = useState(null);
 
   // Process sensor data when it loads
   useEffect(() => {
@@ -102,24 +81,56 @@ const AQIDashboard = () => {
       // Use the overall AQI value from the data
       setAqiData({
         overall_value: Math.round(sensorData.overall.latest_hour_mean),
-        pm25_value: Math.round(sensorData.overall.latest_hour_mean / 2),
+        pm25_value: null, // Will be updated from sensorLocations
         timestamp: sensorData.latest_date,
       });
-
-      // You can also select a location if needed
-      if (sensorData.locations['Gulberg']) {
-        setSelectedLocation('Gulberg, Lahore');
-      }
     }
   }, [sensorData]);
 
+  // Process sensor locations data for PM2.5 values
+  useEffect(() => {
+    if (
+      sensorLocations &&
+      Array.isArray(sensorLocations) &&
+      sensorLocations.length > 0
+    ) {
+      // Find the most recent PM2.5 reading
+      const sortedSensors = [...sensorLocations].sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+
+      const latestSensor = sortedSensors[0];
+
+      // Update PM2.5 data
+      setPm25Data({
+        value: latestSensor.sensor_value,
+        timestamp: latestSensor.timestamp,
+      });
+
+      // Update AQI data with PM2.5 info
+      setAqiData(prevData => {
+        if (prevData) {
+          return {
+            ...prevData,
+            pm25_value: latestSensor.sensor_value,
+            timestamp: latestSensor.timestamp || prevData.timestamp,
+          };
+        }
+        return prevData;
+      });
+    }
+  }, [sensorLocations]);
+
   // Format timestamp to show days, hours, or minutes ago
   const getLastUpdatedText = () => {
-    if (!aqiData || !aqiData.timestamp) {
+    // Use PM2.5 data timestamp if available, otherwise use AQI data timestamp
+    const timestamp = pm25Data?.timestamp || aqiData?.timestamp || null;
+
+    if (!timestamp) {
       return 'Last Updated: --';
     }
 
-    const sensorDate = new Date(aqiData.timestamp);
+    const sensorDate = new Date(timestamp);
     const now = new Date();
     const diffMs = now - sensorDate;
 
@@ -177,6 +188,16 @@ const AQIDashboard = () => {
 
         <Text style={styles.location}>{selectedLocation}</Text>
         <Text style={styles.updateTime}>{getLastUpdatedText()}</Text>
+
+        {/* Loading indicators */}
+        {(sensorsLoading || locationsLoading) && (
+          <Text style={styles.loadingText}>Loading data...</Text>
+        )}
+
+        {/* Error messages */}
+        {(sensorsError || locationsError) && (
+          <Text style={styles.errorText}>Error loading data</Text>
+        )}
 
         {/* AQI Display - Centered */}
         <View style={styles.aqiCenterContainer}>
@@ -271,7 +292,7 @@ const AQIDashboard = () => {
               <Text style={styles.pmText}>
                 PM2.5:{' '}
                 <Text style={styles.pmValue}>
-                  {aqiData ? aqiData.pm25_value : '--'}
+                  {pm25Data ? pm25Data.value.toFixed(1) : '--'}
                 </Text>{' '}
                 μg/m³
               </Text>
@@ -357,7 +378,7 @@ const AQIDashboard = () => {
   );
 };
 
-// Styles remain the same
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -420,7 +441,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  // In the styles object, update the aqiNumber style:
   aqiNumber: {
     fontSize: 70,
     fontWeight: 'bold',
@@ -515,7 +535,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
   },
-  // Weather card styles - improved
   weatherCardWrapper: {
     marginTop: 10,
     marginBottom: 10,
@@ -574,6 +593,20 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     marginBottom: 5,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#d32f2f',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
 

@@ -11,7 +11,7 @@ import {
 
 // Import images
 import maryam from '../assets/images/maryam.jpg';
-import raja from '../assets/images/raja.jpg';
+import raja from '../assets/images/raja-epd.jpg';
 import imran from '../assets/images/imran.png';
 import backIcon from '../assets/icons/back.png'; // Import your back icon image
 

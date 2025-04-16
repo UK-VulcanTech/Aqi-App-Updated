@@ -1022,7 +1022,6 @@ showCurrentLocation();
     }
   }, [webViewLoaded]);
 
-  // Use an effect to process sensor data when it loads
   useEffect(() => {
     if (sensorData && webViewLoaded && webViewRef.current) {
       console.log('Processing sensor data:', sensorData.length);

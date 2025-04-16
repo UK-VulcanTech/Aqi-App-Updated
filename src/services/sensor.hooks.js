@@ -1,106 +1,6 @@
-// // services/sensor.hooks.js
-// import { useMutation, useQuery } from '@tanstack/react-query';
-// import sensorServices from './sensor.services';
-
-// export const useGetAllSensors = () => {
-//     return useQuery({
-//         queryKey: ['sensors'],
-//         queryFn: async () => {
-//             try {
-//                 console.log('Fetching sensors from service');
-//                 const response = await sensorServices.getAllSensors();
-//                 console.log('Sensor data fetched successfully:', response.data.length);
-//                 return response.data;
-//             } catch (error) {
-//                 console.error('Failed to fetch sensors:', error.message);
-//                 if (error.response) {
-//                     console.error('Response status:', error.response.status);
-//                 }
-//                 throw error;
-//             }
-//         },
-//         retry: 2,
-//         retryDelay: 1000,
-//     });
-// };
-
-// // For the last 7 Days
-// export const useGetSensorDataLastSevenDays = () => {
-//     return useQuery({
-//         queryKey: ['sensors', 'lastSevenDays'],
-//         queryFn: async () => {
-//             try {
-//                 console.log('Fetching sensor data for last 7 days');
-//                 const response = await sensorServices.getSevenDaysData();
-//                 console.log('7-day sensor data fetched successfully:', response.data.length);
-//                 return response.data;
-//             } catch (error) {
-//                 console.error('Failed to fetch 7-day sensor data:', error.message);
-//                 if (error.response) {
-//                     console.error('Response status:', error.response.status);
-//                 }
-//                 throw error;
-//             }
-//         },
-//         retry: 2,
-//         retryDelay: 1000,
-//     });
-// };
-
-
-// // Get Locatinons Data
-// export const useGetSensorLocations = () => {
-//     return useQuery({
-//         queryKey: ['locations'],
-//         queryFn: async () => {
-//             try {
-//                 console.log('Fetching sensor locations');
-//                 const response = await sensorServices.getSensorLocations();
-//                 console.log('Locations fetched successfully:', response.data.length);
-//                 return response.data;
-//             } catch (error) {
-//                 console.error('Failed to fetch locations:', error.message);
-//                 if (error.response) {
-//                     console.error('Response status:', error.response.status);
-//                 }
-//                 throw error;
-//             }
-//         },
-//         retry: 2,
-//         retryDelay: 1000,
-//     });
-// };
-
-// // Submit Sensor Data
-// // Mutation hook for submitting sensor data
-// export const useSubmitSensorReading = () => {
-//     return useMutation({
-//         mutationFn: (data) => {
-//             return sensorServices.submitSensorReading(data);
-//         },
-//         onSuccess: () => {
-//             console.log('Sensor reading submitted successfully');
-//         },
-//         onError: (error) => {
-//             console.error('Failed to submit sensor reading:', error.message);
-//             if (error.response) {
-//                 console.error('Response status:', error.response.status);
-//                 console.error('Response data:', error.response.data);
-//             }
-//         },
-//     });
-// };
-
-
-
-
-// ------------------------------------------------------------------------------- //
-
-
-// // services/sensor.hooks.js (with WebSocket enhancements)
+// services/sensor.hooks.js
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import sensorServices from './sensor.services';
-// import { useWebSocketEnhancedQuery } from './useWebSocketEnhancedQuery';
 import { useWebSocketEnhancedQuery } from './useWebSocketEnhancedQuery.js';
 
 export const useGetAllSensors = () => {
@@ -133,7 +33,7 @@ export const useGetAllSensors = () => {
         },
         (oldData, message) => {
             // Update sensor data with WebSocket message
-            if (!Array.isArray(oldData)) { return oldData; }
+            if (!Array.isArray(oldData)) { return oldData || []; }
 
             const index = oldData.findIndex(item => item.sensor_id === message.sensor_id);
 
@@ -182,7 +82,7 @@ export const useGetSensorDataLastSevenDays = () => {
             return message.type === 'daily_summary_update';
         },
         (oldData, message) => {
-            if (!Array.isArray(oldData)) { return oldData; }
+            if (!Array.isArray(oldData)) { return oldData || []; }
 
             // Find if we have data for this date
             const date = message.date;
@@ -233,7 +133,7 @@ export const useGetSensorLocations = () => {
             return message.type === 'location_update';
         },
         (oldData, message) => {
-            if (!Array.isArray(oldData)) { return oldData; }
+            if (!Array.isArray(oldData)) { return oldData || []; }
 
             const index = oldData.findIndex(location => location.id === message.id);
 
@@ -252,14 +152,20 @@ export const useGetSensorLocations = () => {
     return query;
 };
 
-// Get Latest AQI Mean
+// Get Latest AQI Mean - FIXED
 export const useGetLatestMeanAQIValues = () => {
-    return useQuery({
+    const query = useQuery({
         queryKey: ['MeanAQIValues'],
         queryFn: async () => {
             try {
                 console.log('Fetching Latest Mean AQI Values');
                 const response = await sensorServices.getLatestMeanAQIValues();
+
+                // Check if response and response.data exist before proceeding
+                if (!response || !response.data) {
+                    throw new Error('Invalid response format from AQI service');
+                }
+
                 console.log('Latest Mean AQI data fetched successfully:', response.data);
                 return response.data;
             } catch (error) {
@@ -267,48 +173,86 @@ export const useGetLatestMeanAQIValues = () => {
                 if (error.response) {
                     console.error('Response status:', error.response.status);
                 }
-                throw error;
+                // Return a default empty object instead of throwing to prevent UI errors
+                return { error: true, message: 'Failed to load AQI data' };
             }
         },
-        retry: 2,
-        retryDelay: 1000,
+        retry: 3,  // Increased retries for this critical data
+        retryDelay: 2000,  // Longer delay between retries
+        staleTime: 60000,  // Data stays fresh for 1 minute
+        cacheTime: 300000,  // Keep in cache for 5 minutes
     });
+
+    // Add WebSocket enhancement for AQI updates
+    useWebSocketEnhancedQuery(
+        ['MeanAQIValues'],
+        (message) => {
+            // Only process AQI updates
+            return message && message.type === 'aqi_update';
+        },
+        (oldData, message) => {
+            // Safely handle the update with data validation
+            if (!message || !message.data) return oldData || {};
+            if (!oldData) return message.data;
+            return { ...oldData, ...message.data };
+        }
+    );
+
+    return query;
 };
 
-
 export const useGetHealthAdvisory = () => {
-    return useQuery({
+    const query = useQuery({
         queryKey: ['HealthAdvisory'],
         queryFn: async () => {
             try {
-                console.log('Fetching Latest Mean AQI Values');
+                console.log('Fetching Health Advisory');
                 const response = await sensorServices.getHealthAdvisory();
-                console.log('Latest Mean AQI data fetched successfully:', response.data);
+                console.log('Health Advisory data fetched successfully:', response.data);
                 return response.data;
             } catch (error) {
-                console.error('Failed to fetch latest AQI data from sensors:', error.message);
+                console.error('Failed to fetch health advisory data:', error.message);
                 if (error.response) {
                     console.error('Response status:', error.response.status);
                 }
-                throw error;
+                // Return a default empty object instead of throwing to prevent UI errors
+                return { error: true, message: 'Failed to load health advisory data' };
             }
         },
         retry: 2,
         retryDelay: 1000,
     });
+
+    // Add WebSocket enhancement for health advisory updates
+    useWebSocketEnhancedQuery(
+        ['HealthAdvisory'],
+        (message) => {
+            // Only process health advisory updates
+            return message && message.type === 'health_advisory_update';
+        },
+        (oldData, message) => {
+            if (!message || !message.data) return oldData || {};
+            if (!oldData) return message.data;
+            return { ...oldData, ...message.data };
+        }
+    );
+
+    return query;
 };
 
-
-
-// Submit Sensor Data
-// Submit Sensor Data
 // Submit Sensor Data
 export const useSubmitSensorReading = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data) => {
-            return sensorServices.submitSensorReading(data);
+        mutationFn: async (data) => {
+            try {
+                const response = await sensorServices.submitSensorReading(data);
+                return response;
+            } catch (error) {
+                console.error('Error in mutation function:', error);
+                throw error;
+            }
         },
         onSuccess: (response, variables) => {
             console.log('Sensor reading submitted successfully for location:', variables.location);
@@ -316,9 +260,9 @@ export const useSubmitSensorReading = () => {
             // Instead of trying to update the cache manually,
             // simply invalidate all sensor-related queries to force a fresh fetch
             queryClient.invalidateQueries(['sensors']);
-
-            // If you have other related queries that should refresh:
             queryClient.invalidateQueries(['MeanAQIValues']);
+            queryClient.invalidateQueries(['sensors', 'lastSevenDays']);
+            queryClient.invalidateQueries(['HealthAdvisory']);
 
             console.log('Invalidated queries to refresh all components');
         },
@@ -331,9 +275,3 @@ export const useSubmitSensorReading = () => {
         },
     });
 };
-
-
-
-// Get Latest AQI Mean
-
-

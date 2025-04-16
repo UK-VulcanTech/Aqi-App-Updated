@@ -73,9 +73,9 @@ const websocketService = {
                 }
             };
 
-            socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
+            // socket.onerror = (error) => {
+            //     console.error('WebSocket error:', error);
+            // };
 
             socket.onclose = (event) => {
                 console.log('WebSocket connection closed with code:', event.code);

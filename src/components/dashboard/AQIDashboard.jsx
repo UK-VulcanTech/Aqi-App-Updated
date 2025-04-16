@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -147,9 +147,8 @@ const AQIDashboard = () => {
     } else if (diffHours > 0) {
       return `Last Updated: ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
     } else if (diffMinutes > 0) {
-      return `Last Updated: ${diffMinutes} minute${
-        diffMinutes !== 1 ? 's' : ''
-      } ago`;
+      return `Last Updated: ${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''
+        } ago`;
     } else {
       return 'Last Updated: Just now';
     }
@@ -205,7 +204,7 @@ const AQIDashboard = () => {
             <View
               style={[
                 styles.moderateBox,
-                {backgroundColor: aqiCategory.color},
+                { backgroundColor: aqiCategory.color },
               ]}>
               <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
@@ -218,14 +217,14 @@ const AQIDashboard = () => {
                     aqiCategory.color === '#A5D46A'
                       ? '#568B35'
                       : aqiCategory.color === '#FFDA75'
-                      ? '#B38F1D'
-                      : aqiCategory.color === '#F5A05A'
-                      ? '#A85714'
-                      : aqiCategory.color === '#EB6B6B'
-                      ? '#8B2323'
-                      : aqiCategory.color === '#B085C9'
-                      ? '#69397A'
-                      : '#8B1A1A',
+                        ? '#B38F1D'
+                        : aqiCategory.color === '#F5A05A'
+                          ? '#A85714'
+                          : aqiCategory.color === '#EB6B6B'
+                            ? '#8B2323'
+                            : aqiCategory.color === '#B085C9'
+                              ? '#69397A'
+                              : '#8B1A1A',
                 },
               ]}>
               {aqiData ? aqiData.overall_value : '--'}
@@ -298,7 +297,19 @@ const AQIDashboard = () => {
               </Text>
 
               <Image
-                source={require('../../assets/images/face.png')}
+                source={
+                  aqiCategory.text === 'Good'
+                    ? require('../../assets/images/Good.png')
+                    : aqiCategory.text === 'Moderate'
+                      ? require('../../assets/images/Moderate.png')
+                      : aqiCategory.text === 'Poor'
+                        ? require('../../assets/images/Poor.png')
+                        : aqiCategory.text === 'Unhealthy'
+                          ? require('../../assets/images/Unhealthy.png')
+                          : aqiCategory.text === 'Very Unhealthy'
+                            ? require('../../assets/images/VeryUnhealthy.png')
+                            : require('../../assets/images/Hazardous.png')
+                }
                 style={styles.personImage}
                 resizeMode="contain"
               />
@@ -313,19 +324,18 @@ const AQIDashboard = () => {
               styles.weatherCard,
               // Optionally adjust weather card background to match category
               {
-                backgroundColor: `rgba(${
-                  aqiCategory.color === '#A5D46A'
+                backgroundColor: `rgba(${aqiCategory.color === '#A5D46A'
                     ? '230, 240, 220'
                     : aqiCategory.color === '#FFDA75'
-                    ? '240, 235, 220'
-                    : aqiCategory.color === '#F5A05A'
-                    ? '240, 230, 220'
-                    : aqiCategory.color === '#EB6B6B'
-                    ? '240, 220, 220'
-                    : aqiCategory.color === '#B085C9'
-                    ? '235, 220, 240'
-                    : '240, 215, 215'
-                }, 0.15)`,
+                      ? '240, 235, 220'
+                      : aqiCategory.color === '#F5A05A'
+                        ? '240, 230, 220'
+                        : aqiCategory.color === '#EB6B6B'
+                          ? '240, 220, 220'
+                          : aqiCategory.color === '#B085C9'
+                            ? '235, 220, 240'
+                            : '240, 215, 215'
+                  }, 0.15)`,
               },
             ]}>
             <View style={styles.weatherTopSection}>

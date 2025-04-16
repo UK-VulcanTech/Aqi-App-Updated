@@ -1,9 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import {useGetAllSensors} from '../../services/sensor.hooks';
+import {
+  useGetAllSensors,
+  useGetLatestMeanSensorValues,
+} from '../../services/sensor.hooks';
 
 const PollutantsList = () => {
   const [selectedSensor, setSelectedSensor] = useState(null);
+  const [pm25Data, setPm25Data] = useState(null);
 
   const {
     data: sensorData,
@@ -11,6 +15,14 @@ const PollutantsList = () => {
     error: sensorsError,
   } = useGetAllSensors();
 
+  // Add the sensorMeanData hook to get PM2.5 data
+  const {
+    data: sensorMeanData,
+    isLoading: sensorMeanLoading,
+    error: sensorMeanError,
+  } = useGetLatestMeanSensorValues();
+
+  // Process sensor location data
   useEffect(() => {
     if (sensorData && sensorData.length > 0) {
       // Using Gulberg data as in the AQIDashboard example
@@ -25,6 +37,20 @@ const PollutantsList = () => {
       }
     }
   }, [sensorData]);
+
+  // Process PM2.5 data from sensorMeanData
+  useEffect(() => {
+    if (sensorMeanData && !sensorMeanData.error && sensorMeanData.overall) {
+      setPm25Data({
+        value: sensorMeanData.overall.latest_hour_mean,
+      });
+      console.log(
+        'PM2.5 value set from sensorMeanData:',
+        sensorMeanData.overall.latest_hour_mean,
+      );
+    }
+  }, [sensorMeanData]);
+
   const getAQICategory = value => {
     if (value <= 50) {
       return {text: 'Good', color: '#A5D46A'};
@@ -45,13 +71,23 @@ const PollutantsList = () => {
   };
 
   const getAQIDetails = () => {
-    if (!selectedSensor) {
-      return {text: 'Loading...', color: '#FFDA75'};
+    // Use PM2.5 value from sensorMeanData if available
+    if (pm25Data) {
+      return getAQICategory(pm25Data.value);
     }
-    return getAQICategory(selectedSensor.sensor_value);
+    // Fallback to selectedSensor value if PM2.5 data not available
+    if (selectedSensor) {
+      return getAQICategory(selectedSensor.sensor_value);
+    }
+    // Loading state
+    return {text: 'Loading...', color: '#FFDA75'};
   };
 
   const aqiCategory = getAQIDetails();
+
+  // Display loading state when data is being fetched
+  const isLoading = sensorsLoading || sensorMeanLoading;
+  const hasError = sensorsError || sensorMeanError;
 
   return (
     <View style={styles.container}>
@@ -61,15 +97,27 @@ const PollutantsList = () => {
             <Text style={styles.title}>Air Pollutants</Text>
           </View>
 
+          {isLoading && (
+            <Text style={styles.loadingText}>Loading pollutant data...</Text>
+          )}
+
+          {hasError && (
+            <Text style={styles.errorText}>Error loading pollutant data</Text>
+          )}
+
           <View style={styles.pollutantsContainer}>
             <View style={[styles.pollutantCard, styles.amberBorder]}>
               <Text style={styles.pollutantLabel}>
                 Particulate Matter (PM2.5)
-                {/* {selectedSensor?.sensor_value} */}
               </Text>
               <Text style={styles.pollutantValue}>
                 <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
-                  {Math.round(selectedSensor?.sensor_value)} µg/m³
+                  {pm25Data
+                    ? Math.round(pm25Data.value)
+                    : selectedSensor
+                    ? Math.round(selectedSensor.sensor_value)
+                    : '--'}{' '}
+                  µg/m³
                 </Text>{' '}
               </Text>
             </View>
@@ -164,6 +212,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#31343D',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#d32f2f',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   amberBorder: {
     borderLeftColor: '#FCD34D',

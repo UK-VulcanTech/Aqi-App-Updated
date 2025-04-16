@@ -11,6 +11,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {
   useGetAllSensors,
   useGetLatestMeanAQIValues,
+  useGetLatestMeanSensorValues,
 } from '../../services/sensor.hooks';
 
 // Function to get AQI category based on value
@@ -58,13 +59,20 @@ const getAQICategory = value => {
 };
 
 const AQIDashboard = () => {
+  // Get AQI data
   const {
     data: sensorData,
     isLoading: sensorsLoading,
     error: sensorsError,
   } = useGetLatestMeanAQIValues();
 
-  const {data: sensorMeanData} = useGetLatestMeanAQIValues();
+  // Get PM2.5 data
+  const {
+    data: sensorMeanData,
+    isLoading: sensorMeanLoading,
+    error: sensorMeanError,
+  } = useGetLatestMeanSensorValues();
+
   console.log('🚀 ~ AQIDashboard ~ sensorMeanData:', sensorMeanData);
 
   const {
@@ -78,100 +86,26 @@ const AQIDashboard = () => {
   const [aqiData, setAqiData] = useState(null);
   const [pm25Data, setPm25Data] = useState(null);
 
-  // Process sensor data when it loads
+  // Process AQI data from sensorData
   useEffect(() => {
-    if (sensorData && sensorData.overall) {
-      // Use the overall AQI value from the data
+    if (sensorData && !sensorData.error && sensorData.overall) {
       setAqiData({
         overall_value: Math.round(sensorData.overall.latest_hour_mean),
-        pm25_value: null, // Will be updated from sensorLocations
         timestamp: sensorData.latest_date,
       });
     }
   }, [sensorData]);
 
+  // Process PM2.5 data from sensorMeanData
   useEffect(() => {
-    if (sensorMeanData && sensorMeanData.overall) {
-      // Use the overall AQI value from the data
-      setAqiData({
-        overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
-        pm25_value: null, // Will be updated from sensorLocations
-        timestamp: sensorMeanData.latest_date,
-      });
-    }
-  }, [sensorMeanData]);
-
-  // Process sensor data when it loads
-  useEffect(() => {
-    if (sensorMeanData) {
-      // Set overall AQI value
-      if (sensorMeanData.overall) {
-        setAqiData({
-          overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
-          timestamp: sensorMeanData.latest_date,
-        });
-      }
-
-      // Set PM2.5 value from the same API data
-      if (sensorMeanData.pm25) {
-        setPm25Data({
-          value: sensorMeanData.pm25.latest_hour_mean,
-          timestamp: sensorMeanData.latest_date,
-        });
-      }
-    }
-  }, [sensorMeanData]);
-
-  // Process sensor data when it loads
-  useEffect(() => {
-    if (sensorMeanData && sensorMeanData.overall) {
-      // Set overall AQI value
-      setAqiData({
-        overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
-        timestamp: sensorMeanData.latest_date,
-      });
-
-      // Set PM2.5 data using the same overall value
+    if (sensorMeanData && !sensorMeanData.error && sensorMeanData.overall) {
+      // For PM2.5, we're using the sensorMeanData but accessing the overall latest_hour_mean
       setPm25Data({
         value: sensorMeanData.overall.latest_hour_mean,
         timestamp: sensorMeanData.latest_date,
       });
     }
   }, [sensorMeanData]);
-
-  // Process sensor locations data for PM2.5 values
-  useEffect(() => {
-    if (
-      sensorLocations &&
-      Array.isArray(sensorLocations) &&
-      sensorLocations.length > 0
-    ) {
-      // Find the most recent PM2.5 reading
-      const sortedSensors = [...sensorLocations].sort((a, b) => {
-        return new Date(b.timestamp) - new Date(a.timestamp);
-      });
-
-      const latestSensor = sortedSensors[0];
-
-      // Update PM2.5 data
-      setPm25Data({
-        value: latestSensor.sensor_value,
-        timestamp: latestSensor.timestamp,
-      });
-
-      // Update AQI data with PM2.5 info
-      setAqiData(prevData => {
-        if (prevData) {
-          return {
-            ...prevData,
-            pm25_value: latestSensor.sensor_value,
-            timestamp: latestSensor.timestamp || prevData.timestamp,
-          };
-        }
-        return prevData;
-      });
-    }
-  }, [sensorLocations]);
 
   // Format timestamp to show days, hours, or minutes ago
   const getLastUpdatedText = () => {
@@ -242,12 +176,12 @@ const AQIDashboard = () => {
         <Text style={styles.updateTime}>{getLastUpdatedText()}</Text>
 
         {/* Loading indicators */}
-        {(sensorsLoading || locationsLoading) && (
+        {(sensorsLoading || sensorMeanLoading || locationsLoading) && (
           <Text style={styles.loadingText}>Loading data...</Text>
         )}
 
         {/* Error messages */}
-        {(sensorsError || locationsError) && (
+        {(sensorsError || sensorMeanError || locationsError) && (
           <Text style={styles.errorText}>Error loading data</Text>
         )}
 
@@ -511,7 +445,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#8B2323',
     textAlign: 'right',
-    marginLeft: 30, // Reduced gap to a more reasonable spacing
+    marginLeft: 50, // Reduced gap to a more reasonable spacing
   },
   scaleSection: {
     marginTop: 10,

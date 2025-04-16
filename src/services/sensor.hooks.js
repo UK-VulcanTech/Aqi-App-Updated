@@ -209,7 +209,7 @@ export const useGetLatestMeanSensorValues = () => {
         queryFn: async () => {
             try {
                 console.log('Fetching Latest Mean Sensor Values');
-                const response = await sensorServices.getLatestMeanSensorValues();
+                const response = await sensorServices.getLatestSensorMeanValues();
 
                 // Check if response and response.data exist before proceeding
                 if (!response || !response.data) {

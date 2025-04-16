@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -64,6 +64,9 @@ const AQIDashboard = () => {
     error: sensorsError,
   } = useGetLatestMeanAQIValues();
 
+  const {data: sensorMeanData} = useGetLatestMeanAQIValues();
+  console.log('🚀 ~ AQIDashboard ~ sensorMeanData:', sensorMeanData);
+
   const {
     data: sensorLocations,
     isLoading: locationsLoading,
@@ -86,6 +89,55 @@ const AQIDashboard = () => {
       });
     }
   }, [sensorData]);
+
+  useEffect(() => {
+    if (sensorMeanData && sensorMeanData.overall) {
+      // Use the overall AQI value from the data
+      setAqiData({
+        overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
+        pm25_value: null, // Will be updated from sensorLocations
+        timestamp: sensorMeanData.latest_date,
+      });
+    }
+  }, [sensorMeanData]);
+
+  // Process sensor data when it loads
+  useEffect(() => {
+    if (sensorMeanData) {
+      // Set overall AQI value
+      if (sensorMeanData.overall) {
+        setAqiData({
+          overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
+          timestamp: sensorMeanData.latest_date,
+        });
+      }
+
+      // Set PM2.5 value from the same API data
+      if (sensorMeanData.pm25) {
+        setPm25Data({
+          value: sensorMeanData.pm25.latest_hour_mean,
+          timestamp: sensorMeanData.latest_date,
+        });
+      }
+    }
+  }, [sensorMeanData]);
+
+  // Process sensor data when it loads
+  useEffect(() => {
+    if (sensorMeanData && sensorMeanData.overall) {
+      // Set overall AQI value
+      setAqiData({
+        overall_value: Math.round(sensorMeanData.overall.latest_hour_mean),
+        timestamp: sensorMeanData.latest_date,
+      });
+
+      // Set PM2.5 data using the same overall value
+      setPm25Data({
+        value: sensorMeanData.overall.latest_hour_mean,
+        timestamp: sensorMeanData.latest_date,
+      });
+    }
+  }, [sensorMeanData]);
 
   // Process sensor locations data for PM2.5 values
   useEffect(() => {
@@ -147,8 +199,9 @@ const AQIDashboard = () => {
     } else if (diffHours > 0) {
       return `Last Updated: ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
     } else if (diffMinutes > 0) {
-      return `Last Updated: ${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''
-        } ago`;
+      return `Last Updated: ${diffMinutes} minute${
+        diffMinutes !== 1 ? 's' : ''
+      } ago`;
     } else {
       return 'Last Updated: Just now';
     }
@@ -204,7 +257,7 @@ const AQIDashboard = () => {
             <View
               style={[
                 styles.moderateBox,
-                { backgroundColor: aqiCategory.color },
+                {backgroundColor: aqiCategory.color},
               ]}>
               <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
@@ -217,14 +270,14 @@ const AQIDashboard = () => {
                     aqiCategory.color === '#A5D46A'
                       ? '#568B35'
                       : aqiCategory.color === '#FFDA75'
-                        ? '#B38F1D'
-                        : aqiCategory.color === '#F5A05A'
-                          ? '#A85714'
-                          : aqiCategory.color === '#EB6B6B'
-                            ? '#8B2323'
-                            : aqiCategory.color === '#B085C9'
-                              ? '#69397A'
-                              : '#8B1A1A',
+                      ? '#B38F1D'
+                      : aqiCategory.color === '#F5A05A'
+                      ? '#A85714'
+                      : aqiCategory.color === '#EB6B6B'
+                      ? '#8B2323'
+                      : aqiCategory.color === '#B085C9'
+                      ? '#69397A'
+                      : '#8B1A1A',
                 },
               ]}>
               {aqiData ? aqiData.overall_value : '--'}
@@ -301,14 +354,14 @@ const AQIDashboard = () => {
                   aqiCategory.text === 'Good'
                     ? require('../../assets/images/Good.png')
                     : aqiCategory.text === 'Moderate'
-                      ? require('../../assets/images/Moderate.png')
-                      : aqiCategory.text === 'Poor'
-                        ? require('../../assets/images/Poor.png')
-                        : aqiCategory.text === 'Unhealthy'
-                          ? require('../../assets/images/Unhealthy.png')
-                          : aqiCategory.text === 'Very Unhealthy'
-                            ? require('../../assets/images/VeryUnhealthy.png')
-                            : require('../../assets/images/Hazardous.png')
+                    ? require('../../assets/images/Moderate.png')
+                    : aqiCategory.text === 'Poor'
+                    ? require('../../assets/images/Poor.png')
+                    : aqiCategory.text === 'Unhealthy'
+                    ? require('../../assets/images/Unhealthy.png')
+                    : aqiCategory.text === 'Very Unhealthy'
+                    ? require('../../assets/images/VeryUnhealthy.png')
+                    : require('../../assets/images/Hazardous.png')
                 }
                 style={styles.personImage}
                 resizeMode="contain"
@@ -324,18 +377,19 @@ const AQIDashboard = () => {
               styles.weatherCard,
               // Optionally adjust weather card background to match category
               {
-                backgroundColor: `rgba(${aqiCategory.color === '#A5D46A'
+                backgroundColor: `rgba(${
+                  aqiCategory.color === '#A5D46A'
                     ? '230, 240, 220'
                     : aqiCategory.color === '#FFDA75'
-                      ? '240, 235, 220'
-                      : aqiCategory.color === '#F5A05A'
-                        ? '240, 230, 220'
-                        : aqiCategory.color === '#EB6B6B'
-                          ? '240, 220, 220'
-                          : aqiCategory.color === '#B085C9'
-                            ? '235, 220, 240'
-                            : '240, 215, 215'
-                  }, 0.15)`,
+                    ? '240, 235, 220'
+                    : aqiCategory.color === '#F5A05A'
+                    ? '240, 230, 220'
+                    : aqiCategory.color === '#EB6B6B'
+                    ? '240, 220, 220'
+                    : aqiCategory.color === '#B085C9'
+                    ? '235, 220, 240'
+                    : '240, 215, 215'
+                }, 0.15)`,
               },
             ]}>
             <View style={styles.weatherTopSection}>
@@ -434,11 +488,12 @@ const styles = StyleSheet.create({
   },
   aqiCenterContainer: {
     marginTop: 20,
+    marginRight: 20,
   },
   aqiDisplayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Space between category box and number
+    // justifyContent: 's', // Space between category box and number
   },
   moderateBox: {
     backgroundColor: '#B75E5E',
@@ -456,7 +511,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#8B2323',
     textAlign: 'right',
-    marginLeft: 80, // Add left margin to push value to the right
+    marginLeft: 30, // Reduced gap to a more reasonable spacing
   },
   scaleSection: {
     marginTop: 10,

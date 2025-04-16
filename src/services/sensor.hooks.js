@@ -192,14 +192,66 @@ export const useGetLatestMeanAQIValues = () => {
         },
         (oldData, message) => {
             // Safely handle the update with data validation
-            if (!message || !message.data) return oldData || {};
-            if (!oldData) return message.data;
+            if (!message || !message.data) { return oldData || {}; }
+            if (!oldData) { return message.data; }
             return { ...oldData, ...message.data };
         }
     );
 
     return query;
 };
+
+
+// Get Latest PM2.5 Values - FIXED
+export const useGetLatestMeanSensorValues = () => {
+    const query = useQuery({
+        queryKey: ['MeanSensorValues'],
+        queryFn: async () => {
+            try {
+                console.log('Fetching Latest Mean Sensor Values');
+                const response = await sensorServices.getLatestMeanSensorValues();
+
+                // Check if response and response.data exist before proceeding
+                if (!response || !response.data) {
+                    throw new Error('Invalid response format from sensor service');
+                }
+
+                console.log('Latest Mean Sensor data fetched successfully:', response.data);
+                return response.data;
+            } catch (error) {
+                console.error('Failed to fetch latest sensor data from sensors:', error.message);
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                }
+                // Return a default empty object instead of throwing to prevent UI errors
+                return { error: true, message: 'Failed to load sensor data' };
+            }
+        },
+        retry: 3,  // Increased retries for this critical data
+        retryDelay: 2000,  // Longer delay between retries
+        staleTime: 60000,  // Data stays fresh for 1 minute
+        cacheTime: 300000,  // Keep in cache for 5 minutes
+    });
+
+    // Add WebSocket enhancement for sensor updates
+    useWebSocketEnhancedQuery(
+        ['MeanSensorValues'],
+        (message) => {
+            // Only process sensor updates
+            return message && message.type === 'sensor_update';
+        },
+        (oldData, message) => {
+            // Safely handle the update with data validation
+            if (!message || !message.data) { return oldData || {}; }
+            if (!oldData) { return message.data; }
+            return { ...oldData, ...message.data };
+        }
+    );
+
+    return query;
+};
+
+
 
 export const useGetHealthAdvisory = () => {
     const query = useQuery({
@@ -231,8 +283,8 @@ export const useGetHealthAdvisory = () => {
             return message && message.type === 'health_advisory_update';
         },
         (oldData, message) => {
-            if (!message || !message.data) return oldData || {};
-            if (!oldData) return message.data;
+            if (!message || !message.data) { return oldData || {}; }
+            if (!oldData) { return message.data; }
             return { ...oldData, ...message.data };
         }
     );

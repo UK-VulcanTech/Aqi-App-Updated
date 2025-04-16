@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    height: 67,
+    height: 55,
     flexShrink: 0,
     borderRadius: 15,
     borderWidth: 1,
@@ -207,13 +207,13 @@ const styles = StyleSheet.create({
   loginButton: {
     display: 'flex',
     width: '100%', // Making it responsive while matching your design
-    height: 66,
+    height: 45,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
     borderRadius: 79,
     backgroundColor: '#0EA959',
-    marginTop: 20,
+    marginTop: 10,
     // React Native shadow properties (equivalent to box-shadow)
     shadowColor: 'rgba(0, 0, 0, 0.25)',
     shadowOffset: {

@@ -35,8 +35,8 @@ const BlogsScreen = ({navigation}) => {
     {
       id: 2,
       image: raja,
-      alt: 'Secratary EPD discussing air quality monitoring',
-      title: 'Secratary EPD',
+      alt: 'Secratary EPCCD discussing air quality monitoring',
+      title: 'Secratary EPCCD',
       subtitle: 'Mr. Raja Jahangir Anwar',
       description:
         "A complete solution for air quality monitoring, data analysis, and fresh air solutions in workplaces prioritizing employee's health and productivity.",
@@ -44,8 +44,8 @@ const BlogsScreen = ({navigation}) => {
     {
       id: 3,
       image: imran,
-      alt: 'DG EPD discussing air quality monitoring',
-      title: 'DG EPD',
+      alt: 'DG EPA discussing air quality monitoring',
+      title: 'DG EPA',
       subtitle: 'Mr. Imran Hamid Sheikh',
       description:
         "A complete solution for air quality monitoring, data analysis, and fresh air solutions in workplaces prioritizing employee's health and productivity.",
@@ -70,7 +70,7 @@ const BlogsScreen = ({navigation}) => {
           <View style={styles.headerWrapper}>
             <Text style={styles.headerCaption}>BLOGS</Text>
             <Text style={styles.headerText}>
-              Environment Protection Department
+              Environment Protection and Climate Change Department
             </Text>
             <View style={styles.headerDivider} />
             <Text style={styles.headerSubtext}>

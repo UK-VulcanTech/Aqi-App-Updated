@@ -8,6 +8,7 @@ import {
   Animated,
   TouchableWithoutFeedback,
   PanResponder,
+  SafeAreaView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
@@ -144,12 +145,14 @@ const Header = () => {
 
   return (
     <>
-      <View style={styles.header}>
-        <Image
-          source={require('../../assets/icons/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+      {/* <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+          <Image
+            source={require('../../assets/icons/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => toggleMenu(true)}>
@@ -159,7 +162,28 @@ const Header = () => {
             resizeMode="contain"
           />
         </TouchableOpacity>
-      </View>
+      </View> */}
+
+      <SafeAreaView style={styles.backgroundColor}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+            <Image
+              source={require('../../assets/icons/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => toggleMenu(true)}>
+            <Image
+              source={require('../../assets/icons/hamburger.png')}
+              style={styles.hamburgerIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
 
       {menuOpen && (
         <>
@@ -216,6 +240,9 @@ const Header = () => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: '#262626',
+  },
   header: {
     backgroundColor: '#262626',
     flexDirection: 'row',

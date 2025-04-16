@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Keyboard,
+  Image,
 } from 'react-native';
 
 const SearchBox = ({
@@ -19,11 +20,16 @@ const SearchBox = ({
   setSearchResults,
   showDropdown,
   setShowDropdown,
+  onSearchInteraction, // Add this prop
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Handle search
   const handleSearch = () => {
+    if (onSearchInteraction) {
+      onSearchInteraction();
+    } // Call the function to close the card
+
     if (!searchQuery.trim()) {
       return;
     }
@@ -113,11 +119,25 @@ const SearchBox = ({
           placeholder="Search"
           placeholderTextColor="white"
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={text => {
+            if (onSearchInteraction) {
+              onSearchInteraction();
+            } // Close card when typing
+            setSearchQuery(text);
+          }}
+          onFocus={() => {
+            if (onSearchInteraction) {
+              onSearchInteraction();
+            } // Close card when focused
+          }}
           onSubmitEditing={handleSearch}
         />
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          {/* <Text style={styles.searchIcon}>🔍</Text> */}
+          <Image
+            source={require('../../assets/icons/search.png')}
+            style={{width: 20, height: 20, color: 'white'}}
+          />
         </TouchableOpacity>
       </View>
 

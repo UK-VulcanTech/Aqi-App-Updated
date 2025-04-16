@@ -101,7 +101,7 @@ const AQIDashboard = () => {
     if (sensorMeanData && !sensorMeanData.error && sensorMeanData.overall) {
       // For PM2.5, we're using the sensorMeanData but accessing the overall latest_hour_mean
       setPm25Data({
-        value: sensorMeanData.overall.latest_hour_mean,
+        value: Math.round(sensorMeanData.overall.latest_hour_mean),
         timestamp: sensorMeanData.latest_date,
       });
     }
@@ -278,7 +278,7 @@ const AQIDashboard = () => {
               <Text style={styles.pmText}>
                 PM2.5:{' '}
                 <Text style={styles.pmValue}>
-                  {pm25Data ? pm25Data.value.toFixed(1) : '--'}
+                  {pm25Data ? Math.round(pm25Data.value) : '--'}
                 </Text>{' '}
                 μg/m³
               </Text>

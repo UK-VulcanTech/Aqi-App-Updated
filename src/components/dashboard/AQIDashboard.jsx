@@ -8,26 +8,53 @@ import {
   StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useGetAllSensors} from '../../services/sensor.hooks';
+import {
+  useGetAllSensors,
+  useGetLatestMeanAQIValues,
+} from '../../services/sensor.hooks';
 
 // Function to get AQI category based on value
 const getAQICategory = value => {
   if (value <= 50) {
-    return {text: 'Good', color: '#A5D46A'};
+    return {
+      text: 'Good',
+      color: '#A5D46A',
+      gradientColors: ['#FFFFFF', '#E8F5D8', '#F2F9E8'],
+    };
   }
   if (value <= 100) {
-    return {text: 'Moderate', color: '#FFDA75'};
+    return {
+      text: 'Moderate',
+      color: '#FFDA75',
+      gradientColors: ['#FFFFFF', '#FFF6D8', '#FFFAEB'],
+    };
   }
   if (value <= 150) {
-    return {text: 'Poor', color: '#F5A05A'};
+    return {
+      text: 'Poor',
+      color: '#F5A05A',
+      gradientColors: ['#FFFFFF', '#FBE8D8', '#FDEFDE'],
+    };
   }
   if (value <= 200) {
-    return {text: 'Unhealthy', color: '#EB6B6B'};
+    return {
+      text: 'Unhealthy',
+      color: '#EB6B6B',
+      gradientColors: ['#FFFFFF', '#F9D8D8', '#FCE9E9'],
+    };
   }
   if (value <= 250) {
-    return {text: 'Very Unhealthy', color: '#B085C9'};
+    return {
+      text: 'Very Unhealthy',
+      color: '#B085C9',
+      gradientColors: ['#FFFFFF', '#EBE0F2', '#F4ECF7'],
+    };
   }
-  return {text: 'Hazardous', color: '#CF3030'};
+  return {
+    text: 'Hazardous',
+    color: '#CF3030',
+    gradientColors: ['#FFFFFF', '#F5D8D8', '#F9E6E6'],
+  };
 };
 
 const AQIDashboard = () => {
@@ -35,58 +62,107 @@ const AQIDashboard = () => {
     data: sensorData,
     isLoading: sensorsLoading,
     error: sensorsError,
-  } = useGetAllSensors();
+  } = useGetLatestMeanAQIValues();
 
-  const [selectedLocation, setSelectedLocation] = useState('Lahore Cantonment');
-  const [selectedSensor, setSelectedSensor] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState('Lahore');
+  const [aqiData, setAqiData] = useState(null);
+
+  // Process sensor data when it loads
+  // useEffect(() => {
+  //   // TEST VALUE: Change this number to test different AQI values
+  //   const testValue = 225;
+
+  //   // Use test value instead of real data
+  //   setAqiData({
+  //     overall_value: testValue,
+  //     pm25_value: Math.round(testValue / 2),
+  //     timestamp: new Date().toISOString(),
+  //   });
+
+  //   setSelectedLocation(`Test AQI Value: ${testValue}`);
+
+  //   /* Comment out this block of real data logic while testing
+  //   if (sensorData && sensorData.overall) {
+  //     setAqiData({
+  //       overall_value: Math.round(sensorData.overall.latest_hour_mean),
+  //       pm25_value: Math.round(sensorData.overall.latest_hour_mean / 2),
+  //       timestamp: sensorData.latest_date,
+  //     });
+
+  //     if (sensorData.locations['Gulberg']) {
+  //       setSelectedLocation('Gulberg, Lahore');
+  //     }
+  //   }
+  //   */
+  // }, [sensorData]);
 
   // Process sensor data when it loads
   useEffect(() => {
-    if (sensorData && sensorData.length > 0) {
-      // You could select a specific sensor or average all values
-      // For now, let's use Gulberg data as an example (has high value in your data)
-      const gulbergSensor = sensorData.find(
-        sensor => sensor.location === 'Gulberg',
-      );
-      if (gulbergSensor) {
-        setSelectedSensor(gulbergSensor);
+    if (sensorData && sensorData.overall) {
+      // Use the overall AQI value from the data
+      setAqiData({
+        overall_value: Math.round(sensorData.overall.latest_hour_mean),
+        pm25_value: Math.round(sensorData.overall.latest_hour_mean / 2),
+        timestamp: sensorData.latest_date,
+      });
+
+      // You can also select a location if needed
+      if (sensorData.locations['Gulberg']) {
         setSelectedLocation('Gulberg, Lahore');
-      } else {
-        // Fallback to first sensor if Gulberg not found
-        setSelectedSensor(sensorData[0]);
-        setSelectedLocation(`${sensorData[0].location}, Lahore, Punjab, PK`);
       }
     }
   }, [sensorData]);
 
-  // Format timestamp to "X hours ago"
+  // Format timestamp to show days, hours, or minutes ago
   const getLastUpdatedText = () => {
-    if (!selectedSensor) {
+    if (!aqiData || !aqiData.timestamp) {
       return 'Last Updated: --';
     }
 
-    const sensorDate = new Date(selectedSensor.timestamp);
+    const sensorDate = new Date(aqiData.timestamp);
     const now = new Date();
-    const diffHours = Math.round((now - sensorDate) / (1000 * 60 * 60));
+    const diffMs = now - sensorDate;
 
-    return 'Last Updated: 2 hours ago';
+    // Calculate time units
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    // Format based on the largest time unit
+    if (diffDays > 0) {
+      return `Last Updated: ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `Last Updated: ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+      return `Last Updated: ${diffMinutes} minute${
+        diffMinutes !== 1 ? 's' : ''
+      } ago`;
+    } else {
+      return 'Last Updated: Just now';
+    }
   };
 
   // Get AQI category
   const getAQIDetails = () => {
-    if (!selectedSensor) {
-      return {text: '--', color: '#FFDA75'};
+    if (!aqiData) {
+      return {
+        text: '--',
+        color: '#FFDA75',
+        gradientColors: ['#FFFFFF', '#F0C09D', '#F8D7BE'],
+      };
     }
-    return getAQICategory(selectedSensor.sensor_value);
+    return getAQICategory(aqiData.overall_value);
   };
 
   const aqiCategory = getAQIDetails();
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Gradient Background */}
+      {/* Dynamic Gradient Background based on AQI category */}
       <LinearGradient
-        colors={['#FFFFFF', '#F0C09D', '#F8D7BE']}
+        colors={aqiCategory.gradientColors}
         style={styles.gradientBackground}
         locations={[0.0, 0.5, 0.8]}
       />
@@ -96,10 +172,6 @@ const AQIDashboard = () => {
       <View style={styles.content}>
         {/* AQI Title and Location */}
         <View style={styles.titleContainer}>
-          {/* <Image
-            source={require('../../assets/icons/aqi.png')}
-            style={styles.aqiIcon}
-          /> */}
           <Text style={styles.title}>AQI Level</Text>
         </View>
 
@@ -116,13 +188,31 @@ const AQIDashboard = () => {
               ]}>
               <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
-            <Text style={styles.aqiNumber}>
-              {selectedSensor ? Math.round(selectedSensor.sensor_value) : '--'}
+            <Text
+              style={[
+                styles.aqiNumber,
+                // Optionally adjust text color to match category
+                {
+                  color:
+                    aqiCategory.color === '#A5D46A'
+                      ? '#568B35'
+                      : aqiCategory.color === '#FFDA75'
+                      ? '#B38F1D'
+                      : aqiCategory.color === '#F5A05A'
+                      ? '#A85714'
+                      : aqiCategory.color === '#EB6B6B'
+                      ? '#8B2323'
+                      : aqiCategory.color === '#B085C9'
+                      ? '#69397A'
+                      : '#8B1A1A',
+                },
+              ]}>
+              {aqiData ? aqiData.overall_value : '--'}
             </Text>
           </View>
         </View>
 
-        {/* PM2.5 and AQI Scale Section */}
+        {/* Rest of the component remains the same */}
         <View style={styles.scaleSection}>
           <View style={styles.aqiScaleContainer}>
             <View style={styles.scaleContainer}>
@@ -181,9 +271,7 @@ const AQIDashboard = () => {
               <Text style={styles.pmText}>
                 PM2.5:{' '}
                 <Text style={styles.pmValue}>
-                  {selectedSensor
-                    ? Math.round(selectedSensor.sensor_value / 2)
-                    : '--'}
+                  {aqiData ? aqiData.pm25_value : '--'}
                 </Text>{' '}
                 μg/m³
               </Text>
@@ -199,7 +287,26 @@ const AQIDashboard = () => {
 
         {/* Weather Card */}
         <View style={styles.weatherCardWrapper}>
-          <View style={styles.weatherCard}>
+          <View
+            style={[
+              styles.weatherCard,
+              // Optionally adjust weather card background to match category
+              {
+                backgroundColor: `rgba(${
+                  aqiCategory.color === '#A5D46A'
+                    ? '230, 240, 220'
+                    : aqiCategory.color === '#FFDA75'
+                    ? '240, 235, 220'
+                    : aqiCategory.color === '#F5A05A'
+                    ? '240, 230, 220'
+                    : aqiCategory.color === '#EB6B6B'
+                    ? '240, 220, 220'
+                    : aqiCategory.color === '#B085C9'
+                    ? '235, 220, 240'
+                    : '240, 215, 215'
+                }, 0.15)`,
+              },
+            ]}>
             <View style={styles.weatherTopSection}>
               <Text style={styles.temperatureText}>17°C</Text>
               <Text style={styles.weatherCondition}>Weather</Text>
@@ -250,6 +357,7 @@ const AQIDashboard = () => {
   );
 };
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,

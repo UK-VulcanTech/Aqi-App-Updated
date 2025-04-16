@@ -364,45 +364,6 @@ const HealthAdvisory = () => {
                     <Text style={styles.emptySpace}>{''}</Text>
                     <Text style={styles.redText}>Lahore</Text>
                   </Animated.Text>
-
-                  <View>
-                    <View style={styles.cigaretteContainer}>
-                      <View style={styles.cigaretteTextContainer}>
-                        <Text style={styles.cigaretteText}>
-                          <Text style={styles.redNumberText}>
-                            {cigarettesPerDay}{' '}
-                          </Text>
-                          Cigarettes per day
-                        </Text>
-                        <Image
-                          source={require('../../assets/icons/cross.png')}
-                          style={styles.crossIcon}
-                        />
-                      </View>
-                    </View>
-
-                    <Animated.View
-                      style={[
-                        styles.animationContainer,
-                        {
-                          opacity: fadeAnim,
-                          transform: [{translateX: slideAnim}],
-                        },
-                      ]}>
-                      <Image
-                        source={require('../../assets/images/SmokingGIF.gif')}
-                        style={styles.smokingGif}
-                      />
-                    </Animated.View>
-
-                    <Animated.Text
-                      style={[styles.quoteText, {opacity: fadeAnim}]}>
-                      "Inhaling the air here is equivalent to smoking{' '}
-                      {cigarettesPerDay} cigarette
-                      {cigarettesPerDay !== '01' ? 's' : ''} daily in terms of
-                      health impact."
-                    </Animated.Text>
-                  </View>
                 </View>
               </ImageBackground>
             </View>

@@ -873,7 +873,6 @@ showCurrentLocation();
     // Try to parse as JSON
     try {
       const data = JSON.parse(event.nativeEvent.data);
-
       // Handle marker clicks from search
       if (data.type === 'markerClick') {
         const markerData = data.data;
@@ -891,6 +890,7 @@ showCurrentLocation();
           type: markerData.description,
           status: markerData.status || 'Location Info',
           color: markerData.color || null, // Store color for styling the card
+          timestamp: markerData.timestamp || null, // Store the timestamp for display
         });
         setShowPollutionCard(true);
       }
@@ -931,6 +931,7 @@ showCurrentLocation();
           type: markerData.markerType,
           status: status,
           color: color,
+          timestamp: markerData.timestamp || null, // Include timestamp if available
         });
         setShowPollutionCard(true);
       }
@@ -1139,7 +1140,7 @@ showCurrentLocation();
         marker.on('click', function(e) {
           debug("Sensor marker clicked: " + index);
           
-          // FIXED: Send comprehensive data including location and color
+          // FIXED: Send comprehensive data including location, color and timestamp
           window.ReactNativeWebView.postMessage(JSON.stringify({
             type: 'markerClick',
             data: {
@@ -1150,7 +1151,8 @@ showCurrentLocation();
               value: sensor.value.toString(),
               status: statusText,
               source: 'Sensor Data',
-              color: bgColor
+              color: bgColor,
+              timestamp: sensor.timestamp
             }
           }));
         });
@@ -1344,7 +1346,7 @@ showCurrentLocation();
             <Text style={styles.removeLayerButtonText}>Remove Layer</Text>
           </TouchableOpacity>
         )}
-        {/* FIXED: Pollution Info Card - Now uses marker color for styling */}
+        {/* FIXED: Pollution Info Card - Now uses marker color for styling and includes timestamp */}
         {showPollutionCard && selectedMarkerData && (
           <View
             style={{
@@ -1399,6 +1401,13 @@ showCurrentLocation();
                   {selectedMarkerData.location}
                 </Text>
               </View>
+
+              {/* Add timestamp display */}
+              {selectedMarkerData.timestamp && (
+                <Text style={{color: '#aaaaaa', fontSize: 12, marginTop: 4}}>
+                  Last update: {selectedMarkerData.timestamp}
+                </Text>
+              )}
 
               <View
                 style={{
@@ -1760,7 +1769,6 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
   },
-  // MODIFIED: Added styling to make A
   // MODIFIED: Added styling to make AQI indicator look clickable
   aqiIndicator: {
     position: 'absolute',

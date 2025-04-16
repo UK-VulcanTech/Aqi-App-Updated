@@ -29,6 +29,15 @@ const sensorServices = {
             timeout: 1000,
         });
     },
+
+    // Get Latest PM2.5 Values
+    getLatestSensorMeanValues: () => {
+        console.log(`Making API request to: ${BASE_URL}/sensor-readings/latest-sensor-means`);
+        return axios.get(`${BASE_URL}/sensor-readings/latest-sensor-means`, {
+            timeout: 1000,
+        });
+    },
+
     getHealthAdvisory: () => {
         console.log(`Making API request to: ${BASE_URL}/health-advisory`);
         return axios.get(`${BASE_URL}/sensor-readings/latest-aqi-means`, {

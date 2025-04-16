@@ -1436,7 +1436,7 @@ showCurrentLocation();
                     textShadowOffset: {width: 1, height: 1},
                     textShadowRadius: 2,
                   }}>
-                  {selectedMarkerData.value}
+                  {Math.round(parseFloat(selectedMarkerData.value))}
                 </Text>
 
                 <View

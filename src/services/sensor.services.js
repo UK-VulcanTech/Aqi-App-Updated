@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Use exactly this URL since you confirmed data is coming from here
-const BASE_URL = 'https://cf46-206-42-117-63.ngrok-free.app';
+const BASE_URL = 'https://api.innovateitsolutions.co.uk';
 const sensorServices = {
     getAllSensors: () => {
         console.log(`Making API request to: ${BASE_URL}/sensor-readings`);

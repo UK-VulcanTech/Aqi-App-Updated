@@ -14,48 +14,84 @@ import {
   useGetLatestMeanSensorValues,
 } from '../../services/sensor.hooks';
 
-// Function to get AQI category based on value
+// Define AQI color constants
+const AQI_COLORS = {
+  GOOD: '#00A652',
+  SATISFACTORY: '#A3C853',
+  MODERATE: '#FFF200',
+  SENSITIVE: '#F7941D',
+  UNHEALTHY: '#EF4444',
+  VERY_UNHEALTHY: '#9333EA',
+  HAZARDOUS: '#FF3333',
+};
+
+// Function to get AQI category based on value with consistent colors
 const getAQICategory = value => {
   if (value <= 50) {
     return {
       text: 'Good',
-      color: '#A5D46A',
-      gradientColors: ['#FFFFFF', '#E8F5D8', '#F2F9E8'],
+      color: AQI_COLORS.GOOD,
+      gradientColors: ['#FFFFFF', '#E8F5E8', '#F2F9F2'],
     };
   }
   if (value <= 100) {
     return {
-      text: 'Moderate',
-      color: '#FFDA75',
-      gradientColors: ['#FFFFFF', '#FFF6D8', '#FFFAEB'],
+      text: 'Satisfactory',
+      color: AQI_COLORS.SATISFACTORY,
+      gradientColors: ['#FFFFFF', '#F1F7E8', '#F7FAF2'],
     };
   }
   if (value <= 150) {
     return {
-      text: 'Poor',
-      color: '#F5A05A',
-      gradientColors: ['#FFFFFF', '#FBE8D8', '#FDEFDE'],
+      text: 'Moderate',
+      color: AQI_COLORS.MODERATE,
+      gradientColors: ['#FFFFFF', '#FFFDE8', '#FFFEF2'],
     };
   }
   if (value <= 200) {
     return {
-      text: 'Unhealthy',
-      color: '#EB6B6B',
-      gradientColors: ['#FFFFFF', '#F9D8D8', '#FCE9E9'],
+      text: 'Unhealthy for sensitive group',
+      color: AQI_COLORS.SENSITIVE,
+      gradientColors: ['#FFFFFF', '#FBF0E8', '#FCF5F0'],
     };
   }
-  if (value <= 250) {
+  if (value <= 300) {
+    return {
+      text: 'Unhealthy',
+      color: AQI_COLORS.UNHEALTHY,
+      gradientColors: ['#FFFFFF', '#F9E8E8', '#FCF2F2'],
+    };
+  }
+  if (value <= 400) {
     return {
       text: 'Very Unhealthy',
-      color: '#B085C9',
-      gradientColors: ['#FFFFFF', '#EBE0F2', '#F4ECF7'],
+      color: AQI_COLORS.VERY_UNHEALTHY,
+      gradientColors: ['#FFFFFF', '#EFE8F5', '#F5F2F9'],
     };
   }
   return {
     text: 'Hazardous',
-    color: '#CF3030',
-    gradientColors: ['#FFFFFF', '#F5D8D8', '#F9E6E6'],
+    color: AQI_COLORS.HAZARDOUS,
+    gradientColors: ['#FFFFFF', '#F5E0E0', '#F9EBEB'],
   };
+};
+
+// Custom component for PM2.5 with subscript
+const PM25Text = () => {
+  return (
+    <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
+      <Text style={{fontSize: 13, color: '#444'}}>PM</Text>
+      <Text
+        style={{
+          fontSize: 10,
+          color: '#444',
+          lineHeight: 10,
+          marginBottom: 1.5,
+        }}>
+        2.5
+      </Text>
+    </View>
+  );
 };
 
 const AQIDashboard = () => {
@@ -146,8 +182,8 @@ const AQIDashboard = () => {
     if (!aqiData) {
       return {
         text: '--',
-        color: '#FFDA75',
-        gradientColors: ['#FFFFFF', '#F0C09D', '#F8D7BE'],
+        color: AQI_COLORS.SATISFACTORY, // Default to Satisfactory color
+        gradientColors: ['#FFFFFF', '#F1F7E8', '#F7FAF2'],
       };
     }
     return getAQICategory(aqiData.overall_value);
@@ -195,106 +231,101 @@ const AQIDashboard = () => {
               ]}>
               <Text style={styles.moderateText}>{aqiCategory.text}</Text>
             </View>
-            <Text
-              style={[
-                styles.aqiNumber,
-                // Optionally adjust text color to match category
-                {
-                  color:
-                    aqiCategory.color === '#A5D46A'
-                      ? '#568B35'
-                      : aqiCategory.color === '#FFDA75'
-                      ? '#B38F1D'
-                      : aqiCategory.color === '#F5A05A'
-                      ? '#A85714'
-                      : aqiCategory.color === '#EB6B6B'
-                      ? '#8B2323'
-                      : aqiCategory.color === '#B085C9'
-                      ? '#69397A'
-                      : '#8B1A1A',
-                },
-              ]}>
-              {aqiData ? aqiData.overall_value : '--'}
-            </Text>
+            <View style={styles.aqiValueContainer}>
+              <Text
+                style={[
+                  styles.aqiNumber,
+                  {color: aqiCategory.color}, // Use the same color as the category box
+                ]}>
+                {aqiData ? aqiData.overall_value : '--'}
+              </Text>
+              {/* PM2.5 text with subscript below AQI value */}
+              <View style={styles.pmContainer}>
+                <PM25Text />
+                <Text style={styles.pmText}>: </Text>
+                <Text style={styles.pmValue}>
+                  {pm25Data ? Math.round(pm25Data.value) : '--'}
+                </Text>
+                <Text style={styles.pmText}> μg/m³</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Rest of the component remains the same */}
+        {/* AQI Scale Section */}
         <View style={styles.scaleSection}>
           <View style={styles.aqiScaleContainer}>
             <View style={styles.scaleContainer}>
-              <View style={styles.pointerContainer}>
-                <View style={styles.pointer} />
-              </View>
-
               <View style={styles.levelsContainer}>
                 <View style={styles.scaleRow}>
                   <View style={[styles.colorBar, styles.goodColor]}>
-                    <Text style={styles.colorBarNumber}>50</Text>
+                    <Text style={styles.colorBarNumber}>0-50</Text>
                   </View>
                   <Text style={styles.scaleText}>Good</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
+                  <View style={[styles.colorBar, styles.satisfactoryColor]}>
+                    <Text style={styles.colorBarNumber}>51-100</Text>
+                  </View>
+                  <Text style={styles.scaleText}>Satisfactory</Text>
+                </View>
+
+                <View style={styles.scaleRow}>
                   <View style={[styles.colorBar, styles.moderateColor]}>
-                    <Text style={styles.colorBarNumber}>100</Text>
+                    <Text style={styles.colorBarNumber}>101-150</Text>
                   </View>
                   <Text style={styles.scaleText}>Moderate</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
-                  <View style={[styles.colorBar, styles.poorColor]}>
-                    <Text style={styles.colorBarNumber}>150</Text>
+                  <View style={[styles.colorBar, styles.sensitiveColor]}>
+                    <Text style={styles.colorBarNumber}>151-200</Text>
                   </View>
-                  <Text style={styles.scaleText}>Poor</Text>
+                  <Text style={styles.scaleText}>
+                    Unhealthy for sensitive group
+                  </Text>
                 </View>
 
                 <View style={styles.scaleRow}>
                   <View style={[styles.colorBar, styles.unhealthyColor]}>
-                    <Text style={styles.colorBarNumber}>200</Text>
+                    <Text style={styles.colorBarNumber}>201-300</Text>
                   </View>
                   <Text style={styles.scaleText}>Unhealthy</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
                   <View style={[styles.colorBar, styles.veryUnhealthyColor]}>
-                    <Text style={styles.colorBarNumber}>250</Text>
+                    <Text style={styles.colorBarNumber}>301-400</Text>
                   </View>
                   <Text style={styles.scaleText}>Very Unhealthy</Text>
                 </View>
 
                 <View style={styles.scaleRow}>
                   <View style={[styles.colorBar, styles.hazardousColor]}>
-                    <Text style={styles.colorBarNumber}>300+</Text>
+                    <Text style={styles.colorBarNumber}>401-500</Text>
                   </View>
                   <Text style={styles.scaleText}>Hazardous</Text>
                 </View>
               </View>
             </View>
 
-            {/* PM2.5 text and Person with mask - right side */}
+            {/* Person with mask - right side */}
             <View style={styles.personContainer}>
-              {/* PM2.5 text above the person image - aligned to right */}
-              <Text style={styles.pmText}>
-                PM2.5:{' '}
-                <Text style={styles.pmValue}>
-                  {pm25Data ? Math.round(pm25Data.value) : '--'}
-                </Text>{' '}
-                μg/m³
-              </Text>
-
               <Image
                 source={
                   aqiCategory.text === 'Good'
                     ? require('../../assets/images/Good.png')
-                    : aqiCategory.text === 'Moderate'
+                    : aqiCategory.text === 'Satisfactory'
                     ? require('../../assets/images/Moderate.png')
-                    : aqiCategory.text === 'Poor'
+                    : aqiCategory.text === 'Moderate'
                     ? require('../../assets/images/Poor.png')
-                    : aqiCategory.text === 'Unhealthy'
+                    : aqiCategory.text === 'Unhealthy for sensitive group'
                     ? require('../../assets/images/Unhealthy.png')
-                    : aqiCategory.text === 'Very Unhealthy'
+                    : aqiCategory.text === 'Unhealthy'
                     ? require('../../assets/images/VeryUnhealthy.png')
+                    : aqiCategory.text === 'Very Unhealthy'
+                    ? require('../../assets/images/Hazardous.png')
                     : require('../../assets/images/Hazardous.png')
                 }
                 style={styles.personImage}
@@ -309,20 +340,22 @@ const AQIDashboard = () => {
           <View
             style={[
               styles.weatherCard,
-              // Optionally adjust weather card background to match category
+              // Adjust weather card background to match category
               {
                 backgroundColor: `rgba(${
-                  aqiCategory.color === '#A5D46A'
-                    ? '230, 240, 220'
-                    : aqiCategory.color === '#FFDA75'
-                    ? '240, 235, 220'
-                    : aqiCategory.color === '#F5A05A'
-                    ? '240, 230, 220'
-                    : aqiCategory.color === '#EB6B6B'
-                    ? '240, 220, 220'
-                    : aqiCategory.color === '#B085C9'
-                    ? '235, 220, 240'
-                    : '240, 215, 215'
+                  aqiCategory.color === AQI_COLORS.GOOD
+                    ? '230, 240, 230'
+                    : aqiCategory.color === AQI_COLORS.SATISFACTORY
+                    ? '240, 245, 230'
+                    : aqiCategory.color === AQI_COLORS.MODERATE
+                    ? '245, 245, 230'
+                    : aqiCategory.color === AQI_COLORS.SENSITIVE
+                    ? '245, 235, 225'
+                    : aqiCategory.color === AQI_COLORS.UNHEALTHY
+                    ? '245, 225, 225'
+                    : aqiCategory.color === AQI_COLORS.VERY_UNHEALTHY
+                    ? '235, 225, 240'
+                    : '240, 220, 220'
                 }, 0.15)`,
               },
             ]}>
@@ -381,6 +414,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#FFFFFF', // Add a fallback background color
   },
   gradientBackground: {
     position: 'absolute',
@@ -388,6 +422,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: -1, // Make sure gradient is behind content
   },
   content: {
     flex: 1,
@@ -398,11 +433,6 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  aqiIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
   },
   title: {
     fontSize: 24,
@@ -427,10 +457,13 @@ const styles = StyleSheet.create({
   aqiDisplayContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // justifyContent: 's', // Space between category box and number
+  },
+  aqiValueContainer: {
+    flexDirection: 'column',
+    marginLeft: 50,
+    alignItems: 'flex-end',
   },
   moderateBox: {
-    backgroundColor: '#B75E5E',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 3,
@@ -443,39 +476,33 @@ const styles = StyleSheet.create({
   aqiNumber: {
     fontSize: 70,
     fontWeight: 'bold',
-    color: '#8B2323',
     textAlign: 'right',
-    marginLeft: 50, // Reduced gap to a more reasonable spacing
+  },
+  pmContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  pmText: {
+    fontSize: 13,
+    color: '#444',
+  },
+  pmValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#444',
   },
   scaleSection: {
     marginTop: 10,
     marginBottom: 15,
   },
-  pmText: {
-    fontSize: 13,
-    color: '#444',
-    marginBottom: 20,
-    textAlign: 'right', // Align text to right
-  },
-  pmValue: {
-    fontWeight: 'bold',
-  },
   aqiScaleContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between', // Creates space between scale and person
+    justifyContent: 'space-between',
   },
   scaleContainer: {
-    flexDirection: 'row',
-    width: 160, // Reduce width to create more space for PM2.5
-  },
-  pointerContainer: {
-    width: 5,
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  pointer: {
-    // Pointer styles if needed
+    width: 200,
   },
   levelsContainer: {
     flex: 1,
@@ -484,45 +511,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 30,
+    marginBottom: 2,
   },
   colorBar: {
-    width: 50,
+    width: 60,
     height: 30,
     marginRight: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   colorBarNumber: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#333',
   },
   goodColor: {
-    backgroundColor: '#A5D46A',
+    backgroundColor: AQI_COLORS.GOOD,
+  },
+  satisfactoryColor: {
+    backgroundColor: AQI_COLORS.SATISFACTORY,
   },
   moderateColor: {
-    backgroundColor: '#FFDA75',
+    backgroundColor: AQI_COLORS.MODERATE,
   },
-  poorColor: {
-    backgroundColor: '#F5A05A',
+  sensitiveColor: {
+    backgroundColor: AQI_COLORS.SENSITIVE,
   },
   unhealthyColor: {
-    backgroundColor: '#EB6B6B',
+    backgroundColor: AQI_COLORS.UNHEALTHY,
   },
   veryUnhealthyColor: {
-    backgroundColor: '#B085C9',
+    backgroundColor: AQI_COLORS.VERY_UNHEALTHY,
   },
   hazardousColor: {
-    backgroundColor: '#CF3030',
+    backgroundColor: AQI_COLORS.HAZARDOUS,
   },
   scaleText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     marginLeft: 5,
+    color: '#333',
+    ellipsizeMode: 'tail',
+    numberOfLines: 1,
   },
   personContainer: {
-    alignItems: 'flex-end', // Align content to right
-    marginLeft: 20, // Add space between scale and person container
+    alignItems: 'flex-end',
+    marginLeft: 10,
+    marginTop: 120, // Positioned to keep the character lower down
   },
   personImage: {
     width: 120,
@@ -541,7 +576,7 @@ const styles = StyleSheet.create({
   weatherCard: {
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'rgba(240, 220, 220, 0.15)', // Changed from 0.25 to 0.15
+    backgroundColor: 'rgba(240, 220, 220, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },

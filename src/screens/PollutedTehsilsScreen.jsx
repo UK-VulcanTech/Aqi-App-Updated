@@ -128,8 +128,8 @@ const PollutedTehsilsScreen = () => {
         <View style={styles.content}>
           {/* Heading Section */}
           <View style={styles.headingContainer}>
-            <H1>Most Polluted Tehsils</H1>
-            <Text style={styles.locationText}>Lahore, Pakistan • 2025</Text>
+            <H1>Lahore Air Quality Rankings</H1>
+            <Text style={styles.locationText}>Lahore, Pakistan</Text>
             <Text style={styles.headingSubtitle}>
               {/* Real-time air quality data from all tehsils */}
             </Text>
@@ -137,7 +137,7 @@ const PollutedTehsilsScreen = () => {
 
           {/* Table Header Section */}
           <View style={styles.tableHeaderSection}>
-            <Text style={styles.tableTitle}>Tehsil Rankings</Text>
+            <Text style={styles.tableTitle}>Rankings</Text>
 
             {/* Pollutant Selector Dropdown */}
             <View style={styles.dropdownContainer}>

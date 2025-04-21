@@ -13,6 +13,7 @@ import {
 import maryam from '../assets/images/maryam.jpg';
 import raja from '../assets/images/raja-epd.jpg';
 import imran from '../assets/images/imran.png';
+import maryamA from '../assets/images/maryam-a.jpeg';
 import backIcon from '../assets/icons/back.png'; // Import your back icon image
 
 // Get device width for responsive sizing
@@ -26,7 +27,7 @@ const BlogsScreen = ({navigation}) => {
     {
       id: 1,
       image: maryam,
-      alt: 'CM Punjab discussing air quality solutions',
+      alt: 'CM Punjab discussing air quality monitoring',
       title: 'Chief Minister Punjab',
       subtitle: 'Ms. Maryam Nawaz',
       description:
@@ -34,6 +35,15 @@ const BlogsScreen = ({navigation}) => {
     },
     {
       id: 2,
+      image: maryamA,
+      alt: 'Senior Minsiter Punjab discussing air quality monitoring',
+      title: 'Senior Minister Punjab EPCCD',
+      subtitle: 'Ms. Maryam Aurangzeb',
+      description:
+        "A complete solution for air quality monitoring, data analysis, and fresh air solutions in workplaces prioritizing employee's health and productivity. Lorem ipsum dolor sit amet consectetur adipisicing elit.",
+    },
+    {
+      id: 3,
       image: raja,
       alt: 'Secratary EPCCD discussing air quality monitoring',
       title: 'Secratary EPCCD',
@@ -42,7 +52,7 @@ const BlogsScreen = ({navigation}) => {
         "A complete solution for air quality monitoring, data analysis, and fresh air solutions in workplaces prioritizing employee's health and productivity.",
     },
     {
-      id: 3,
+      id: 4,
       image: imran,
       alt: 'DG EPA discussing air quality monitoring',
       title: 'DG EPA',

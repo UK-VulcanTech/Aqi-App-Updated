@@ -4,7 +4,6 @@ import {
   Text,
   ImageBackground,
   StyleSheet,
-  Image,
   Animated,
   Dimensions,
   TouchableOpacity,
@@ -12,56 +11,107 @@ import {
 } from 'react-native';
 import {useGetLatestMeanAQIValues} from '../../services/sensor.hooks';
 
-// Health advisories data
-const healthAdvisories = [
-  {
-    id: 1,
-    aqi_content: '0-50',
-    content:
-      'In terms of performance assessment, exposure to this air results in Good to Moderate.',
-  },
-  {
-    id: 8,
-    aqi_content: 'aqi_content',
-    content: 'content',
-  },
-  {
-    id: 7,
-    aqi_content: '51-100',
-    content:
-      'In terms of performance assessment, exposure to this air results in Good to Moderate.',
-  },
-  {
-    id: 2,
-    aqi_content: '101-150',
-    content:
-      ' Keep a regular check on your health vitals e.g. oxygen levels, blood pressure etc.  In case of respiratory problem etc. consult your doctor/family physician.  Eat healthy diet to naturally boost your immunity.  Avoid smoking or any related activity.  Reduce prolonged or heavy outdoor exertion.  Make the emergency equipment such as nebulizers available at home as first aid measure.',
-  },
-  {
-    id: 3,
-    aqi_content: '151-200',
-    content:
-      ' Check AQI level before outdoor workout/ exercise.  Wear face masks during outdoor activities.  Restrict children from playing outdoors.  Avoid unnecessary traveling, residing, and visits in the areas having unhealthy AQI.  Elderly people should minimize outdoor exposure.  Consider doors and windows closed to reduce outdoor air intake.  Avoid prolonged or heavy outdoor exertion.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
-  },
-  {
-    id: 4,
-    aqi_content: '201-250',
-    content:
-      ' Regularly check AQI and health vitals.  Spend maximum time at home.  Use N95 mask when going outside is unavoidable.  Restrict prolonged or heavy outdoor exertion.  Bar children from unnecessary outdoor visits/activities.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
-  },
-  {
-    id: 5,
-    aqi_content: '251-300',
-    content:
-      ' Stay indoors.  Use N95 or equivalent mask and pollution protective glasses/ goggles when going outside is unavoidable.  Regularly check AQI and health vitals.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
-  },
-  {
-    id: 6,
-    aqi_content: '300',
-    content:
-      ' Stay at home.  Use air purifiers or equivalent.  Frequently check health vitals.',
-  },
-];
+// Health advisories data in both English and Urdu
+const healthAdvisoriesData = {
+  english: [
+    {
+      id: 1,
+      aqi_content: '0-50',
+      content:
+        'Air quality is Good to Satisfactory. (in terms of health advisory).',
+    },
+    {
+      id: 7,
+      aqi_content: '51-100',
+      content:
+        'Air quality is Good to Satisfactory. (in terms of health advisory).',
+    },
+    {
+      id: 2,
+      aqi_content: '101-150',
+      content:
+        'General Public- Consider AQI to plan outdoor activities.  Vulnerable Groups- Keep a regular check on your health vitals e.g. oxygen levels, blood pressure etc.  In case of respiratory problem etc., consult your doctor/family physician.  Eat healthy diet to naturally boost your immunity.  Avoid smoking or any related activity.  Reduce prolonged or heavy outdoor exertion.  Make the emergency equipment such as nebulizers available at home as first aid measure.',
+    },
+    {
+      id: 3,
+      aqi_content: '151-200',
+      content:
+        'General Public- Reduce prolonged or heavy outdoor exertion.  Vulnerable Groups- Check AQI level before outdoor workout/exercise.  Wear face masks during outdoor activities.  Restrict children from playing outdoors.  Avoid unnecessary traveling, residing, and visits in the areas having unhealthy AQI.  Elderly people should minimize outdoor exposure.  Consider doors and windows closed to reduce outdoor air intake.  Avoid prolonged or heavy outdoor exertion.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+    },
+    {
+      id: 4,
+      aqi_content: '201-300',
+      content:
+        'General Public- Wear face masks during outdoor activities.  Reduce prolonged or heavy outdoor exertion.  Vulnerable Groups- Regularly check AQI and health vitals.  Spend maximum time at home.  Use N95 mask when going outside is unavoidable.  Restrict prolonged or heavy outdoor exertion.  Bar children from unnecessary outdoor visits/activities.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+    },
+    {
+      id: 5,
+      aqi_content: '301-400',
+      content:
+        'General Public- Limit outdoor activities on days with poor air quality.  Limit outdoor exercise activities and shift to indoor gyms or home-based workouts to protect your health.  Vulnerable Groups- Stay indoor.  Use N95 or equivalent mask and pollution protective glasses/goggles when going outside is unavoidable.  Regularly check AQI and health vitals.  Patients of COPD & CVD should select the face masks in consultation with their physician.',
+    },
+    {
+      id: 6,
+      aqi_content: '401-500',
+      content:
+        'General Public- Stay indoor.  Use N95 or equivalent mask and pollution protective glasses/goggles when going outside is unavoidable.  Regularly check AQI and health vitals.  Vulnerable Groups- Stay at home.  Use air purifiers or equivalent.  Frequently check health vitals.',
+    },
+    {
+      id: 8,
+      aqi_content: 'aqi_content',
+      content: 'content',
+    },
+  ],
+  urdu: [
+    {
+      id: 1,
+      aqi_content: '0-50',
+      content:
+        'ہوا کا معیار اچھا سے تسلی بخش ہے۔ اس سطح پر کوئی خاص صحت کی ہدایات نہیں ہیں۔',
+    },
+    {
+      id: 7,
+      aqi_content: '51-100',
+      content:
+        'ہوا کا معیار اچھا سے تسلی بخش ہے۔ اس سطح پر کوئی خاص صحت کی ہدایات نہیں ہیں۔',
+    },
+    {
+      id: 2,
+      aqi_content: '101-150',
+      content:
+        ' کمزور افراداپنی صحت کا باقاعدہ معائنہ کرتے رہیں جیسے خون میں آکسیجن کی سطح اور بلڈ پریشر و غیره  سانس کے مسائل کی صورت میں اپنے ڈاکٹر / فیملی فزیشن سے رجوع کریں۔  قوت مدافعت کو بڑھانے کے لیے صحت بخش غذا کھائیں.  تمباکو نوشی یا ایسی کسی بھی سرگرمی سے پرہیز کریں۔  گھر سے باہر طویل یا بھاری مشقت کو محدود کریں۔  ہنگامی آلات جیسے کہ نیبولائزر کو ابتدائی طبی امداد کے لیے گھر پر دستیاب رکھیں۔عام لوگائیر کوالٹی انڈیکس کو مد نظر رکھ کر بی بیرونی سرگرمیوں کی منصوبہ بندی کریں',
+    },
+    {
+      id: 3,
+      aqi_content: '151-200',
+      content:
+        ' کمزور افرادباہر ورزش سے پہلے ائیر کوالٹی انڈیکس دیکھ لیں۔  بیرونی سرگرمیوں کے دوران چہرے پر ماسک پہنیں۔  بچوں کو باہر کھیلنے سے روکیں۔  غير صحت مند ائیر کوالٹی والے علاقوں میں غیر ضروری سفر، رہائش اور دوروں سے گریز کریں۔  بوڑھے افراد باہر نکلنے سے پرہیز کریں۔  بیرونی ہوا کے اندراج کو کم کرنے کے لیے دروازے اور کھڑکیوں کو بند رکھیں۔  گھر سے باہر طویل یا بھاری مشقت سے پرہیز کریں۔  COPD اور CVD کے مریض اپنے معالج کے مشورے سے چہرے کے ماسک کا انتخاب کریں۔  عام لوگ گھر سے باہر طویل یا بهاری بیرونی مشقت کو محدود کریں۔',
+    },
+    {
+      id: 4,
+      aqi_content: '201-250',
+      content:
+        ' کمزور افرادباقاعدگی سے ائیر کوالٹی انڈیکساور صحت کا باقاعدگی سے معائنہ کریں۔  زیادہ سے زیادہ وقت گھر پر گزاریں۔  جب باہر جانا ناگزیر ہو تو N95 ماسک کا استعمال کریں۔  طویل یا بهاری بیرونی مشقت کو محدود رکھیں۔  بچوں کو غیر ضروری طور پر باہر جانے اور بیرونی سرگرمیوں سے روکیں۔  COPD اور CVD کے مریض اپنے معالج کے مشورے سے ماسک کا انتخاب کریں  عام لوگبیرونی سرگرمیوں کے دوران چہرے پر ماسک پہنیں۔  گھر سے باہر طویل یا بھاری مشقت کو محدود کریں۔',
+    },
+    {
+      id: 5,
+      aqi_content: '251-300',
+      content:
+        ' کمزور افرادگهر کے اندر رہیں۔ جب باہر جانا ناگزیر ہو تو N95 یا اس کے مساوی ماسک اور آلودگی سے حفاظتی چشمے/گوگلز پہنیں۔ باقاعدگی سے ائیر کوالٹی انڈیکس اور صحت کا معائنہ کریں۔ COPD اور CVD کے مریض اپنے معالج کے مشورے سے چہرے کے ماسک کا انتخاب کریں۔',
+    },
+    {
+      id: 6,
+      aqi_content: '300',
+      content:
+        ' کمزور افرادگهر سے باہر نہ نکلیں۔  Air Purifier یا اس جیسے آلات کا استعمال کریں.  صحت کے اہم معاملات جیسے بلڈ پریشر ، آکسیجن لیول وغیرہ کا بار بار معائنہ کریں  عام لوگگهر سے باہر نہ نکلیں۔  باہر نکلتے وقت N95 یا اس کے مساوی ماسک اور آلودگی سے بچاؤ کے کے لیے لیے حفاظتی چشمے کا استعمال لازمی طور پر کریں۔  باقاعدگی سے ائیر کوالٹی انڈیکس اور صحت کا معائنہ کرتے رہیں۔',
+    },
+    {
+      id: 8,
+      aqi_content: 'aqi_content',
+      content: 'مواد',
+    },
+  ],
+};
 
 const {width} = Dimensions.get('window');
 const cardWidth = width - 32; // Full width minus padding
@@ -69,28 +119,32 @@ const cardWidth = width - 32; // Full width minus padding
 // Function to get AQI category based on value
 const getAQICategory = value => {
   if (value <= 50) {
-    return {text: 'Good', color: '#A5D46A'};
+    return {text: 'Good', urduText: 'اچھا', color: '#A5D46A'};
   }
   if (value <= 100) {
-    return {text: 'Moderate', color: '#FFDA75'};
+    return {text: 'Moderate', urduText: 'معتدل', color: '#FFDA75'};
   }
   if (value <= 150) {
-    return {text: 'Poor', color: '#F5A05A'};
+    return {text: 'Poor', urduText: 'کمزور', color: '#F5A05A'};
   }
   if (value <= 200) {
-    return {text: 'Unhealthy', color: '#EB6B6B'};
+    return {text: 'Unhealthy', urduText: 'غیر صحت مند', color: '#EB6B6B'};
   }
   if (value <= 250) {
-    return {text: 'Very Unhealthy', color: '#B085C9'};
+    return {
+      text: 'Very Unhealthy',
+      urduText: 'بہت غیر صحت مند',
+      color: '#B085C9',
+    };
   }
-  return {text: 'Hazardous', color: '#CF3030'};
+  return {text: 'Hazardous', urduText: 'خطرناک', color: '#CF3030'};
 };
 
 const HealthAdvisory = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [language, setLanguage] = useState('english'); // 'english' or 'urdu'
   const scrollViewRef = useRef(null);
   const [aqiData, setAqiData] = useState(null);
-  const [cigarettesPerDay, setCigarettesPerDay] = useState('01');
   const [healthAdvice, setHealthAdvice] = useState([]);
 
   // Use the latest mean AQI values hook
@@ -103,7 +157,6 @@ const HealthAdvisory = () => {
   // Create animated values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
-  const textScrollAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Process sensor data when it loads
@@ -122,9 +175,13 @@ const HealthAdvisory = () => {
   useEffect(() => {
     if (aqiData) {
       const aqi = aqiData.overall_value;
+      const currentAdvisories =
+        language === 'english'
+          ? healthAdvisoriesData.english
+          : healthAdvisoriesData.urdu;
 
       // Find the appropriate advisory based on AQI value
-      const matchingAdvisory = healthAdvisories.find(advisory => {
+      const matchingAdvisory = currentAdvisories.find(advisory => {
         // Skip the item with "aqi_content": "aqi_content"
         if (advisory.aqi_content === 'aqi_content') {
           return false;
@@ -157,33 +214,13 @@ const HealthAdvisory = () => {
       } else {
         // If no matching advisory is found, use a simple default message
         setHealthAdvice([
-          'No specific health recommendations available for the current AQI level',
+          language === 'english'
+            ? 'No specific health recommendations available for the current AQI level'
+            : 'موجودہ AQI لیول کے لیے کوئی مخصوص صحت کی سفارشات دستیاب نہیں ہیں',
         ]);
       }
     }
-  }, [aqiData]);
-
-  // Calculate cigarettes per day based on AQI
-  useEffect(() => {
-    if (aqiData) {
-      const aqi = aqiData.overall_value;
-      let cigaretteEquivalent;
-
-      if (aqi <= 50) {
-        cigaretteEquivalent = '01';
-      } else if (aqi <= 100) {
-        cigaretteEquivalent = '02';
-      } else if (aqi <= 200) {
-        cigaretteEquivalent = '04';
-      } else if (aqi <= 300) {
-        cigaretteEquivalent = '06';
-      } else {
-        cigaretteEquivalent = '08';
-      }
-
-      setCigarettesPerDay(cigaretteEquivalent);
-    }
-  }, [aqiData]);
+  }, [aqiData, language]);
 
   useEffect(() => {
     // Create animation sequence
@@ -199,15 +236,6 @@ const HealthAdvisory = () => {
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Text scrolling animation
-    Animated.loop(
-      Animated.timing(textScrollAnim, {
-        toValue: -800, // Adjust based on text length
-        duration: 20000,
-        useNativeDriver: true,
-      }),
-    ).start();
 
     // Pulsing animation for bullets
     Animated.loop(
@@ -226,39 +254,57 @@ const HealthAdvisory = () => {
     ).start();
   }, []);
 
-  const handleScroll = event => {
-    const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / cardWidth);
-    setActiveIndex(index);
-  };
-
-  const scrollToCard = index => {
-    scrollViewRef.current?.scrollTo({
-      x: index * cardWidth,
-      animated: true,
-    });
-    setActiveIndex(index);
-  };
-
   // Get AQI category based on current AQI value
   const getAQIDetails = () => {
     if (!aqiData) {
-      return {text: 'Loading...', color: '#FFDA75'};
+      return {
+        text: language === 'english' ? 'Loading...' : 'لوڈ ہو رہا ہے...',
+        urduText: 'لوڈ ہو رہا ہے...',
+        color: '#FFDA75',
+      };
     }
     return getAQICategory(aqiData.overall_value);
   };
 
   const aqiCategory = getAQIDetails();
 
-  // Limit the number of displayed recommendations to avoid overflow
-  const displayHealthRecommendations =
-    healthAdvice.length > 0
-      ? healthAdvice.slice(0, 3) // Show only first 3 recommendations
-      : ['Loading health recommendations...'];
-
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Health Advisory</Text>
+      <Text style={styles.heading}>
+        {language === 'english' ? 'Health Advisory' : 'صحت کا مشورہ'}
+      </Text>
+
+      {/* Language Toggle Button */}
+      <View style={styles.languageToggleContainer}>
+        <TouchableOpacity
+          style={[
+            styles.languageTab,
+            language === 'english' && styles.activeLanguageTab,
+          ]}
+          onPress={() => setLanguage('english')}>
+          <Text
+            style={[
+              styles.languageTabText,
+              language === 'english' && styles.activeLanguageTabText,
+            ]}>
+            English
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.languageTab,
+            language === 'urdu' && styles.activeLanguageTab,
+          ]}
+          onPress={() => setLanguage('urdu')}>
+          <Text
+            style={[
+              styles.languageTabText,
+              language === 'urdu' && styles.activeLanguageTabText,
+            ]}>
+            اردو
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Health Alert card at the top */}
       <View style={styles.topCardContainer}>
@@ -271,195 +317,101 @@ const HealthAdvisory = () => {
               <View style={styles.alertHeaderContainer}>
                 <Animated.Text
                   style={[styles.alertTitleText, {opacity: fadeAnim}]}>
-                  <Text style={styles.redText}>HEALTH ALERT</Text>
+                  <Text style={styles.redText}>
+                    {language === 'english' ? 'HEALTH ALERT' : 'صحت کا انتباہ'}
+                  </Text>
                 </Animated.Text>
               </View>
 
-              <View style={styles.alertContentRow}>
-                <View style={styles.alertLeftColumn}>
-                  <Animated.View
+              <View style={styles.aqiCircleContainer}>
+                <Animated.View
+                  style={[
+                    styles.aqiCircle,
+                    {
+                      opacity: fadeAnim,
+                      transform: [{scale: pulseAnim}],
+                      borderColor: aqiCategory.color,
+                      backgroundColor: `${aqiCategory.color}20`,
+                    },
+                  ]}>
+                  <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
+                    {aqiData ? Math.round(aqiData.overall_value) : '--'}
+                  </Text>
+                  <Text
                     style={[
-                      styles.aqiCircle,
-                      {
-                        opacity: fadeAnim,
-                        transform: [{scale: pulseAnim}],
-                        borderColor: aqiCategory.color,
-                        backgroundColor: `${aqiCategory.color}20`,
-                      },
+                      styles.aqiLabel,
+                      aqiCategory.text === 'Hazardous' ? {fontSize: 10} : null,
                     ]}>
-                    <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
-                      {aqiData ? Math.round(aqiData.overall_value) : '--'}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.aqiLabel,
-                        aqiCategory.text === 'Hazardous'
-                          ? {fontSize: 10}
-                          : null,
-                      ]}>
-                      {aqiCategory.text}
-                    </Text>
-                  </Animated.View>
-                </View>
+                    {language === 'english'
+                      ? aqiCategory.text
+                      : aqiCategory.urduText}
+                  </Text>
+                </Animated.View>
+              </View>
 
-                <View style={styles.alertRightColumn}>
-                  <Animated.View style={[{opacity: fadeAnim}]}>
-                    <Text style={styles.alertHeading}>Current Air Quality</Text>
+              <View style={styles.healthAdviceContainer}>
+                <Animated.View style={[{opacity: fadeAnim}]}>
+                  <Text
+                    style={[
+                      styles.alertHeading,
+                      language === 'urdu' && styles.urduText,
+                    ]}>
+                    {language === 'english'
+                      ? 'Current Air Quality'
+                      : 'موجودہ ہوا کا معیار'}
+                  </Text>
+                  <ScrollView style={styles.adviceScrollView}>
                     {sensorsLoading ? (
-                      <Text style={styles.alertText}>
-                        Loading health recommendations...
+                      <Text
+                        style={[
+                          styles.alertText,
+                          language === 'urdu' && styles.urduText,
+                        ]}>
+                        {language === 'english'
+                          ? 'Loading health recommendations...'
+                          : 'صحت کی سفارشات لوڈ ہو رہی ہیں...'}
                       </Text>
                     ) : (
-                      displayHealthRecommendations.map(
-                        (recommendation, index) => (
-                          <View key={index} style={styles.miniBulletContainer}>
-                            <Text style={styles.miniBullet}>•</Text>
-                            <Text style={styles.alertText}>
-                              {recommendation}
-                            </Text>
-                          </View>
-                        ),
-                      )
+                      healthAdvice.map((recommendation, index) => (
+                        <View
+                          key={index}
+                          style={[
+                            styles.bulletContainer,
+                            language === 'urdu' && styles.urduBulletContainer,
+                          ]}>
+                          {language === 'english' ? (
+                            <>
+                              <Text style={styles.bullet}>•</Text>
+                              <Text style={styles.alertText}>
+                                {recommendation}
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={[styles.alertText, styles.urduText]}>
+                                {recommendation}
+                              </Text>
+                              <Text style={styles.bullet}>•</Text>
+                            </>
+                          )}
+                        </View>
+                      ))
                     )}
-                  </Animated.View>
-                </View>
+                  </ScrollView>
+                </Animated.View>
               </View>
 
-              <View style={styles.scrollingAlertContainer}>
-                <Animated.Text
-                  style={[
-                    styles.scrollingAlertText,
-                    {transform: [{translateX: textScrollAnim}]},
-                  ]}>
-                  Health alert issued for Lahore • AQI levels may worsen in
-                  evening hours • Check your health app for updates • Stay
-                  hydrated • Limit strenuous outdoor activities
-                </Animated.Text>
-              </View>
+              {/* Red scrolling alert bar removed */}
             </View>
           </ImageBackground>
         </View>
       </View>
 
-      <View style={styles.border}>
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          contentContainerStyle={styles.scrollViewContent}>
-          {/* First Card - Cigarette Card with dynamic data */}
-          <View style={styles.cardContainer}>
-            <View style={styles.gradientContainer}>
-              <ImageBackground
-                source={require('../../assets/images/smoke.jpg')}
-                style={styles.backgroundImage}
-                imageStyle={styles.backgroundImageStyle}>
-                <View style={styles.contentContainer}>
-                  <Animated.Text
-                    style={[styles.titleText, {opacity: fadeAnim}]}>
-                    Wellness Tips for Everyday Living in
-                    <Text style={styles.emptySpace}>{''}</Text>
-                    <Text style={styles.redText}>Lahore</Text>
-                  </Animated.Text>
-                </View>
-              </ImageBackground>
-            </View>
-          </View>
-
-          {/* Second Card - Health Disclaimer */}
-          <View style={styles.cardContainer}>
-            <View style={styles.gradientContainer}>
-              <ImageBackground
-                source={require('../../assets/images/smoke.jpg')}
-                style={styles.backgroundImage}
-                imageStyle={styles.backgroundImageStyleLighter}>
-                <View style={styles.contentContainer}>
-                  <View style={styles.headerContainer}>
-                    <Text style={styles.titleText}>
-                      <Text style={styles.redText}>IMPORTANT</Text>{' '}
-                      <Text style={styles.whiteText}>Health Disclaimer</Text>
-                    </Text>
-                  </View>
-
-                  {/* Warning icon */}
-                  <View style={styles.warningIconContainer}>
-                    <Text>{''}</Text>
-                  </View>
-
-                  {/* Bullet points */}
-                  <View style={styles.bulletPointsContainer}>
-                    <View style={styles.bulletLine}>
-                      <View style={styles.bulletIconContainer}>
-                        <Text style={styles.bulletPoint}>•</Text>
-                      </View>
-                      <Text style={styles.bulletText}>
-                        Stay hydrated and minimize outdoor exposure during high
-                        pollution alerts
-                      </Text>
-                    </View>
-
-                    <View style={styles.bulletLine}>
-                      <View style={styles.bulletIconContainer}>
-                        <Text style={styles.bulletPoint}>•</Text>
-                      </View>
-                      <Text style={styles.bulletText}>
-                        Use N95 masks when AQI exceeds 150 for respiratory
-                        protection
-                      </Text>
-                    </View>
-
-                    <View style={styles.bulletLine}>
-                      <View style={styles.bulletIconContainer}>
-                        <Text style={styles.bulletPoint}>•</Text>
-                      </View>
-                      <Text style={styles.bulletText}>
-                        Consult healthcare provider if experiencing persistent
-                        respiratory symptoms
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Scrolling text */}
-                  <View style={styles.scrollingTextContainer}>
-                    <Animated.Text
-                      style={[
-                        styles.scrollingText,
-                        {transform: [{translateX: textScrollAnim}]},
-                      ]}>
-                      Information provided is for awareness only • Not a
-                      substitute for medical advice • Air quality affects
-                      individuals differently • Monitor local pollution levels
-                      daily • Air purifiers recommended for indoor use
-                    </Animated.Text>
-                  </View>
-                </View>
-              </ImageBackground>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Carousel Indicators */}
-        <View style={styles.indicatorContainer}>
-          {[0, 1].map(index => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.indicator,
-                activeIndex === index && styles.activeIndicator,
-              ]}
-              onPress={() => scrollToCard(index)}
-            />
-          ))}
-        </View>
-      </View>
+      {/* Second card section removed */}
     </View>
   );
 };
 
-// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     width: '100%',
@@ -467,9 +419,46 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 25,
-    fontWeight: 600,
+    fontWeight: '600',
     color: '#495159',
     padding: 20,
+  },
+  // Language toggle styles
+  languageToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  languageTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginHorizontal: 5,
+    backgroundColor: '#F3F4F6',
+  },
+  activeLanguageTab: {
+    backgroundColor: '#495159',
+  },
+  languageTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#495159',
+  },
+  activeLanguageTabText: {
+    color: 'white',
+  },
+  // Urdu specific styles
+  urduText: {
+    fontFamily: 'UrduFont', // This would need to be configured in your app
+    textAlign: 'right',
+  },
+  urduTitle: {
+    fontFamily: 'UrduFont',
+    textAlign: 'center',
+  },
+  urduBulletContainer: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'flex-start',
   },
   // Top card container (for the standalone card above carousel)
   topCardContainer: {
@@ -477,110 +466,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   healthAlertContainer: {
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: '#2A2F34', // Slightly lighter background
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  alertHeaderContainer: {
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
-    paddingBottom: 8,
-    marginBottom: 8,
-  },
-  alertTitleText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'white',
-    textAlign: 'center',
-  },
-  alertContentRow: {
-    flexDirection: 'row',
-    width: '100%',
-    flex: 1,
-  },
-  alertLeftColumn: {
-    flex: 0.35,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alertRightColumn: {
-    flex: 0.65,
-    paddingLeft: 10,
-    justifyContent: 'center',
-  },
-  alertHeading: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    marginBottom: 5,
-    marginTop: 20,
-    marginLeft: -20,
-  },
-  miniBulletContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  miniBullet: {
-    color: '#EF4444',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginRight: 5,
-    lineHeight: 20,
-  },
-  alertText: {
-    color: 'white',
-    fontSize: 12,
-    flex: 1,
-    lineHeight: 18,
-  },
-  scrollingAlertContainer: {
-    height: 24,
-    width: '100%',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 5,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    marginTop: 5,
-  },
-  scrollingAlertText: {
-    color: 'white',
-    fontSize: 11,
-    position: 'absolute',
-    fontWeight: '500',
-    width: 800, // Make sure this is wide enough for all text
-  },
-  border: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingVertical: 16,
-  },
-  scrollViewContent: {
-    paddingBottom: 20,
-  },
-  cardContainer: {
-    width: cardWidth,
-  },
-  gradientContainer: {
-    height: 300,
+    height: 460, // Increased height to accommodate all health advice
     borderRadius: 12,
     backgroundColor: '#2A2F34',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   backgroundImage: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  backgroundImageStyle: {
-    borderRadius: 12,
-    opacity: 0.3,
   },
   backgroundImageStyleLighter: {
     borderRadius: 12,
@@ -588,153 +484,36 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    justifyContent: 'space-evenly',
+    width: '100%',
+    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    position: 'relative',
   },
-  emptySpace: {
-    // Empty space placeholder
-  },
-  // Header styling for second card
-  headerContainer: {
+  alertHeaderContainer: {
     width: '100%',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.2)',
     paddingBottom: 8,
-    marginBottom: 5,
+    marginBottom: 8,
+    alignItems: 'center',
   },
-  titleText: {
-    fontSize: 13,
-    fontWeight: '600',
+  alertTitleText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: 'white',
     textAlign: 'center',
   },
-  whiteText: {
-    color: 'white',
-  },
-  redText: {
-    color: '#EF4444',
-  },
-  // Original card styles (unchanged)
-  cigaretteContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  cigaretteTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  cigaretteText: {
-    fontSize: 24,
-    color: 'white',
-    fontWeight: '500',
-  },
-  redNumberText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#EF4444',
-  },
-  crossIcon: {
-    width: 24,
-    height: 24,
-    marginLeft: 8,
-    marginTop: 4,
-  },
-  animationContainer: {
+  aqiCircleContainer: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    marginVertical: 10,
   },
-  smokingGif: {
-    width: 100,
-    height: 60,
-    resizeMode: 'contain',
-  },
-  quoteText: {
-    fontSize: 14,
-    color: 'white',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  // Enhanced disclaimer card styles
-  warningIconContainer: {
-    marginTop: 10,
-  },
-  warningIcon: {
-    width: 30,
-    height: 30,
-    tintColor: '#EF4444',
-  },
-  bulletPointsContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: 8,
-    padding: 10,
-    marginVertical: 5,
-  },
-  bulletLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-    width: '100%',
-  },
-  bulletIconContainer: {
-    width: 24,
-    alignItems: 'center',
-    paddingTop: 0,
-  },
-  bulletPoint: {
-    color: '#EF4444',
-    fontSize: 30,
-    fontWeight: 'bold',
-    lineHeight: 20,
-  },
-  bulletText: {
-    color: 'white',
-    fontSize: 14,
-    flex: 1,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
-  scrollingTextContainer: {
-    height: 30,
-    width: '100%',
-    overflow: 'hidden',
-    marginTop: 5,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 5,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  scrollingText: {
-    color: 'white',
-    fontSize: 12,
-    position: 'absolute',
-    fontWeight: '500',
-    width: 800, // Make sure this is wide enough for all text
-  },
-  // Enhanced carousel indicators
-  indicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(196, 196, 196, 0.5)',
-    marginHorizontal: 5,
-  },
-  activeIndicator: {
-    backgroundColor: '#EF4444',
-    width: 16,
-  },
-  // AQI card styles
   aqiCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderWidth: 2,
     borderColor: '#EF4444',
@@ -750,6 +529,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'white',
     fontWeight: '600',
+  },
+  healthAdviceContainer: {
+    width: '100%',
+    flex: 1,
+  },
+  adviceScrollView: {
+    height: 400, // Adjusted to fill the space previously occupied by the scrolling alert
+  },
+  alertHeading: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 5,
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  bulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  bullet: {
+    color: '#EF4444',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginRight: 5,
+    marginLeft: 5,
+    lineHeight: 20,
+  },
+  alertText: {
+    color: 'white',
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 18,
+  },
+  redText: {
+    color: '#EF4444',
   },
 });
 

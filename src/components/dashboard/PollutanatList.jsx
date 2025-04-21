@@ -5,6 +5,42 @@ import {
   useGetLatestMeanSensorValues,
 } from '../../services/sensor.hooks';
 
+// Custom components for pollutant subscripts
+const PM25Text = () => (
+  <View style={styles.subscriptContainer}>
+    <Text style={styles.pollutantBaseText}>PM</Text>
+    <Text style={styles.subscriptText}>2.5</Text>
+  </View>
+);
+
+const PM10Text = () => (
+  <View style={styles.subscriptContainer}>
+    <Text style={styles.pollutantBaseText}>PM</Text>
+    <Text style={styles.subscriptText}>10</Text>
+  </View>
+);
+
+const NO2Text = () => (
+  <View style={styles.subscriptContainer}>
+    <Text style={styles.pollutantBaseText}>NO</Text>
+    <Text style={styles.subscriptText}>2</Text>
+  </View>
+);
+
+const SO2Text = () => (
+  <View style={styles.subscriptContainer}>
+    <Text style={styles.pollutantBaseText}>SO</Text>
+    <Text style={styles.subscriptText}>2</Text>
+  </View>
+);
+
+const O3Text = () => (
+  <View style={styles.subscriptContainer}>
+    <Text style={styles.pollutantBaseText}>O</Text>
+    <Text style={styles.subscriptText}>3</Text>
+  </View>
+);
+
 const PollutantsList = () => {
   const [selectedSensor, setSelectedSensor] = useState(null);
   const [pm25Data, setPm25Data] = useState(null);
@@ -107,9 +143,16 @@ const PollutantsList = () => {
 
           <View style={styles.pollutantsContainer}>
             <View style={[styles.pollutantCard, styles.amberBorder]}>
-              <Text style={styles.pollutantLabel}>
-                Particulate Matter (PM2.5)
-              </Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>
+                  Particulate Matter
+                </Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(</Text>
+                  <PM25Text />
+                  <Text style={styles.pollutantLabelText}>)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>
                 <Text style={[styles.aqiValue, {color: aqiCategory.color}]}>
                   {pm25Data
@@ -123,29 +166,62 @@ const PollutantsList = () => {
             </View>
 
             <View style={[styles.pollutantCard, styles.blueBorder]}>
-              <Text style={styles.pollutantLabel}>
-                Particulate Matter (PM10)
-              </Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>
+                  Particulate Matter
+                </Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(</Text>
+                  <PM10Text />
+                  <Text style={styles.pollutantLabelText}>)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>283 µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.fuchsiaBorder]}>
-              <Text style={styles.pollutantLabel}>Nitrogen Dioxide (NO2)</Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>Nitrogen Dioxide</Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(</Text>
+                  <NO2Text />
+                  <Text style={styles.pollutantLabelText}>)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>107 µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.greenBorder]}>
-              <Text style={styles.pollutantLabel}>Sulpher Dioxide (SO2)</Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>Sulpher Dioxide</Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(</Text>
+                  <SO2Text />
+                  <Text style={styles.pollutantLabelText}>)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>49 µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.orangeBorder]}>
-              <Text style={styles.pollutantLabel}>Carbon Monoxide (CO)</Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>Carbon Monoxide</Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(CO)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>5 µg/m³</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.redBorder]}>
-              <Text style={styles.pollutantLabel}>Ozone (O3)</Text>
+              <View style={styles.pollutantLabelContainer}>
+                <Text style={styles.pollutantLabelText}>Ozone</Text>
+                <View style={styles.labelParenGroup}>
+                  <Text style={styles.pollutantLabelText}>(</Text>
+                  <O3Text />
+                  <Text style={styles.pollutantLabelText}>)</Text>
+                </View>
+              </View>
               <Text style={styles.pollutantValue}>19 µg/m³</Text>
             </View>
           </View>
@@ -201,10 +277,35 @@ const styles = StyleSheet.create({
     margin: 4,
     marginBottom: 12,
   },
-  pollutantLabel: {
+  pollutantLabelContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  labelParenGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pollutantLabelText: {
     fontSize: 13,
     color: '#31343D',
-    textAlign: 'center',
+    fontWeight: '500',
+  },
+  subscriptContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  pollutantBaseText: {
+    fontSize: 13,
+    color: '#31343D',
+    fontWeight: '500',
+  },
+  subscriptText: {
+    fontSize: 10,
+    color: '#31343D',
+    lineHeight: 10,
+    marginBottom: 1.5,
     fontWeight: '500',
   },
   pollutantValue: {
@@ -244,6 +345,9 @@ const styles = StyleSheet.create({
   },
   redBorder: {
     borderLeftColor: '#FCA5A5',
+  },
+  aqiValue: {
+    fontWeight: 'bold',
   },
 });
 

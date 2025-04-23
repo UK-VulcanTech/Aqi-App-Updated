@@ -11,6 +11,17 @@ import {
 } from 'react-native';
 import {useGetLatestMeanAQIValues} from '../../services/sensor.hooks';
 
+// Define AQI color constants - Same as AQIDashboard
+const AQI_COLORS = {
+  GOOD: '#00A652',
+  SATISFACTORY: '#A3C853',
+  MODERATE: '#FFF200',
+  SENSITIVE: '#F7941D',
+  UNHEALTHY: '#EF4444',
+  VERY_UNHEALTHY: '#9333EA',
+  HAZARDOUS: '#FF3333',
+};
+
 // Health advisories data in both English and Urdu
 const healthAdvisoriesData = {
   english: [
@@ -116,28 +127,62 @@ const healthAdvisoriesData = {
 const {width} = Dimensions.get('window');
 const cardWidth = width - 32; // Full width minus padding
 
-// Function to get AQI category based on value
+// Updated function to match AQIDashboard's getAQICategory function
 const getAQICategory = value => {
   if (value <= 50) {
-    return {text: 'Good', urduText: 'اچھا', color: '#A5D46A'};
+    return {
+      text: 'Good',
+      urduText: 'اچھا',
+      color: AQI_COLORS.GOOD,
+      gradientColors: ['#FFFFFF', '#E8F5E8', '#F2F9F2'],
+    };
   }
   if (value <= 100) {
-    return {text: 'Moderate', urduText: 'معتدل', color: '#FFDA75'};
+    return {
+      text: 'Satisfactory',
+      urduText: 'تسلی بخش',
+      color: AQI_COLORS.SATISFACTORY,
+      gradientColors: ['#FFFFFF', '#F1F7E8', '#F7FAF2'],
+    };
   }
   if (value <= 150) {
-    return {text: 'Poor', urduText: 'کمزور', color: '#F5A05A'};
+    return {
+      text: 'Moderate',
+      urduText: 'معتدل',
+      color: AQI_COLORS.MODERATE,
+      gradientColors: ['#FFFFFF', '#FFFDE8', '#FFFEF2'],
+    };
   }
   if (value <= 200) {
-    return {text: 'Unhealthy', urduText: 'غیر صحت مند', color: '#EB6B6B'};
+    return {
+      text: 'Unhealthy for sensitive group',
+      urduText: 'حساس افراد کے لیے غیر صحت مند',
+      color: AQI_COLORS.SENSITIVE,
+      gradientColors: ['#FFFFFF', '#FBF0E8', '#FCF5F0'],
+    };
   }
-  if (value <= 250) {
+  if (value <= 300) {
+    return {
+      text: 'Unhealthy',
+      urduText: 'غیر صحت مند',
+      color: AQI_COLORS.UNHEALTHY,
+      gradientColors: ['#FFFFFF', '#F9E8E8', '#FCF2F2'],
+    };
+  }
+  if (value <= 400) {
     return {
       text: 'Very Unhealthy',
       urduText: 'بہت غیر صحت مند',
-      color: '#B085C9',
+      color: AQI_COLORS.VERY_UNHEALTHY,
+      gradientColors: ['#FFFFFF', '#EFE8F5', '#F5F2F9'],
     };
   }
-  return {text: 'Hazardous', urduText: 'خطرناک', color: '#CF3030'};
+  return {
+    text: 'Hazardous',
+    urduText: 'خطرناک',
+    color: AQI_COLORS.HAZARDOUS,
+    gradientColors: ['#FFFFFF', '#F5E0E0', '#F9EBEB'],
+  };
 };
 
 const HealthAdvisory = () => {
@@ -147,7 +192,7 @@ const HealthAdvisory = () => {
   const [aqiData, setAqiData] = useState(null);
   const [healthAdvice, setHealthAdvice] = useState([]);
 
-  // Use the latest mean AQI values hook
+  // Use the latest mean AQI values hook - Keeping original API call
   const {
     data: sensorData,
     isLoading: sensorsLoading,
@@ -159,7 +204,7 @@ const HealthAdvisory = () => {
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Process sensor data when it loads
+  // Process sensor data when it loads - Keeping original processing
   useEffect(() => {
     if (sensorData && sensorData.overall) {
       // Use the overall AQI value from the data
@@ -254,19 +299,67 @@ const HealthAdvisory = () => {
     ).start();
   }, []);
 
-  // Get AQI category based on current AQI value
+  // Get AQI category based on current AQI value - Using the updated function
   const getAQIDetails = () => {
     if (!aqiData) {
       return {
         text: language === 'english' ? 'Loading...' : 'لوڈ ہو رہا ہے...',
         urduText: 'لوڈ ہو رہا ہے...',
-        color: '#FFDA75',
+        color: AQI_COLORS.SATISFACTORY,
+        gradientColors: ['#FFFFFF', '#F1F7E8', '#F7FAF2'],
       };
     }
     return getAQICategory(aqiData.overall_value);
   };
 
   const aqiCategory = getAQIDetails();
+
+  // Format timestamp to show days, hours, or minutes ago
+  const getLastUpdatedText = () => {
+    const timestamp = aqiData?.timestamp || null;
+
+    if (!timestamp) {
+      return language === 'english' ? 'Last Updated: --' : 'آخری اپڈیٹ: --';
+    }
+
+    const sensorDate = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - sensorDate;
+
+    // Calculate time units
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    // Format based on the largest time unit
+    if (language === 'english') {
+      if (diffDays > 0) {
+        return `Last Updated: ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      } else if (diffHours > 0) {
+        return `Last Updated: ${diffHours} hour${
+          diffHours !== 1 ? 's' : ''
+        } ago`;
+      } else if (diffMinutes > 0) {
+        return `Last Updated: ${diffMinutes} minute${
+          diffMinutes !== 1 ? 's' : ''
+        } ago`;
+      } else {
+        return 'Last Updated: Just now';
+      }
+    } else {
+      if (diffDays > 0) {
+        return `آخری اپڈیٹ: ${diffDays} دن پہلے`;
+      } else if (diffHours > 0) {
+        return `آخری اپڈیٹ: ${diffHours} گھنٹے پہلے`;
+      } else if (diffMinutes > 0) {
+        return `آخری اپڈیٹ: ${diffMinutes} منٹ پہلے`;
+      } else {
+        return 'آخری اپڈیٹ: ابھی ابھی';
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -317,8 +410,15 @@ const HealthAdvisory = () => {
               <View style={styles.alertHeaderContainer}>
                 <Animated.Text
                   style={[styles.alertTitleText, {opacity: fadeAnim}]}>
-                  <Text style={styles.redText}>
-                    {language === 'english' ? 'HEALTH ALERT' : 'صحت کا انتباہ'}
+                  <Text>
+                    <Text style={styles.redText}>
+                      {language === 'english' ? 'Important! ' : 'اہم! '}
+                    </Text>
+                    <Text style={styles.whiteText}>
+                      {language === 'english'
+                        ? 'Average Air Quality and the Corresponding Health Advisory'
+                        : 'اوسط فضائی معیار اور اس کے مطابق صحت سے متعلق تنبیہ'}
+                    </Text>
                   </Text>
                 </Animated.Text>
               </View>
@@ -349,6 +449,10 @@ const HealthAdvisory = () => {
                 </Animated.View>
               </View>
 
+              <View style={styles.updateTimeContainer}>
+                <Text style={styles.updateTime}>{getLastUpdatedText()}</Text>
+              </View>
+
               <View style={styles.healthAdviceContainer}>
                 <Animated.View style={[{opacity: fadeAnim}]}>
                   <Text
@@ -356,9 +460,9 @@ const HealthAdvisory = () => {
                       styles.alertHeading,
                       language === 'urdu' && styles.urduText,
                     ]}>
-                    {language === 'english'
-                      ? 'Current Air Quality'
-                      : 'موجودہ ہوا کا معیار'}
+                    {/* {language === 'english'
+                      ? 'Current Air Quality Advisory'
+                      : 'موجودہ ہوا کی کیفیت کا مشورہ'} */}
                   </Text>
                   <ScrollView style={styles.adviceScrollView}>
                     {sensorsLoading ? (
@@ -370,6 +474,17 @@ const HealthAdvisory = () => {
                         {language === 'english'
                           ? 'Loading health recommendations...'
                           : 'صحت کی سفارشات لوڈ ہو رہی ہیں...'}
+                      </Text>
+                    ) : sensorsError ? (
+                      <Text
+                        style={[
+                          styles.alertText,
+                          styles.errorText,
+                          language === 'urdu' && styles.urduText,
+                        ]}>
+                        {language === 'english'
+                          ? 'Error loading data'
+                          : 'ڈیٹا لوڈ کرنے میں خرابی'}
                       </Text>
                     ) : (
                       healthAdvice.map((recommendation, index) => (
@@ -400,14 +515,10 @@ const HealthAdvisory = () => {
                   </ScrollView>
                 </Animated.View>
               </View>
-
-              {/* Red scrolling alert bar removed */}
             </View>
           </ImageBackground>
         </View>
       </View>
-
-      {/* Second card section removed */}
     </View>
   );
 };
@@ -460,13 +571,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     justifyContent: 'flex-start',
   },
-  // Top card container (for the standalone card above carousel)
+  // Top card container
   topCardContainer: {
     width: '100%',
     marginBottom: 20,
   },
   healthAlertContainer: {
-    height: 460, // Increased height to accommodate all health advice
+    height: 460,
     borderRadius: 12,
     backgroundColor: '#2A2F34',
     overflow: 'hidden',
@@ -530,18 +641,28 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
   },
+  updateTimeContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  updateTime: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
   healthAdviceContainer: {
     width: '100%',
     flex: 1,
   },
   adviceScrollView: {
-    height: 400, // Adjusted to fill the space previously occupied by the scrolling alert
+    height: 300,
   },
   alertHeading: {
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
-    marginBottom: 5,
+    // marginBottom: ,
     marginTop: 5,
     textAlign: 'center',
   },
@@ -565,7 +686,14 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   redText: {
-    color: '#EF4444',
+    color: 'red',
+    fontWeight: 'bold',
+  },
+  whiteText: {
+    color: 'white',
+  },
+  errorText: {
+    color: '#FF6B6B',
   },
 });
 

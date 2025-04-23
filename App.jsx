@@ -21,6 +21,7 @@ import AdminProfile from './src/components/admin/AdminProfile';
 import EditAdminProfile from './src/components/admin/EditAdminProfile';
 import BlogsScreen from './src/screens/BlogsScreen';
 import SensorDataForm from './src/screens/SensorData/SensorDataForm';
+import AnalyserScreen from './src/screens/analyser/AnalyserScreen';
 
 // Create a client with better caching settings for WebSocket support
 const queryClient = new QueryClient({
@@ -71,6 +72,10 @@ function HomeStack() {
       <Stack.Screen name="About" component={withHeader(AboutUsScreen)} />
       <Stack.Screen name="Contact" component={withHeader(ContactUsScreen)} />
       <Stack.Screen name="Blogs" component={withHeader(BlogsScreen)} />
+      <Stack.Screen
+        name="AnalyserScreen"
+        component={withHeader(AnalyserScreen, false)}
+      />
     </Stack.Navigator>
   );
 }

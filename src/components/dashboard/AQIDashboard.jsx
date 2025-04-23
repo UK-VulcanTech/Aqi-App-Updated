@@ -360,7 +360,7 @@ const AQIDashboard = () => {
               },
             ]}>
             <View style={styles.weatherTopSection}>
-              <Text style={styles.temperatureText}>17°C</Text>
+              <Text style={styles.temperatureText}>Coming Soon</Text>
               <Text style={styles.weatherCondition}>Weather</Text>
             </View>
 
@@ -371,7 +371,7 @@ const AQIDashboard = () => {
                   style={styles.weatherIcon}
                 />
                 <Text style={styles.weatherDataLabel}>Humidity</Text>
-                <Text style={styles.weatherDataValue}>66 %</Text>
+                <Text style={styles.weatherDataValue}>coming soon</Text>
               </View>
 
               <View style={styles.weatherDataItemSeparator} />
@@ -382,7 +382,7 @@ const AQIDashboard = () => {
                   style={styles.weatherIcon}
                 />
                 <Text style={styles.weatherDataLabel}>Wind Speed</Text>
-                <Text style={styles.weatherDataValue}>7 km/h</Text>
+                <Text style={styles.weatherDataValue}>coming soon</Text>
               </View>
 
               <View style={styles.weatherDataItemSeparator} />
@@ -393,7 +393,7 @@ const AQIDashboard = () => {
                   style={styles.weatherIcon}
                 />
                 <Text style={styles.weatherDataLabel}>UV Index</Text>
-                <Text style={styles.weatherDataValue}>2</Text>
+                <Text style={styles.weatherDataValue}>coming soon</Text>
               </View>
             </View>
           </View>
@@ -587,9 +587,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   temperatureText: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#444',
+    color: 'black',
   },
   weatherCondition: {
     color: '#444',

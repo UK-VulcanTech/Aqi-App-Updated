@@ -37,7 +37,7 @@ const BlogsScreen = ({navigation}) => {
       id: 2,
       image: maryamA,
       alt: 'Senior Minsiter Punjab discussing air quality monitoring',
-      title: 'Senior Minister Punjab EPCCD',
+      title: 'Senior Minister Punjab',
       subtitle: 'Ms. Maryam Aurangzeb',
       description:
         "A complete solution for air quality monitoring, data analysis, and fresh air solutions in workplaces prioritizing employee's health and productivity. Lorem ipsum dolor sit amet consectetur adipisicing elit.",

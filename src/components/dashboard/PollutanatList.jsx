@@ -176,7 +176,7 @@ const PollutantsList = () => {
                   <Text style={styles.pollutantLabelText}>)</Text>
                 </View>
               </View>
-              <Text style={styles.pollutantValue}>283 µg/m³</Text>
+              <Text style={styles.pollutantValue}>Coming soon</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.fuchsiaBorder]}>
@@ -188,7 +188,7 @@ const PollutantsList = () => {
                   <Text style={styles.pollutantLabelText}>)</Text>
                 </View>
               </View>
-              <Text style={styles.pollutantValue}>107 µg/m³</Text>
+              <Text style={styles.pollutantValue}>Coming soon</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.greenBorder]}>
@@ -200,7 +200,7 @@ const PollutantsList = () => {
                   <Text style={styles.pollutantLabelText}>)</Text>
                 </View>
               </View>
-              <Text style={styles.pollutantValue}>49 µg/m³</Text>
+              <Text style={styles.pollutantValue}>Coming soon</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.orangeBorder]}>
@@ -210,7 +210,7 @@ const PollutantsList = () => {
                   <Text style={styles.pollutantLabelText}>(CO)</Text>
                 </View>
               </View>
-              <Text style={styles.pollutantValue}>5 µg/m³</Text>
+              <Text style={styles.pollutantValue}>Coming soon</Text>
             </View>
 
             <View style={[styles.pollutantCard, styles.redBorder]}>
@@ -222,7 +222,7 @@ const PollutantsList = () => {
                   <Text style={styles.pollutantLabelText}>)</Text>
                 </View>
               </View>
-              <Text style={styles.pollutantValue}>19 µg/m³</Text>
+              <Text style={styles.pollutantValue}>Coming soon</Text>
             </View>
           </View>
         </View>

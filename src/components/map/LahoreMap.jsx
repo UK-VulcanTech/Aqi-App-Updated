@@ -18,6 +18,8 @@ import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
 import {useGetAllSensors} from '../../services/sensor.hooks';
+import {useNavigation} from '@react-navigation/native';
+
 // import {SafeAreaView} from 'react-native-safe-area-context';
 
 const LahoreMap = () => {
@@ -37,6 +39,8 @@ const LahoreMap = () => {
   const {data: sensorData} = useGetAllSensors();
   const [activeMetric, setActiveMetric] = useState('PM2.5'); // Add this for tracking active metric
   console.log('🚀 ~ LahoreMap ~ sensorData:', sensorData);
+
+  const navigation = useNavigation();
 
   // Define different pollutant layers - ensuring consistent capitalization
   const tiffLayers = [
@@ -444,12 +448,12 @@ const LahoreMap = () => {
 
   // Add this sample data near the top of your component
   const pollutantsData = [
-    {pollutant: 'PM2.5', value: 35, unit: 'μg/m³'},
-    {pollutant: 'PM10', value: 283.81, unit: 'μg/m³'},
-    {pollutant: 'CO', value: 4.513, unit: 'μg/m³'},
-    {pollutant: 'O₃', value: 18.977, unit: 'ppb'},
-    {pollutant: 'NO₂', value: 107.81, unit: 'ppb'},
-    {pollutant: 'SO₂', value: 6.005, unit: 'ppb'},
+    {pollutant: 'PM2.5', value: '', unit: 'coming soon'},
+    {pollutant: 'PM10', value: '', unit: 'coming soon'},
+    {pollutant: 'CO', value: '', unit: 'coming soon'},
+    {pollutant: 'O₃', value: '', unit: 'coming soon'},
+    {pollutant: 'NO₂', value: '', unit: 'coming soon'},
+    {pollutant: 'SO₂', value: '', unit: 'coming soon'},
   ];
 
   // Function to show Lahore-only notification
@@ -1566,6 +1570,27 @@ showCurrentLocation();
                     );
                   })}
               </View>
+
+              {/* Add Read Me button */}
+              <TouchableOpacity
+                style={{
+                  marginTop: 12,
+                  backgroundColor: 'rgba(50, 150, 255, 0.8)',
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 20,
+                  alignSelf: 'center',
+                }}
+                onPress={() => {
+                  navigation.navigate('AnalyserScreen', {
+                    markerData: selectedMarkerData,
+                  });
+                }}>
+                <Text
+                  style={{color: 'white', fontWeight: 'bold', fontSize: 14}}>
+                  Read More
+                </Text>
+              </TouchableOpacity>
 
               {/* Close button */}
               <TouchableOpacity

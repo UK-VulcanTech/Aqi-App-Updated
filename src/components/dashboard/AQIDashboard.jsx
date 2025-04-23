@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   aqiValueContainer: {
     flexDirection: 'column',
-    marginLeft: 50,
+    marginLeft: 30,
     alignItems: 'flex-end',
   },
   moderateBox: {

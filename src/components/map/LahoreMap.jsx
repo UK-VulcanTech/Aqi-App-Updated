@@ -1582,8 +1582,8 @@ showCurrentLocation();
                   alignSelf: 'center',
                 }}
                 onPress={() => {
-                  navigation.navigate('AnalyserScreen', {
-                    markerData: selectedMarkerData,
+                  navigation.navigate('Home', {
+                    screen: 'AnalyserScreen',
                   });
                 }}>
                 <Text

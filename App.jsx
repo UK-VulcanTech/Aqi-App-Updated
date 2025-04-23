@@ -74,7 +74,7 @@ function HomeStack() {
       <Stack.Screen name="Blogs" component={withHeader(BlogsScreen)} />
       <Stack.Screen
         name="AnalyserScreen"
-        component={withHeader(AnalyserScreen, false)}
+        component={withHeader(AnalyserScreen)}
       />
     </Stack.Navigator>
   );

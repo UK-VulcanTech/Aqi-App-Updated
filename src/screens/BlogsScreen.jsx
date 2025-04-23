@@ -13,7 +13,7 @@ import {
 import maryam from '../assets/images/maryam.jpg';
 import raja from '../assets/images/raja-epd.jpg';
 import imran from '../assets/images/imran.png';
-import maryamA from '../assets/images/maryam-a.jpeg';
+import maryamA from '../assets/images/maryamA.png';
 import backIcon from '../assets/icons/back.png'; // Import your back icon image
 
 // Get device width for responsive sizing

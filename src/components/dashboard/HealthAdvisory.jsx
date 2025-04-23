@@ -494,21 +494,14 @@ const HealthAdvisory = () => {
                             styles.bulletContainer,
                             language === 'urdu' && styles.urduBulletContainer,
                           ]}>
-                          {language === 'english' ? (
-                            <>
-                              <Text style={styles.bullet}>•</Text>
-                              <Text style={styles.alertText}>
-                                {recommendation}
-                              </Text>
-                            </>
-                          ) : (
-                            <>
-                              <Text style={[styles.alertText, styles.urduText]}>
-                                {recommendation}
-                              </Text>
-                              <Text style={styles.bullet}>•</Text>
-                            </>
-                          )}
+                          <Text style={styles.bullet}>•</Text>
+                          <Text
+                            style={[
+                              styles.alertText,
+                              language === 'urdu' && styles.urduText,
+                            ]}>
+                            {recommendation}
+                          </Text>
                         </View>
                       ))
                     )}
@@ -662,21 +655,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
-    // marginBottom: ,
     marginTop: 5,
     textAlign: 'center',
   },
   bulletContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 15, // Increased spacing below each bullet point
+  },
+  urduBulletContainer: {
+    flexDirection: 'row-reverse',
   },
   bullet: {
     color: '#EF4444',
     fontSize: 20,
     fontWeight: 'bold',
-    marginRight: 5,
-    marginLeft: 5,
+    marginHorizontal: 8, // Equal spacing on both sides
     lineHeight: 20,
   },
   alertText: {
@@ -684,6 +678,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flex: 1,
     lineHeight: 18,
+    marginBottom: 5, // Add space below text
   },
   redText: {
     color: 'red',

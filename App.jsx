@@ -21,7 +21,8 @@ import AdminProfile from './src/components/admin/AdminProfile';
 import EditAdminProfile from './src/components/admin/EditAdminProfile';
 import BlogsScreen from './src/screens/BlogsScreen';
 import SensorDataForm from './src/screens/SensorData/SensorDataForm';
-import AnalyserScreen from './src/screens/analyser/AnalyserScreen';
+import AnalyserScreen from './src/screens/senosr/SensorDetailsScreen';
+import SensorDetailsScreen from './src/screens/senosr/SensorDetailsScreen';
 
 // Create a client with better caching settings for WebSocket support
 const queryClient = new QueryClient({
@@ -155,6 +156,13 @@ function App() {
           <Tab.Screen
             name="Ranking"
             component={withHeader(PollutedTehsilsTable)}
+            options={{
+              tabBarIcon: getTabIcon(require('./src/assets/icons/rank.png')),
+            }}
+          />
+          <Tab.Screen
+            name="Sensor"
+            component={withHeader(SensorDetailsScreen)}
             options={{
               tabBarIcon: getTabIcon(require('./src/assets/icons/rank.png')),
             }}

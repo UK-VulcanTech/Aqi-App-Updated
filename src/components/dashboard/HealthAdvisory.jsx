@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import {useGetLatestMeanAQIValues} from '../../services/sensor.hooks';
+import {useGetLatestMeanAQIValues} from '../../services/sensors/sensor.hooks';
 
 // Define AQI color constants - Same as AQIDashboard
 const AQI_COLORS = {

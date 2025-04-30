@@ -1,7 +1,11 @@
 // services/sensor.hooks.js
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import sensorServices from './sensor.services';
-import { useWebSocketEnhancedQuery } from './useWebSocketEnhancedQuery.js';
+import sensorServices from './sensor.services.js';
+import { useWebSocketEnhancedQuery } from '../websockets/useWebSocketEnhancedQuery.js.js';
+// import sensorServices from './sensor.services.js';
+// import { useWebSocketEnhancedQuery } from '../useWebSocketEnhancedQuery.js.js';
+// import sensorServices from './sensor.services.js';
+// import sensorServices from './sensor.services.js';
 
 export const useGetAllSensors = () => {
     const query = useQuery({

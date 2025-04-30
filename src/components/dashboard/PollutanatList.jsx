@@ -3,7 +3,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import {
   useGetAllSensors,
   useGetLatestMeanSensorValues,
-} from '../../services/sensor.hooks';
+} from '../../services/sensors/sensor.hooks';
 
 // Custom components for pollutant subscripts
 const PM25Text = () => (

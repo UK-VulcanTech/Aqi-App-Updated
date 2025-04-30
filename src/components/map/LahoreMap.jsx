@@ -17,7 +17,7 @@ import {WebView} from 'react-native-webview';
 import RNFS from 'react-native-fs';
 import SearchBox from './SearchBox';
 import Papa from 'papaparse';
-import {useGetAllSensors} from '../../services/sensor.hooks';
+import {useGetAllSensors} from '../../services/sensors/sensor.hooks';
 import {useNavigation} from '@react-navigation/native';
 
 // import {SafeAreaView} from 'react-native-safe-area-context';

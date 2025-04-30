@@ -21,7 +21,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {
   useGetSensorLocations,
   useSubmitSensorReading,
-} from '../../services/sensor.hooks';
+} from '../../services/sensors/sensor.hooks';
 
 // H1 function component
 const H1 = ({children, style}) => {

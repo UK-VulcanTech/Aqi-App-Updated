@@ -12,7 +12,7 @@ import {
   useGetAllSensors,
   useGetLatestMeanAQIValues,
   useGetLatestMeanSensorValues,
-} from '../../services/sensor.hooks';
+} from '../../services/sensors/sensor.hooks';
 
 // Define AQI color constants
 const AQI_COLORS = {

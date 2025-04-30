@@ -10,7 +10,7 @@ import {
 import {BarChart, LineChart} from 'react-native-chart-kit';
 
 // import {useGetAllSensors} from '../../services/sensor.hooks';
-import {useGetSensorDataLastSevenDays} from '../../services/sensor.hooks';
+import {useGetSensorDataLastSevenDays} from '../../services/sensors/sensor.hooks';
 
 const AirQualityChart = () => {
   const [selectedPollutant, setSelectedPollutant] = useState('PM 2.5');
@@ -56,7 +56,9 @@ const AirQualityChart = () => {
   };
 
   const processPM25Data = () => {
-    if (!sensorData || !sensorData.daily_means) return [];
+    if (!sensorData || !sensorData.daily_means) {
+      return [];
+    }
 
     // Sort dates in ascending order to show properly on chart
     const sortedDates = Object.keys(sensorData.daily_means).sort();

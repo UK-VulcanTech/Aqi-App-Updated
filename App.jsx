@@ -10,19 +10,21 @@ import Header from './src/components/dashboard/Header';
 // Import screens
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import AboutUsScreen from './src/screens/AboutUsScreen';
-import ContactUsScreen from './src/screens/ContactUsScreen';
+// import AboutUsScreen from './src/screens/about/AboutUsScreen';
+import ContactUsScreen from './src/screens/contact/ContactUsScreen';
 import PollutedTehsilsTable from './src/screens/PollutedTehsilsScreen';
-import UserDashboard from './src/components/user/UserDashboard';
-import SensorRecords from './src/components/user/SensorRecords';
-import AdminDashboard from './src/components/admin/AdminDashboard';
-import CreateUser from './src/components/admin/CreateUser';
-import AdminProfile from './src/components/admin/AdminProfile';
-import EditAdminProfile from './src/components/admin/EditAdminProfile';
-import BlogsScreen from './src/screens/BlogsScreen';
-import SensorDataForm from './src/screens/SensorData/SensorDataForm';
+// import UserDashboard from './src/screens/user/UserDashboard';
+import SensorRecords from './src/screens/user/SensorRecords';
+import AdminDashboard from './src/screens/admin/AdminDashboard';
+import CreateUser from './src/screens/admin/CreateUser';
+import AdminProfile from './src/screens/admin/AdminProfile';
+import EditAdminProfile from './src/screens/admin/EditAdminProfile';
+import BlogsScreen from './src/screens/blogs/BlogsScreen';
+import SensorDataForm from './src/screens/sensor-data/SensorDataForm';
 import AnalyserScreen from './src/screens/senosr/SensorDetailsScreen';
 import SensorDetailsScreen from './src/screens/senosr/SensorDetailsScreen';
+import UserDashboard from './src/screens/user/UserDashboard';
+import AboutUsScreen from './src/screens/about/AboutUsScreen';
 
 // Create a client with better caching settings for WebSocket support
 const queryClient = new QueryClient({
